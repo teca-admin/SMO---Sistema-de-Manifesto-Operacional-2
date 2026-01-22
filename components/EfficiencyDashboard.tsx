@@ -95,11 +95,11 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
     
     if (ini && com) {
       const diff = (com.getTime() - ini.getTime()) / 60000;
-      if (diff > 120) return 'Puxe > 2h';
+      if (diff > 120) return 'PUXE > 2H';
     }
     if (com && ass) {
       const diff = (ass.getTime() - com.getTime()) / 60000;
-      if (diff > 15) return 'Assinatura > 15m';
+      if (diff > 15) return 'ASSINATURA > 15M';
     }
     return null;
   };
@@ -495,9 +495,13 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
                       'bg-slate-50/50 dark:bg-slate-900/30 text-slate-700 dark:text-slate-400 border-slate-200 dark:border-slate-700'
                     }`}
                   >
-                    <div className="flex flex-col items-start overflow-hidden">
-                      <span className="text-[10px] font-black uppercase font-mono-tech truncate">{m.id}</span>
-                      {violation && <span className="text-[8px] font-bold uppercase text-red-500">{violation}</span>}
+                    <div className="flex items-center gap-1.5 overflow-hidden">
+                      <span className="text-[10px] font-black uppercase font-mono-tech truncate shrink-0">{m.id}</span>
+                      {violation && (
+                        <span className="text-[7px] font-black uppercase px-1 py-0.5 bg-red-600 text-white rounded-sm whitespace-nowrap">
+                          {violation}
+                        </span>
+                      )}
                     </div>
                     <ChevronRight size={14} className="text-slate-300" />
                   </button>
