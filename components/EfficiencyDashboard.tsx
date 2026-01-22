@@ -316,7 +316,7 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
         </svg>
         <div className="absolute inset-0 flex items-center justify-center flex-col pointer-events-none">
           <span className="text-[14px] font-black text-slate-900 dark:text-white leading-none">{total}</span>
-          <span className="text-[7px] font-black text-slate-400 uppercase tracking-tighter">Total</span>
+          <span className="text-[11px] font-black text-slate-400 uppercase tracking-tighter">Total</span>
         </div>
       </div>
     );
@@ -336,7 +336,7 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
                <kpi.icon size={20} />
             </div>
             <div className="flex-1">
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">{kpi.label}</p>
+              <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">{kpi.label}</p>
               <p className="text-2xl font-black text-slate-900 dark:text-white font-mono-tech leading-none">{kpi.val}</p>
             </div>
           </button>
@@ -351,7 +351,7 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 flex-1 min-h-0">
         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 panel-shadow flex flex-col overflow-hidden">
           <div className="bg-slate-50 dark:bg-slate-900/50 px-3 py-2 border-b border-slate-200 dark:border-slate-700 shrink-0 flex items-center justify-between">
-            <h3 className="text-[10px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest flex items-center gap-2">
+            <h3 className="text-[11px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest flex items-center gap-2">
               <ShieldCheck size={14} className="text-slate-700 dark:text-slate-400" /> Rank Sistema
             </h3>
             {activeFilters.usuarioCadastro && <button onClick={() => toggleFilter('usuarioCadastro', activeFilters.usuarioCadastro)} className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors"><X size={14} className="text-red-500" /></button>}
@@ -359,7 +359,7 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
           <div className="flex-1 p-1 space-y-1 overflow-y-auto custom-scrollbar">
             {sistemaRank.map(([name, count], idx) => (
               <button key={name} onClick={() => toggleFilter('usuarioCadastro', name)} className={`w-full flex items-center justify-between py-1.5 px-2 border-l-2 transition-all ${activeFilters.usuarioCadastro === name ? 'bg-slate-900 dark:bg-slate-100 dark:text-slate-900 text-white border-slate-950 dark:border-white' : 'bg-slate-50/50 dark:bg-slate-900/30 text-slate-700 dark:text-slate-300 border-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900/20'}`}>
-                <span className="text-[10px] font-black uppercase truncate pr-1">#{idx+1} {name}</span>
+                <span className="text-[11px] font-black uppercase truncate pr-1">#{idx+1} {name}</span>
                 <span className="text-[11px] font-black font-mono-tech">{count}</span>
               </button>
             ))}
@@ -368,7 +368,7 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
 
         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 panel-shadow flex flex-col overflow-hidden">
           <div className="bg-slate-50 dark:bg-slate-900/50 px-3 py-2 border-b border-slate-200 dark:border-slate-700 shrink-0 flex items-center justify-between">
-            <h3 className="text-[10px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest flex items-center gap-2">
+            <h3 className="text-[11px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest flex items-center gap-2">
               <Award size={14} className="text-indigo-600" /> Rank Operação
             </h3>
             {activeFilters.usuario && <button onClick={() => toggleFilter('usuario', activeFilters.usuario)} className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors"><X size={14} className="text-red-500" /></button>}
@@ -376,7 +376,7 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
           <div className="flex-1 p-1 space-y-1 overflow-y-auto custom-scrollbar">
             {atribuicaoRank.map(([name, count], idx) => (
               <button key={name} onClick={() => toggleFilter('usuario', name)} className={`w-full flex items-center justify-between py-1.5 px-2 border-l-2 transition-all ${activeFilters.usuario === name ? 'bg-indigo-600 text-white border-indigo-700' : 'bg-slate-50/50 dark:bg-slate-900/30 text-slate-700 dark:text-slate-300 border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20'}`}>
-                <span className="text-[10px] font-black uppercase truncate pr-1">#{idx+1} {name}</span>
+                <span className="text-[11px] font-black uppercase truncate pr-1">#{idx+1} {name}</span>
                 <span className="text-[11px] font-black font-mono-tech">{count}</span>
               </button>
             ))}
@@ -386,7 +386,7 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 panel-shadow flex flex-col overflow-hidden">
           <div className={`px-3 py-2 border-b transition-all shrink-0 flex items-center justify-between ${activeFilters.onlyViolations ? 'bg-red-600 border-red-700' : 'bg-red-50 dark:bg-red-900/20 border-red-100 dark:border-red-900/50'}`}>
             <div onClick={() => toggleFilter('onlyViolations', true)} className="flex items-center gap-2 cursor-pointer flex-1">
-              <h3 className={`text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${activeFilters.onlyViolations ? 'text-white' : 'text-red-600 dark:text-red-400'}`}>
+              <h3 className={`text-[11px] font-black uppercase tracking-widest flex items-center gap-2 ${activeFilters.onlyViolations ? 'text-white' : 'text-red-600 dark:text-red-400'}`}>
                 <AlertTriangle size={14} /> Alertas & Conformidade
               </h3>
             </div>
@@ -400,8 +400,8 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
                 <div key={m.id} className="flex gap-1 items-stretch group">
                   <button onClick={() => toggleFilter('manifestoId', m.id)} className={`flex-1 flex items-center justify-between py-1.5 px-2 border-l-2 transition-all ${isActive ? 'bg-slate-900 dark:bg-indigo-600 text-white border-indigo-500' : violation ? 'bg-red-50 dark:bg-red-900/10 text-red-900 dark:text-red-300 border-red-500 hover:bg-red-100 dark:hover:bg-red-900/20' : 'bg-slate-50/50 dark:bg-slate-900/30 text-slate-700 dark:text-slate-400 border-slate-200 dark:border-slate-700'}`}>
                     <div className="flex items-center gap-1.5 overflow-hidden">
-                      <span className="text-[10px] font-black uppercase font-mono-tech truncate shrink-0">{m.id}</span>
-                      {violation && <span className="text-[7px] font-black uppercase px-1 py-0.5 bg-red-600 text-white rounded-sm whitespace-nowrap">{violation}</span>}
+                      <span className="text-[11px] font-black uppercase font-mono-tech truncate shrink-0">{m.id}</span>
+                      {violation && <span className="text-[11px] font-black uppercase px-1 py-0.5 bg-red-600 text-white rounded-sm whitespace-nowrap">{violation}</span>}
                     </div>
                     <ChevronRight size={14} className="text-slate-300" />
                   </button>
@@ -414,7 +414,7 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
 
         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 panel-shadow flex flex-col overflow-hidden">
           <div className="bg-slate-50 dark:bg-slate-900/50 px-3 py-2 border-b border-slate-200 dark:border-slate-700 shrink-0 flex items-center justify-between">
-            <h3 className="text-[10px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest flex items-center gap-2">
+            <h3 className="text-[11px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest flex items-center gap-2">
               <PieChart size={14} className="text-indigo-600" /> Volume por Turno
             </h3>
             {activeFilters.turno && <button onClick={() => toggleFilter('turno', activeFilters.turno)} className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors"><X size={14} className="text-red-500" /></button>}
@@ -426,11 +426,11 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
                 <div key={i} onClick={() => toggleFilter('turno', item.label)} className="flex items-center justify-between cursor-pointer p-1.5 rounded hover:bg-slate-50 dark:hover:bg-slate-900/50">
                   <div className="flex items-center gap-2 overflow-hidden">
                     <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: getTurnColor(item.label) }}></div>
-                    <span className="text-[10px] font-black uppercase truncate text-slate-400">{item.label}</span>
+                    <span className="text-[11px] font-black uppercase truncate text-slate-400">{item.label}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-black font-mono-tech text-slate-900 dark:text-slate-100">{item.count}</span>
-                    <span className="text-[9px] font-black font-mono-tech text-indigo-500 dark:text-indigo-400">{item.pct.toFixed(1)}%</span>
+                    <span className="text-[11px] font-black font-mono-tech text-slate-900 dark:text-slate-100">{item.count}</span>
+                    <span className="text-[11px] font-black font-mono-tech text-indigo-500 dark:text-indigo-400">{item.pct.toFixed(1)}%</span>
                   </div>
                 </div>
               ))}
@@ -440,7 +440,7 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
 
         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 panel-shadow flex flex-col overflow-hidden">
           <div className="bg-slate-50 dark:bg-slate-900/50 px-3 py-2 border-b border-slate-200 dark:border-slate-700 shrink-0">
-            <h3 className="text-[10px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest flex items-center gap-2">
+            <h3 className="text-[11px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest flex items-center gap-2">
               <Target size={14} className="text-slate-600" /> Indicadores Performance SLA
             </h3>
           </div>
@@ -452,24 +452,24 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
             ].map((s, i) => (
               <div key={i} className="flex-1 flex flex-col border border-slate-100 dark:border-slate-700 shadow-sm min-h-0 overflow-hidden">
                 <div className={`bg-${s.color}-50/50 dark:bg-${s.color}-900/20 px-2 py-1 border-b border-${s.color}-100 dark:border-${s.color}-900/50`}>
-                  <p className={`text-[8px] font-black text-${s.color}-600 dark:text-${s.color}-400 uppercase tracking-[0.2em] leading-none`}>{s.label}</p>
+                  <p className={`text-[11px] font-black text-${s.color}-600 dark:text-${s.color}-400 uppercase tracking-[0.2em] leading-none`}>{s.label}</p>
                 </div>
                 <div className={`flex-1 flex flex-col justify-center p-2 border-l-4 border-${s.color}-600 bg-white dark:bg-slate-900 min-h-0`}>
                   <div className="grid grid-cols-4 gap-1">
                     <div className="text-center">
-                      <p className="text-[7px] font-black text-slate-300 uppercase leading-none mb-1">Média</p>
+                      <p className="text-[11px] font-black text-slate-300 uppercase leading-none mb-1">Média</p>
                       <p className={`text-[11px] font-black font-mono-tech text-${s.color}-600 dark:text-${s.color}-400`}>{formatMinutes(s.avg)}</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-[7px] font-black text-slate-300 uppercase leading-none mb-1">Máx</p>
-                      <p className="text-[11px] font-black font-mono-tech text-slate-400">{formatMinutes(s.max)}</p>
+                      <p className="text-[11px] font-black text-slate-300 uppercase leading-none mb-1">Máx</p>
+                      <p className={`text-[11px] font-black font-mono-tech text-slate-400`}>{formatMinutes(s.max)}</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-[7px] font-black text-slate-300 uppercase leading-none mb-1">Limite</p>
-                      <p className="text-[11px] font-black font-mono-tech text-slate-700 dark:text-slate-300">{s.target}</p>
+                      <p className="text-[11px] font-black text-slate-300 uppercase leading-none mb-1">Limite</p>
+                      <p className={`text-[11px] font-black font-mono-tech text-slate-700 dark:text-slate-300`}>{s.target}</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-[7px] font-black text-slate-300 uppercase leading-none mb-1">SLA</p>
+                      <p className="text-[11px] font-black text-slate-300 uppercase leading-none mb-1">SLA</p>
                       <p className={`text-[11px] font-black font-mono-tech ${s.pct >= 95 ? 'text-emerald-600' : 'text-amber-500'}`}>{`${Math.round(s.pct)}%`}</p>
                     </div>
                   </div>
@@ -483,7 +483,7 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 h-[40%] shrink-0">
         <div className="lg:col-span-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 panel-shadow flex flex-col overflow-hidden">
           <div className="bg-slate-50 dark:bg-slate-900/50 px-3 py-2 border-b border-slate-200 dark:border-slate-700 shrink-0 flex items-center justify-between">
-            <h3 className="text-[10px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest flex items-center gap-2">
+            <h3 className="text-[11px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest flex items-center gap-2">
               <BarChart3 size={14} className="text-slate-500" /> Market Share por CIA
             </h3>
             {activeFilters.cia && <button onClick={() => toggleFilter('cia', activeFilters.cia)} className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors"><X size={14} className="text-red-500" /></button>}
@@ -494,11 +494,11 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
                 <div className="flex justify-between items-end mb-1">
                   <div className="flex items-center gap-1.5 overflow-hidden">
                     <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: getCiaColor(item.label) }}></div>
-                    <span className="text-[10px] font-black uppercase truncate text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white">{item.label}</span>
+                    <span className="text-[11px] font-black uppercase truncate text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white">{item.label}</span>
                   </div>
                   <div className="flex items-baseline gap-2 shrink-0">
                     <span className="text-[12px] font-black font-mono-tech text-slate-900 dark:text-slate-100">{item.count}</span>
-                    <span className="text-[9px] font-black text-indigo-500/60 font-mono-tech">{item.pct.toFixed(1)}%</span>
+                    <span className="text-[11px] font-black text-indigo-500/60 font-mono-tech">{item.pct.toFixed(1)}%</span>
                   </div>
                 </div>
                 <div className="h-2 bg-slate-100 dark:bg-slate-900 rounded-sm overflow-hidden flex items-center px-0.5"><div className="h-1 rounded-xs transition-all duration-500 shadow-sm" style={{ width: `${item.pct}%`, backgroundColor: getCiaColor(item.label) }}></div></div>
@@ -509,18 +509,18 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
 
         <div className="lg:col-span-9 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 panel-shadow flex flex-col overflow-hidden">
           <div className="bg-slate-900 dark:bg-slate-950 px-5 py-2.5 flex items-center justify-between shrink-0">
-            <h3 className="text-[10px] font-black text-white uppercase tracking-[0.2em] flex items-center gap-2"><BarChart3 size={16} className="text-indigo-400" /> Fluxo de Recebimento Hora a Hora</h3>
-            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">WFS MONITORING CENTER</span>
+            <h3 className="text-[11px] font-black text-white uppercase tracking-[0.2em] flex items-center gap-2"><BarChart3 size={16} className="text-indigo-400" /> Fluxo de Recebimento Hora a Hora</h3>
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">WFS MONITORING CENTER</span>
           </div>
           <div className="flex-1 flex flex-col p-4 px-12 relative overflow-hidden">
             <div className="absolute inset-x-12 bottom-12 top-6 pointer-events-none"><div className="absolute inset-0 flex flex-col justify-between">{[...Array(5)].map((_, i) => <div key={i} className="w-full border-t border-dashed border-slate-100 dark:border-slate-700/50"></div>)}<div className="w-full h-px bg-slate-400 dark:bg-slate-600"></div></div></div>
             <div className="flex-1 flex items-end gap-1 relative z-10">
-              <div className="absolute left-0 right-0 border-t-2 border-dashed border-red-500 z-40 transition-all duration-500 flex items-center" style={{ bottom: `${(flowStats.max / maxHourlyCount) * 100}%` }}><div className="absolute left-0 -translate-x-1/2 bg-red-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap">PICO (MÁX): {flowStats.max}</div></div>
-              <div className="absolute left-0 right-0 border-t-2 border-dashed border-indigo-500 z-30 transition-all duration-500 flex items-center" style={{ bottom: `${(flowStats.q3 / maxHourlyCount) * 100}%` }}><div className="absolute right-0 translate-x-1/2 bg-indigo-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap">75% (Q3): {flowStats.q3.toFixed(1)}</div></div>
-              <div className="absolute left-0 right-0 border-t-2 border-dashed border-amber-500 z-30 transition-all duration-500 flex items-center" style={{ bottom: `${(flowStats.avg / maxHourlyCount) * 100}%` }}><div className="absolute left-0 -translate-x-1/2 bg-amber-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap">MÉDIA: {flowStats.avg.toFixed(1)}</div></div>
-              {hourlyStats.map((h) => (<div key={h.hour} className="flex-1 flex flex-col items-center h-full justify-end group">{!h.isFuture && (<div className="flex items-end justify-center w-full h-full pb-1"><div className="w-full max-w-[36px] bg-gradient-to-t from-indigo-700 to-indigo-500 dark:from-indigo-600 dark:to-indigo-400 group-hover:scale-y-105 transition-all rounded-t-sm relative shadow-sm" style={{ height: h.received > 0 ? `${(h.received / maxHourlyCount) * 100}%` : '2px' }}>{h.received > 0 && <div className="absolute -top-6 left-0 right-0 text-center text-[10px] font-black text-indigo-700 dark:text-indigo-300 bg-white/90 dark:bg-slate-900/90 rounded border border-indigo-100 dark:border-indigo-900 shadow-sm z-20">{h.received}</div>}{h.received === 0 && <div className="absolute -top-6 left-0 right-0 text-center text-[10px] font-black text-slate-400 bg-white/50 dark:bg-slate-900/50 rounded z-20">0</div>}</div></div>)}</div>))}
+              <div className="absolute left-0 right-0 border-t-2 border-dashed border-red-500 z-40 transition-all duration-500 flex items-center" style={{ bottom: `${(flowStats.max / maxHourlyCount) * 100}%` }}><div className="absolute left-0 -translate-x-1/2 bg-red-600 text-white text-[11px] font-black px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap">PICO (MÁX): {flowStats.max}</div></div>
+              <div className="absolute left-0 right-0 border-t-2 border-dashed border-indigo-500 z-30 transition-all duration-500 flex items-center" style={{ bottom: `${(flowStats.q3 / maxHourlyCount) * 100}%` }}><div className="absolute right-0 translate-x-1/2 bg-indigo-500 text-white text-[11px] font-black px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap">75% (Q3): {flowStats.q3.toFixed(1)}</div></div>
+              <div className="absolute left-0 right-0 border-t-2 border-dashed border-amber-500 z-30 transition-all duration-500 flex items-center" style={{ bottom: `${(flowStats.avg / maxHourlyCount) * 100}%` }}><div className="absolute left-0 -translate-x-1/2 bg-amber-500 text-white text-[11px] font-black px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap">MÉDIA: {flowStats.avg.toFixed(1)}</div></div>
+              {hourlyStats.map((h) => (<div key={h.hour} className="flex-1 flex flex-col items-center h-full justify-end group">{!h.isFuture && (<div className="flex items-end justify-center w-full h-full pb-1"><div className="w-full max-w-[36px] bg-gradient-to-t from-indigo-700 to-indigo-500 dark:from-indigo-600 dark:to-indigo-400 group-hover:scale-y-105 transition-all rounded-t-sm relative shadow-sm" style={{ height: h.received > 0 ? `${(h.received / maxHourlyCount) * 100}%` : '2px' }}>{h.received > 0 && <div className="absolute -top-6 left-0 right-0 text-center text-[11px] font-black text-indigo-700 dark:text-indigo-300 bg-white/90 dark:bg-slate-900/90 rounded border border-indigo-100 dark:border-indigo-900 shadow-sm z-20">{h.received}</div>}{h.received === 0 && <div className="absolute -top-6 left-0 right-0 text-center text-[11px] font-black text-slate-400 bg-white/50 dark:bg-slate-900/50 rounded z-20">0</div>}</div></div>)}</div>))}
             </div>
-            <div className="h-8 mt-2 flex items-center border-t border-slate-900 dark:border-slate-700 pt-2 relative z-20">{hourlyStats.map((h) => (<div key={h.hour} className="flex-1 text-center"><span className={`text-[9px] font-black font-mono-tech tracking-tighter ${h.received > 0 ? 'text-indigo-600 dark:text-indigo-400' : h.isFuture ? 'text-slate-200 dark:text-slate-800' : 'text-slate-400 dark:text-slate-600'}`}>{!h.isFuture ? String(h.hour).padStart(2, '0') : ''}</span></div>))}</div>
+            <div className="h-8 mt-2 flex items-center border-t border-slate-900 dark:border-slate-700 pt-2 relative z-20">{hourlyStats.map((h) => (<div key={h.hour} className="flex-1 text-center"><span className={`text-[11px] font-black font-mono-tech tracking-tighter ${h.received > 0 ? 'text-indigo-600 dark:text-indigo-400' : h.isFuture ? 'text-slate-200 dark:text-slate-800' : 'text-slate-400 dark:text-slate-600'}`}>{!h.isFuture ? String(h.hour).padStart(2, '0') : ''}</span></div>))}</div>
           </div>
         </div>
       </div>
