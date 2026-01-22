@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, Check } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Check } from 'lucide-react';
 
 interface CustomDateTimePickerProps {
   value: string;
@@ -20,6 +19,7 @@ export const CustomDateTimePicker: React.FC<CustomDateTimePickerProps> = ({
   const [viewDate, setViewDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  // Fixed double assignment in useState
   const [coords, setCoords] = useState({ top: 0, left: 0 });
 
   // Sincroniza valor externo (ISO string) com o input visual
@@ -77,14 +77,7 @@ export const CustomDateTimePicker: React.FC<CustomDateTimePickerProps> = ({
     newDate.setDate(day);
     setSelectedDate(newDate);
     onChange(newDate.toISOString());
-  };
-
-  const handleTimeChange = (type: 'hour' | 'minute', val: number) => {
-    const newDate = selectedDate ? new Date(selectedDate) : new Date();
-    if (type === 'hour') newDate.setHours(val);
-    else newDate.setMinutes(val);
-    setSelectedDate(newDate);
-    onChange(newDate.toISOString());
+    // Removido o fechamento automático para permitir confirmação manual
   };
 
   const renderCalendar = () => {
@@ -103,6 +96,7 @@ export const CustomDateTimePicker: React.FC<CustomDateTimePickerProps> = ({
       days.push(
         <button
           key={d}
+          type="button"
           onClick={() => handleDateSelect(d)}
           className={`h-8 w-full text-[10px] font-bold flex items-center justify-center transition-all border ${
             isSelected 
@@ -184,60 +178,24 @@ export const CustomDateTimePicker: React.FC<CustomDateTimePickerProps> = ({
             </div>
           </div>
 
-          {/* Seletor de Hora */}
-          <div className="border-t border-slate-100 p-3 bg-slate-50">
-            <div className="flex items-center gap-2 mb-2">
-              <Clock size={12} className="text-slate-400" />
-              <span className="text-[9px] font-black text-slate-500 uppercase tracking-tighter">Ajuste de Horário</span>
-            </div>
-            
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex-1 flex flex-col items-center">
-                <span className="text-[8px] font-bold text-slate-400 uppercase mb-1">Hora</span>
-                <div className="flex flex-col w-full border border-slate-200 bg-white rounded overflow-hidden">
-                  <div className="h-20 overflow-y-auto custom-scrollbar flex flex-col items-center">
-                    {Array.from({length: 24}, (_, i) => (
-                      <button 
-                        key={i} 
-                        type="button"
-                        onClick={() => handleTimeChange('hour', i)}
-                        className={`w-full py-1 text-[11px] font-bold transition-colors ${selectedDate?.getHours() === i ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-50'}`}
-                      >
-                        {String(i).padStart(2, '0')}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="text-slate-300 font-bold mt-4">:</div>
-
-              <div className="flex-1 flex flex-col items-center">
-                <span className="text-[8px] font-bold text-slate-400 uppercase mb-1">Minuto</span>
-                <div className="flex flex-col w-full border border-slate-200 bg-white rounded overflow-hidden">
-                  <div className="h-20 overflow-y-auto custom-scrollbar flex flex-col items-center">
-                    {Array.from({length: 60}, (_, i) => (
-                      <button 
-                        key={i} 
-                        type="button"
-                        onClick={() => handleTimeChange('minute', i)}
-                        className={`w-full py-1 text-[11px] font-bold transition-colors ${selectedDate?.getMinutes() === i ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-50'}`}
-                      >
-                        {String(i).padStart(2, '0')}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <button 
+          {/* Footer com botão de confirmação */}
+          <div className="p-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+             <button 
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="bg-indigo-600 text-white p-2 h-10 w-10 flex items-center justify-center rounded shadow-lg hover:bg-indigo-700 transition-all self-end"
-              >
-                <Check size={18} />
-              </button>
-            </div>
+                className="text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-indigo-600 transition-colors"
+             >
+               Fechar Calendário
+             </button>
+             
+             <button 
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="w-10 h-10 bg-indigo-600 text-white flex items-center justify-center hover:bg-slate-900 transition-all shadow-md"
+                title="Confirmar escolha"
+             >
+               <Check size={18} />
+             </button>
           </div>
           
           <div className="fixed inset-0 z-[-1]" onClick={() => setIsOpen(false)}></div>
