@@ -12,6 +12,23 @@ interface EditModalProps {
   onSave: (data: Partial<Manifesto> & { id: string, usuario: string, justificativa: string }) => void;
 }
 
+// Utility to format ISO strings to DD/MM/YYYY HH:MM
+const formatDisplayDate = (isoStr: string | undefined) => {
+  if (!isoStr || isoStr === '---' || isoStr === '') return '---';
+  try {
+    const d = new Date(isoStr);
+    if (isNaN(d.getTime())) return isoStr;
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${day}/${month}/${year} ${hours}:${minutes}`;
+  } catch (e) {
+    return isoStr;
+  }
+};
+
 // Fix: EditModal implementation
 export const EditModal: React.FC<EditModalProps> = ({ data, onClose, onSave }) => {
   const [formData, setFormData] = React.useState({ ...data });
@@ -308,7 +325,7 @@ export const HistoryModal: React.FC<{ data: Manifesto, onClose: () => void }> = 
                         </div>
                         <div className="flex flex-col">
                            <span className={`text-[10px] font-black uppercase tracking-tight ${hasDate ? 'text-slate-800 dark:text-slate-200' : 'text-slate-300 dark:text-slate-600'}`}>{step.label}</span>
-                           {hasDate && <span className="text-[10px] font-bold font-mono mt-0.5 text-slate-500 dark:text-slate-400">{step.time}</span>}
+                           {hasDate && <span className="text-[10px] font-bold font-mono mt-0.5 text-slate-500 dark:text-slate-400">{formatDisplayDate(step.time)}</span>}
                         </div>
                       </div>
                     );
