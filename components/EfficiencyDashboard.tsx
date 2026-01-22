@@ -631,21 +631,21 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
             <div className="flex-1 flex items-end gap-1 relative z-10">
               {/* Linha de Pico (Máxima) - Badge na lateral esquerda */}
               <div className="absolute left-0 right-0 border-t-2 border-dashed border-red-500 z-40 transition-all duration-500 flex items-center" style={{ bottom: `${(flowStats.max / maxHourlyCount) * 100}%` }}>
-                <div className="absolute left-0 -translate-x-1/2 bg-red-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap">
+                <div className="absolute left-0 -translate-x-1/2 bg-red-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap">
                   PICO (MÁX): {flowStats.max}
                 </div>
               </div>
 
               {/* Linha do 3º Quartil (75%) */}
               <div className="absolute left-0 right-0 border-t-2 border-dashed border-indigo-500 z-30 transition-all duration-500 flex items-center" style={{ bottom: `${(flowStats.q3 / maxHourlyCount) * 100}%` }}>
-                <div className="absolute right-0 translate-x-1/2 bg-indigo-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap">
+                <div className="absolute right-0 translate-x-1/2 bg-indigo-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap">
                   75% (Q3): {flowStats.q3.toFixed(1)}
                 </div>
               </div>
 
               {/* Linha de Média Operacional - Badge na lateral esquerda */}
               <div className="absolute left-0 right-0 border-t-2 border-dashed border-amber-500 z-30 transition-all duration-500 flex items-center" style={{ bottom: `${(flowStats.avg / maxHourlyCount) * 100}%` }}>
-                <div className="absolute left-0 -translate-x-1/2 bg-amber-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap">
+                <div className="absolute left-0 -translate-x-1/2 bg-amber-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap">
                   MÉDIA: {flowStats.avg.toFixed(1)}
                 </div>
               </div>

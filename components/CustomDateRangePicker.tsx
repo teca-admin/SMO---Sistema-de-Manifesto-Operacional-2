@@ -91,6 +91,13 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({ st
            date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   };
 
+  const isFutureDate = (d: Date) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const checkDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    return checkDate > today;
+  };
+
   const setShortcut = (type: 't1' | 't2' | 't3' | 'hoje') => {
     const now = new Date();
     let s = new Date(now);
@@ -116,6 +123,12 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({ st
         e.setHours(23, 59, 59, 999);
         break;
     }
+
+    // Se o atalho resultar em data futura (como o T3 cruzando a meia-noite), 
+    // precisamos garantir que não ultrapasse o "agora" se o objetivo for apenas dados reais.
+    // Mas para atalhos de turnos padrão, mantemos a lógica, pois o EfficiencyDashboard 
+    // já filtra horas futuras. O bloqueio principal é no clique manual.
+
     setStartDate(s);
     setEndDate(e);
     setViewDate(new Date(s));
@@ -131,8 +144,12 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({ st
   const firstDayOfMonth = (year: number, month: number) => new Date(year, month, 1).getDay();
 
   const handleDateSelect = (day: number) => {
-    setActiveShortcut(null);
     const clickedDate = new Date(viewDate.getFullYear(), viewDate.getMonth(), day);
+    
+    // Bloqueio de data futura
+    if (isFutureDate(clickedDate)) return;
+
+    setActiveShortcut(null);
     
     if (selectionStep === 1) {
       const newStart = new Date(clickedDate);
@@ -154,36 +171,26 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({ st
     }
   };
 
-  // Máscara e validação HH:MM
   const handleTimeInputChange = (field: 'start' | 'end', val: string) => {
-    // Remove não numéricos
     const numeric = val.replace(/\D/g, '').slice(0, 4);
-    
     let formatted = numeric;
     if (numeric.length > 2) {
       formatted = numeric.slice(0, 2) + ':' + numeric.slice(2);
     }
-
-    // Valida segmentos em tempo real
     const h = numeric.slice(0, 2);
     const m = numeric.slice(2);
-    
-    if (h && parseInt(h, 10) > 23) return; // Bloqueia horas > 23
-    if (m && parseInt(m, 10) > 59) return; // Bloqueia minutos > 59
-    
+    if (h && parseInt(h, 10) > 23) return;
+    if (m && parseInt(m, 10) > 59) return;
     setTimeInputs(prev => ({ ...prev, [field]: formatted }));
   };
 
-  // Finalização e atualização do objeto Date
   const handleTimeBlur = (field: 'start' | 'end') => {
     const val = timeInputs[field];
     const parts = val.split(':');
     let h = parseInt(parts[0], 10) || 0;
     let m = parseInt(parts[1], 10) || 0;
-    
     h = Math.min(23, Math.max(0, h));
     m = Math.min(59, Math.max(0, m));
-    
     const formatted = h.toString().padStart(2, '0') + ':' + m.toString().padStart(2, '0');
     setTimeInputs(prev => ({ ...prev, [field]: formatted }));
 
@@ -217,17 +224,21 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({ st
       const isStart = startDate.toDateString() === current.toDateString();
       const isEnd = endDate.toDateString() === current.toDateString();
       const inRange = current > startDate && current < endDate;
+      const future = isFutureDate(current);
 
       days.push(
         <button
           key={d}
+          disabled={future}
           onClick={() => handleDateSelect(d)}
           className={`h-7 w-full text-[9px] font-bold flex items-center justify-center transition-all border ${
             isStart || isEnd
               ? 'bg-indigo-600 border-indigo-600 text-white z-10'
               : inRange
                 ? 'bg-indigo-50 border-indigo-100 text-indigo-600'
-                : 'border-transparent text-slate-600 hover:bg-slate-100'
+                : future
+                  ? 'border-transparent text-slate-200 cursor-not-allowed opacity-40'
+                  : 'border-transparent text-slate-600 hover:bg-slate-100'
           }`}
         >
           {d}
