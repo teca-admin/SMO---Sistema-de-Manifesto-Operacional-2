@@ -4,7 +4,11 @@ import { createPortal } from 'react-dom';
 import { Manifesto, User as UserType } from '../types';
 import { CustomDateTimePicker } from './CustomDateTimePicker';
 import { CustomSelect } from './CustomSelect';
-import { Search, History, Edit3, XCircle, CheckSquare, Plus, Database, Filter, Edit, ChevronDown, ChevronUp, Archive, User as UserIcon, LogOut, Loader2, Lock, KeyRound } from 'lucide-react';
+import { 
+  Search, History, Edit3, XCircle, CheckSquare, Plus, Database, Filter, Edit, 
+  ChevronDown, ChevronUp, Archive, User as UserIcon, LogOut, Loader2, Lock, 
+  KeyRound, Eye, EyeOff 
+} from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
 interface DashboardProps {
@@ -33,6 +37,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   
   const [loginId, setLoginId] = useState('');
   const [loginPass, setLoginPass] = useState('');
+  const [showPass, setShowPass] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   const [formData, setFormData] = useState({ 
@@ -91,6 +96,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     setActiveProfile(null);
     setLoginId('');
     setLoginPass('');
+    setShowPass(false);
     localStorage.removeItem('smo_active_profile');
   };
 
@@ -251,7 +257,21 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
             <div className="relative">
               <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              <input type="password" placeholder="SENHA" value={loginPass} onChange={(e) => setLoginPass(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleLogin()} className="w-full h-14 pl-12 pr-4 bg-slate-50 dark:bg-slate-900/50 border-2 border-slate-200 dark:border-slate-700 text-xs font-black tracking-[0.1em] outline-none focus:border-indigo-600 dark:focus:border-indigo-500 dark:text-white focus:bg-white dark:focus:bg-slate-900 transition-all" />
+              <input 
+                type={showPass ? "text" : "password"} 
+                placeholder="SENHA" 
+                value={loginPass} 
+                onChange={(e) => setLoginPass(e.target.value)} 
+                onKeyDown={(e) => e.key === 'Enter' && handleLogin()} 
+                className="w-full h-14 pl-12 pr-12 bg-slate-50 dark:bg-slate-900/50 border-2 border-slate-200 dark:border-slate-700 text-xs font-black tracking-[0.1em] outline-none focus:border-indigo-600 dark:focus:border-indigo-500 dark:text-white focus:bg-white dark:focus:bg-slate-900 transition-all" 
+              />
+              <button 
+                type="button"
+                onClick={() => setShowPass(!showPass)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+              >
+                {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
             <button onClick={handleLogin} disabled={isLoggingIn} className="w-full h-14 bg-slate-900 dark:bg-indigo-600 hover:bg-indigo-700 text-white font-black text-[11px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 shadow-xl">{isLoggingIn ? <Loader2 className="animate-spin" size={18} /> : 'Acessar Terminal'}</button>
           </div>
