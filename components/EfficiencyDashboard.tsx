@@ -521,7 +521,7 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
                 <div className="flex justify-between items-end mb-1">
                   <div className="flex items-center gap-1.5 overflow-hidden">
                     <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: getCiaColor(item.label) }}></div>
-                    <span className="text-[8px] font-black uppercase truncate text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white">{item.label}</span>
+                    <span className="text-[10px] font-black uppercase truncate text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white">{item.label}</span>
                   </div>
                   <div className="flex items-baseline gap-2 shrink-0">
                     <span className="text-[12px] font-black font-mono-tech text-slate-900 dark:text-slate-100">{item.count}</span>
@@ -553,9 +553,9 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
             </div>
 
             <div className="flex-1 flex items-end gap-1 relative z-10">
-              {/* Linha de Pico (Máxima) */}
+              {/* Linha de Pico (Máxima) - Badge na lateral esquerda */}
               <div className="absolute left-0 right-0 border-t-2 border-dashed border-red-500 z-40 transition-all duration-500 flex items-center" style={{ bottom: `${(flowStats.max / maxHourlyCount) * 100}%` }}>
-                <div className="absolute left-1/2 -translate-x-1/2 -translate-y-full mb-1 bg-red-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap">
+                <div className="absolute left-0 -translate-x-1/2 bg-red-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap">
                   PICO (MÁX): {flowStats.max}
                 </div>
               </div>
@@ -567,7 +567,7 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
                 </div>
               </div>
 
-              {/* Linha de Média Operacional */}
+              {/* Linha de Média Operacional - Badge na lateral esquerda */}
               <div className="absolute left-0 right-0 border-t-2 border-dashed border-amber-500 z-30 transition-all duration-500 flex items-center" style={{ bottom: `${(flowStats.avg / maxHourlyCount) * 100}%` }}>
                 <div className="absolute left-0 -translate-x-1/2 bg-amber-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap">
                   MÉDIA: {flowStats.avg.toFixed(1)}
@@ -591,12 +591,6 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
                   <span className={`text-[9px] font-black font-mono-tech tracking-tighter ${h.received > 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-600'}`}>{String(h.hour).padStart(2, '0')}</span>
                 </div>
               ))}
-            </div>
-          </div>
-          <div className="p-2.5 bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0">
-            <div className="flex items-center gap-2">
-              <Info size={12} className="text-indigo-500" />
-              <p className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.3em]">Consolidado de Fluxo Operacional • WFS BRASIL</p>
             </div>
           </div>
         </div>
