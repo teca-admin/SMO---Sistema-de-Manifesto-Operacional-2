@@ -227,38 +227,68 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
   }, [filteredManifestos]);
 
   const hourlyStats = useMemo(() => {
-    const hours: Record<number, { received: number }> = {};
-    for (let i = 0; i < 24; i++) hours[i] = { received: 0 };
+    const now = new Date();
+    const start = new Date(dateRange.start);
+    const end = new Date(dateRange.end);
+    
+    // Verifica se o range selecionado é o dia de hoje
+    const isToday = start.toDateString() === now.toDateString();
+    const isPastDay = end < now && start.toDateString() !== now.toDateString();
+    
+    const currentHour = now.getHours();
+
+    const hours: Record<number, { received: number, isFuture: boolean }> = {};
+    for (let i = 0; i < 24; i++) {
+      let isFuture = false;
+      if (isToday) {
+        // Se é hoje, horas maiores que a atual são futuro
+        isFuture = i > currentHour;
+      } else if (isPastDay) {
+        // Se é um dia passado completo, nenhuma hora é futuro
+        isFuture = false;
+      } else {
+        // Se o range está no futuro, todas são futuro
+        isFuture = true;
+      }
+      hours[i] = { received: 0, isFuture };
+    }
+
     filteredManifestos.forEach(m => {
       const dRec = parseAnyDate(m.dataHoraRecebido);
-      if (dRec) hours[dRec.getHours()].received++;
+      if (dRec) {
+        const h = dRec.getHours();
+        if (hours[h]) hours[h].received++;
+      }
     });
-    return Object.entries(hours).map(([h, counts]) => ({ hour: parseInt(h), ...counts }));
-  }, [filteredManifestos]);
+
+    return Object.entries(hours).map(([h, data]) => ({ hour: parseInt(h), ...data }));
+  }, [filteredManifestos, dateRange]);
 
   // Cálculo de Médias, Pico e Quartis Operacionais
   const flowStats = useMemo(() => {
-    const rawCounts = hourlyStats.map(h => h.received);
+    // Filtramos apenas as horas que NÃO são futuras para o cálculo
+    const activeHours = hourlyStats.filter(h => !h.isFuture);
+    const rawCounts = activeHours.map(h => h.received);
+
+    if (rawCounts.length === 0) return { avg: 0, q3: 0, max: 0 };
+    
     const max = Math.max(...rawCounts);
     
-    const activeCounts = rawCounts
-      .filter(v => v > 0)
-      .sort((a, b) => a - b);
-
-    if (activeCounts.length === 0) return { avg: 0, q3: 0, max: 0 };
+    // Ordenamos todos os counts (incluindo os zeros de horas passadas)
+    const sortedCounts = [...rawCounts].sort((a, b) => a - b);
     
-    // Média
-    const total = activeCounts.reduce((acc, curr) => acc + curr, 0);
-    const avg = total / activeCounts.length;
+    // Média Operacional (Considerando zeros reais)
+    const total = sortedCounts.reduce((acc, curr) => acc + curr, 0);
+    const avg = total / sortedCounts.length;
 
     // 3º Quartil (75%)
     let q3 = 0;
-    if (activeCounts.length > 0) {
-      const index = 0.75 * (activeCounts.length - 1);
+    if (sortedCounts.length > 0) {
+      const index = 0.75 * (sortedCounts.length - 1);
       const lower = Math.floor(index);
       const upper = Math.ceil(index);
       const weight = index - lower;
-      q3 = activeCounts[lower] * (1 - weight) + activeCounts[upper] * weight;
+      q3 = sortedCounts[lower] * (1 - weight) + sortedCounts[upper] * weight;
     }
 
     return { avg, q3, max };
@@ -622,11 +652,14 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
 
               {hourlyStats.map((h) => (
                 <div key={h.hour} className="flex-1 flex flex-col items-center h-full justify-end group">
-                  <div className="flex items-end justify-center w-full h-full pb-1">
-                     <div className="w-full max-w-[36px] bg-gradient-to-t from-indigo-700 to-indigo-500 dark:from-indigo-600 dark:to-indigo-400 group-hover:scale-y-105 transition-all rounded-t-sm relative shadow-sm" style={{ height: h.received > 0 ? `${(h.received / maxHourlyCount) * 100}%` : '2px' }}>
-                        {h.received > 0 && <div className="absolute -top-6 left-0 right-0 text-center text-[10px] font-black text-indigo-700 dark:text-indigo-300 bg-white/90 dark:bg-slate-900/90 rounded border border-indigo-100 dark:border-indigo-900 shadow-sm z-20">{h.received}</div>}
-                     </div>
-                  </div>
+                  {!h.isFuture && (
+                    <div className="flex items-end justify-center w-full h-full pb-1">
+                       <div className="w-full max-w-[36px] bg-gradient-to-t from-indigo-700 to-indigo-500 dark:from-indigo-600 dark:to-indigo-400 group-hover:scale-y-105 transition-all rounded-t-sm relative shadow-sm" style={{ height: h.received > 0 ? `${(h.received / maxHourlyCount) * 100}%` : '2px' }}>
+                          {h.received > 0 && <div className="absolute -top-6 left-0 right-0 text-center text-[10px] font-black text-indigo-700 dark:text-indigo-300 bg-white/90 dark:bg-slate-900/90 rounded border border-indigo-100 dark:border-indigo-900 shadow-sm z-20">{h.received}</div>}
+                          {h.received === 0 && <div className="absolute -top-6 left-0 right-0 text-center text-[10px] font-black text-slate-400 bg-white/50 dark:bg-slate-900/50 rounded z-20">0</div>}
+                       </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -634,7 +667,9 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
             <div className="h-8 mt-2 flex items-center border-t border-slate-900 dark:border-slate-700 pt-2 relative z-20">
               {hourlyStats.map((h) => (
                 <div key={h.hour} className="flex-1 text-center">
-                  <span className={`text-[9px] font-black font-mono-tech tracking-tighter ${h.received > 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-600'}`}>{String(h.hour).padStart(2, '0')}</span>
+                  <span className={`text-[9px] font-black font-mono-tech tracking-tighter ${h.received > 0 ? 'text-indigo-600 dark:text-indigo-400' : h.isFuture ? 'text-slate-200 dark:text-slate-800' : 'text-slate-400 dark:text-slate-600'}`}>
+                    {!h.isFuture ? String(h.hour).padStart(2, '0') : ''}
+                  </span>
                 </div>
               ))}
             </div>
