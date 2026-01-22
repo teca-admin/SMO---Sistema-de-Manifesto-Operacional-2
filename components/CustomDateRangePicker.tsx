@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, Check, ArrowRight, ChevronDown } from 'lucide-react';
@@ -21,12 +22,10 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({ st
   const [endDate, setEndDate] = useState<Date>(new Date(end));
   const [viewDate, setViewDate] = useState(new Date(start));
 
-  // Estados locais para inputs de texto de hora/minuto para permitir edição livre com validação
+  // Estado unificado para os campos HH:MM
   const [timeInputs, setTimeInputs] = useState({
-    startH: startDate.getHours().toString().padStart(2, '0'),
-    startM: startDate.getMinutes().toString().padStart(2, '0'),
-    endH: endDate.getHours().toString().padStart(2, '0'),
-    endM: endDate.getMinutes().toString().padStart(2, '0')
+    start: `${startDate.getHours().toString().padStart(2, '0')}:${startDate.getMinutes().toString().padStart(2, '0')}`,
+    end: `${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}`
   });
 
   const MODAL_WIDTH = 320;
@@ -37,8 +36,7 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({ st
       setStartDate(d);
       setTimeInputs(prev => ({ 
         ...prev, 
-        startH: d.getHours().toString().padStart(2, '0'),
-        startM: d.getMinutes().toString().padStart(2, '0')
+        start: `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`
       }));
     }
     if (end) {
@@ -46,8 +44,7 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({ st
       setEndDate(d);
       setTimeInputs(prev => ({ 
         ...prev, 
-        endH: d.getHours().toString().padStart(2, '0'),
-        endM: d.getMinutes().toString().padStart(2, '0')
+        end: `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`
       }));
     }
   }, [start, end]);
@@ -123,10 +120,8 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({ st
     setEndDate(e);
     setViewDate(new Date(s));
     setTimeInputs({
-      startH: s.getHours().toString().padStart(2, '0'),
-      startM: s.getMinutes().toString().padStart(2, '0'),
-      endH: e.getHours().toString().padStart(2, '0'),
-      endM: e.getMinutes().toString().padStart(2, '0')
+      start: `${s.getHours().toString().padStart(2, '0')}:${s.getMinutes().toString().padStart(2, '0')}`,
+      end: `${e.getHours().toString().padStart(2, '0')}:${e.getMinutes().toString().padStart(2, '0')}`
     });
     setActiveShortcut(type);
     setSelectionStep(1); 
@@ -159,44 +154,46 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({ st
     }
   };
 
-  const handleTimeInputChange = (field: keyof typeof timeInputs, val: string) => {
-    // Apenas números
-    const numeric = val.replace(/\D/g, '').slice(0, 2);
-    // Convert field to String to avoid TypeScript error about 'endsWith' on keyof
-    const isHour = String(field).endsWith('H');
-    const max = isHour ? 23 : 59;
+  // Máscara e validação HH:MM
+  const handleTimeInputChange = (field: 'start' | 'end', val: string) => {
+    // Remove não numéricos
+    const numeric = val.replace(/\D/g, '').slice(0, 4);
     
-    // Se o valor numérico for válido dentro do range, atualiza o estado visual
-    if (numeric === "" || parseInt(numeric, 10) <= max) {
-      setTimeInputs(prev => ({ ...prev, [field]: numeric }));
+    let formatted = numeric;
+    if (numeric.length > 2) {
+      formatted = numeric.slice(0, 2) + ':' + numeric.slice(2);
     }
+
+    // Valida segmentos em tempo real
+    const h = numeric.slice(0, 2);
+    const m = numeric.slice(2);
+    
+    if (h && parseInt(h, 10) > 23) return; // Bloqueia horas > 23
+    if (m && parseInt(m, 10) > 59) return; // Bloqueia minutos > 59
+    
+    setTimeInputs(prev => ({ ...prev, [field]: formatted }));
   };
 
-  const handleTimeBlur = (field: keyof typeof timeInputs) => {
-    // Convert field to String to avoid TypeScript error about 'startsWith/endsWith' on keyof
-    const fieldStr = String(field);
-    const isStart = fieldStr.startsWith('start');
-    const isHour = fieldStr.endsWith('H');
-    const max = isHour ? 23 : 59;
-    let val = parseInt(timeInputs[field], 10);
+  // Finalização e atualização do objeto Date
+  const handleTimeBlur = (field: 'start' | 'end') => {
+    const val = timeInputs[field];
+    const parts = val.split(':');
+    let h = parseInt(parts[0], 10) || 0;
+    let m = parseInt(parts[1], 10) || 0;
     
-    // Validação de fallback para vazio ou inválido
-    if (isNaN(val)) val = 0;
-    if (val > max) val = max;
+    h = Math.min(23, Math.max(0, h));
+    m = Math.min(59, Math.max(0, m));
     
-    const formatted = val.toString().padStart(2, '0');
+    const formatted = h.toString().padStart(2, '0') + ':' + m.toString().padStart(2, '0');
     setTimeInputs(prev => ({ ...prev, [field]: formatted }));
 
-    // Atualiza os objetos Date reais
-    if (isStart) {
+    if (field === 'start') {
       const newDate = new Date(startDate);
-      if (isHour) newDate.setHours(val);
-      else newDate.setMinutes(val);
+      newDate.setHours(h, m);
       setStartDate(newDate);
     } else {
       const newDate = new Date(endDate);
-      if (isHour) newDate.setHours(val);
-      else newDate.setMinutes(val);
+      newDate.setHours(h, m);
       setEndDate(newDate);
     }
   };
@@ -316,20 +313,11 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({ st
                   <div className="flex items-center gap-1">
                      <input 
                        type="text"
-                       value={timeInputs.startH} 
-                       onChange={(e) => handleTimeInputChange('startH', e.target.value)}
-                       onBlur={() => handleTimeBlur('startH')}
-                       placeholder="HH"
-                       className="flex-1 h-7 text-center text-[10px] font-black font-mono-tech bg-white border border-slate-200 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-100 transition-all"
-                     />
-                     <span className="text-[10px] font-bold text-slate-300">:</span>
-                     <input 
-                       type="text"
-                       value={timeInputs.startM} 
-                       onChange={(e) => handleTimeInputChange('startM', e.target.value)}
-                       onBlur={() => handleTimeBlur('startM')}
-                       placeholder="MM"
-                       className="flex-1 h-7 text-center text-[10px] font-black font-mono-tech bg-white border border-slate-200 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-100 transition-all"
+                       value={timeInputs.start} 
+                       onChange={(e) => handleTimeInputChange('start', e.target.value)}
+                       onBlur={() => handleTimeBlur('start')}
+                       placeholder="00:00"
+                       className="w-full h-8 text-center text-[11px] font-black font-mono-tech bg-white border border-slate-200 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-100 transition-all"
                      />
                   </div>
                </div>
@@ -342,20 +330,11 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({ st
                   <div className="flex items-center gap-1">
                      <input 
                        type="text"
-                       value={timeInputs.endH} 
-                       onChange={(e) => handleTimeInputChange('endH', e.target.value)}
-                       onBlur={() => handleTimeBlur('endH')}
-                       placeholder="HH"
-                       className="flex-1 h-7 text-center text-[10px] font-black font-mono-tech bg-white border border-slate-200 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-100 transition-all"
-                     />
-                     <span className="text-[10px] font-bold text-slate-300">:</span>
-                     <input 
-                       type="text"
-                       value={timeInputs.endM} 
-                       onChange={(e) => handleTimeInputChange('endM', e.target.value)}
-                       onBlur={() => handleTimeBlur('endM')}
-                       placeholder="MM"
-                       className="flex-1 h-7 text-center text-[10px] font-black font-mono-tech bg-white border border-slate-200 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-100 transition-all"
+                       value={timeInputs.end} 
+                       onChange={(e) => handleTimeInputChange('end', e.target.value)}
+                       onBlur={() => handleTimeBlur('end')}
+                       placeholder="23:59"
+                       className="w-full h-8 text-center text-[11px] font-black font-mono-tech bg-white border border-slate-200 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-100 transition-all"
                      />
                   </div>
                </div>
