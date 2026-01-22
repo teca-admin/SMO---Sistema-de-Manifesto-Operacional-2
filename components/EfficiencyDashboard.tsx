@@ -465,7 +465,7 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
                       <p className="text-[11px] font-black font-mono-tech text-slate-400">{formatMinutes(s.max)}</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-[7px] font-black text-slate-300 uppercase leading-none mb-1">Meta</p>
+                      <p className="text-[7px] font-black text-slate-300 uppercase leading-none mb-1">Limite</p>
                       <p className="text-[11px] font-black font-mono-tech text-slate-700 dark:text-slate-300">{s.target}</p>
                     </div>
                     <div className="text-center">
