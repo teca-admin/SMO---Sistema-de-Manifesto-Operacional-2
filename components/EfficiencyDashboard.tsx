@@ -55,22 +55,20 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
     onlyViolations: false
   });
 
-  // Mapeamento de Cores Consistente para CIAs
   const getCiaColor = (ciaName: string) => {
     const name = ciaName.toUpperCase();
-    if (name.includes('AZUL')) return '#4f46e5'; // Indigo
-    if (name.includes('GOL')) return '#f59e0b';  // Amber
-    if (name.includes('LATAM')) return '#ef4444'; // Red
-    if (name.includes('MODERN')) return '#3b82f6'; // Blue
-    if (name.includes('TOTAL')) return '#06b6d4'; // Cyan
-    return '#6366f1'; // Default
+    if (name.includes('AZUL')) return '#4f46e5';
+    if (name.includes('GOL')) return '#f59e0b';
+    if (name.includes('LATAM')) return '#ef4444';
+    if (name.includes('MODERN')) return '#3b82f6';
+    if (name.includes('TOTAL')) return '#06b6d4';
+    return '#6366f1';
   };
 
-  // Mapeamento de Cores para Turnos
   const getTurnColor = (turn: string) => {
-    if (turn === '1º TURNO') return '#3b82f6'; // Blue
-    if (turn === '2º TURNO') return '#f59e0b'; // Amber
-    if (turn === '3º TURNO') return '#10b981'; // Emerald
+    if (turn === '1º TURNO') return '#3b82f6';
+    if (turn === '2º TURNO') return '#f59e0b';
+    if (turn === '3º TURNO') return '#10b981';
     return '#6366f1';
   };
 
@@ -89,17 +87,26 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
   };
 
   const getViolationReason = (m: Manifesto) => {
+    const pux = parseAnyDate(m.dataHoraPuxado);
+    const rec = parseAnyDate(m.dataHoraRecebido);
     const ini = parseAnyDate(m.dataHoraIniciado);
     const com = parseAnyDate(m.dataHoraCompleto);
     const ass = parseAnyDate(m.dataHoraRepresentanteCIA);
     
+    // Alerta Resposta: Recebido - Puxado > 10m
+    if (pux && rec) {
+      const diff = (rec.getTime() - pux.getTime()) / 60000;
+      if (diff > 10) return 'RESP. > 10M';
+    }
+    // Alerta Produção: Completo - Iniciado > 2h
     if (ini && com) {
       const diff = (com.getTime() - ini.getTime()) / 60000;
-      if (diff > 120) return 'PUXE > 2H';
+      if (diff > 120) return 'WFS > 2H';
     }
+    // Alerta Conformidade: Assinatura - Completo > 15m
     if (com && ass) {
       const diff = (ass.getTime() - com.getTime()) / 60000;
-      if (diff > 15) return 'ASSINATURA > 15M';
+      if (diff > 15) return 'COMP. > 15M';
     }
     return null;
   };
@@ -137,7 +144,6 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
     });
   }, [manifestos, dateRange, activeFilters]);
 
-  // Cálculos de Métricas
   const totalReceived = filteredManifestos.length;
   const totalDelivered = filteredManifestos.filter(m => m.status === 'Manifesto Entregue').length;
   const totalCanceled = filteredManifestos.filter(m => m.status === 'Manifesto Cancelado').length;
@@ -164,12 +170,10 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
   const ciaStats = useMemo(() => {
     const counts: Record<string, number> = {};
     CIAS.forEach(c => counts[c.toUpperCase()] = 0);
-    
     filteredManifestos.forEach(m => {
       const cia = m.cia.toUpperCase();
       counts[cia] = (counts[cia] || 0) + 1;
     });
-
     const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
     const total = entries.reduce((acc, curr) => acc + curr[1], 0);
     return entries.map(([cia, count]) => ({ label: cia, count, pct: total > 0 ? (count / total) * 100 : 0 }));
@@ -191,27 +195,32 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
   }, [filteredManifestos]);
 
   const slaStats = useMemo(() => {
-    let tE = 0, cE = 0, maxE = 0;
-    let tP = 0, cP = 0, maxP = 0, withinP = 0;
-    let tA = 0, cA = 0, maxA = 0, withinA = 0;
+    let tE = 0, cE = 0, maxE = 0, withinE = 0; // SLA Resposta
+    let tP = 0, cP = 0, maxP = 0, withinP = 0; // Disponível (WFS)
+    let tA = 0, cA = 0, maxA = 0, withinA = 0; // Comparecimento (CIA)
     
     filteredManifestos.forEach(m => {
+      const pux = parseAnyDate(m.dataHoraPuxado);
       const rec = parseAnyDate(m.dataHoraRecebido);
       const ini = parseAnyDate(m.dataHoraIniciado);
       const com = parseAnyDate(m.dataHoraCompleto);
       const ass = parseAnyDate(m.dataHoraRepresentanteCIA);
       
-      if (rec && ini) { 
-        const diff = (ini.getTime() - rec.getTime()) / 60000;
+      // SLA Resposta: Recebido - Puxado
+      if (pux && rec) { 
+        const diff = (rec.getTime() - pux.getTime()) / 60000;
         tE += diff; cE++;
         if (diff > maxE) maxE = diff;
+        if (diff <= 10) withinE++;
       }
+      // Disponível (WFS): Completo - Iniciado
       if (ini && com) { 
         const diff = (com.getTime() - ini.getTime()) / 60000;
         tP += diff; cP++;
         if (diff > maxP) maxP = diff;
         if (diff <= 120) withinP++; 
       }
+      // Comparecimento (CIA): Assinatura - Completo
       if (com && ass) { 
         const diff = (ass.getTime() - com.getTime()) / 60000;
         tA += diff; cA++;
@@ -221,11 +230,9 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
     });
 
     return { 
-      avgE: cE > 0 ? tE / cE : 0, maxE,
-      avgP: cP > 0 ? tP / cP : 0, maxP, 
-      pctP: cP > 0 ? (withinP / cP) * 100 : 0,
-      avgA: cA > 0 ? tA / cA : 0, maxA,
-      pctA: cA > 0 ? (withinA / cA) * 100 : 0
+      avgE: cE > 0 ? tE / cE : 0, maxE, pctE: cE > 0 ? (withinE / cE) * 100 : 0,
+      avgP: cP > 0 ? tP / cP : 0, maxP, pctP: cP > 0 ? (withinP / cP) * 100 : 0,
+      avgA: cA > 0 ? tA / cA : 0, maxA, pctA: cA > 0 ? (withinA / cA) * 100 : 0
     };
   }, [filteredManifestos]);
 
@@ -233,29 +240,14 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
     const now = new Date();
     const start = new Date(dateRange.start);
     const end = new Date(dateRange.end);
-    
-    // Verifica se o range selecionado é o dia de hoje
     const isToday = start.toDateString() === now.toDateString();
     const isPastDay = end < now && start.toDateString() !== now.toDateString();
-    
     const currentHour = now.getHours();
-
     const hours: Record<number, { received: number, isFuture: boolean }> = {};
     for (let i = 0; i < 24; i++) {
-      let isFuture = false;
-      if (isToday) {
-        // Se é hoje, horas maiores que a atual são futuro
-        isFuture = i > currentHour;
-      } else if (isPastDay) {
-        // Se é um dia passado completo, nenhuma hora é futuro
-        isFuture = false;
-      } else {
-        // Se o range está no futuro, todas são futuro
-        isFuture = true;
-      }
+      let isFuture = isToday ? i > currentHour : !isPastDay;
       hours[i] = { received: 0, isFuture };
     }
-
     filteredManifestos.forEach(m => {
       const dRec = parseAnyDate(m.dataHoraRecebido);
       if (dRec) {
@@ -263,28 +255,17 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
         if (hours[h]) hours[h].received++;
       }
     });
-
     return Object.entries(hours).map(([h, data]) => ({ hour: parseInt(h), ...data }));
   }, [filteredManifestos, dateRange]);
 
-  // Cálculo de Médias, Pico e Quartis Operacionais
   const flowStats = useMemo(() => {
-    // Filtramos apenas as horas que NÃO são futuras para o cálculo
     const activeHours = hourlyStats.filter(h => !h.isFuture);
     const rawCounts = activeHours.map(h => h.received);
-
     if (rawCounts.length === 0) return { avg: 0, q3: 0, max: 0 };
-    
     const max = Math.max(...rawCounts);
-    
-    // Ordenamos todos os counts (incluindo os zeros de horas passadas)
     const sortedCounts = [...rawCounts].sort((a, b) => a - b);
-    
-    // Média Operacional (Considerando zeros reais)
     const total = sortedCounts.reduce((acc, curr) => acc + curr, 0);
     const avg = total / sortedCounts.length;
-
-    // 3º Quartil (75%)
     let q3 = 0;
     if (sortedCounts.length > 0) {
       const index = 0.75 * (sortedCounts.length - 1);
@@ -293,7 +274,6 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
       const weight = index - lower;
       q3 = sortedCounts[lower] * (1 - weight) + sortedCounts[upper] * weight;
     }
-
     return { avg, q3, max };
   }, [hourlyStats]);
 
@@ -304,10 +284,9 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
     if (min < 60) return `${Math.round(min)}m`;
     const h = Math.floor(min / 60);
     const m = Math.round(min % 60);
-    return `${h} h ${m} m`;
+    return `${h}h ${m}m`;
   };
 
-  // Componente Gráfico Donut (SVG) Reutilizável
   const DonutChart = ({ data, colorMapper, filterType, total }: { 
     data: { label: string, count: number, pct: number }[], 
     colorMapper: (label: string) => string,
@@ -315,47 +294,21 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
     total: number
   }) => {
     let currentAngle = 0;
-    
     return (
       <div className="flex items-center justify-center relative w-full h-full p-2">
         <svg viewBox="0 0 100 100" className="w-full h-full max-h-[160px] -rotate-90">
           {data.map((item, i) => {
             const angle = (item.pct / 100) * 360;
             const color = colorMapper(item.label);
-            
-            if (angle >= 359.9) {
-              return (
-                <circle 
-                  key={i} 
-                  cx="50" cy="50" r="32.5" 
-                  fill="none" 
-                  stroke={color} 
-                  strokeWidth="15" 
-                  className="transition-all hover:opacity-80 cursor-pointer"
-                  onClick={() => toggleFilter(filterType, item.label)}
-                />
-              );
-            }
-
+            if (angle >= 359.9) return <circle key={i} cx="50" cy="50" r="32.5" fill="none" stroke={color} strokeWidth="15" className="transition-all hover:opacity-80 cursor-pointer" onClick={() => toggleFilter(filterType, item.label)} />;
             if (angle <= 0.1) return null;
-
             const x1 = 50 + 40 * Math.cos((currentAngle * Math.PI) / 180);
             const y1 = 50 + 40 * Math.sin((currentAngle * Math.PI) / 180);
             const x2 = 50 + 40 * Math.cos(((currentAngle + angle) * Math.PI) / 180);
             const y2 = 50 + 40 * Math.sin(((currentAngle + angle) * Math.PI) / 180);
-            
             const largeArcFlag = angle > 180 ? 1 : 0;
             const d = `M 50 50 L ${x1} ${y1} A 40 40 0 ${largeArcFlag} 1 ${x2} ${y2} Z`;
-            
-            const path = (
-              <path 
-                key={i} 
-                d={d} 
-                fill={color} 
-                className="transition-all hover:opacity-80 cursor-pointer"
-                onClick={() => toggleFilter(filterType, item.label)}
-              />
-            );
+            const path = <path key={i} d={d} fill={color} className="transition-all hover:opacity-80 cursor-pointer" onClick={() => toggleFilter(filterType, item.label)} />;
             currentAngle += angle;
             return path;
           })}
@@ -371,8 +324,6 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
 
   return (
     <div className="flex flex-col gap-4 animate-fadeIn h-[calc(100vh-100px)] overflow-hidden">
-      
-      {/* LINHA SUPERIOR: KPIs + SELETOR (300px) */}
       <div className="flex flex-col md:flex-row gap-3 shrink-0">
         {[
           { label: 'Recebido', val: totalReceived, icon: Box, color: 'indigo', filter: 'Recebido' },
@@ -380,15 +331,7 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
           { label: 'Andamento', val: totalInProgress, icon: Activity, color: 'blue', filter: 'Andamento' },
           { label: 'Cancelado', val: totalCanceled, icon: XCircle, color: 'red', filter: 'Cancelado' }
         ].map((kpi, i) => (
-          <button 
-            key={i} 
-            onClick={() => toggleFilter('status', kpi.filter)}
-            className={`flex-1 bg-white dark:bg-slate-800 border p-3 flex items-center gap-3 transition-all text-left relative ${
-              activeFilters.status === kpi.filter 
-                ? `border-${kpi.color}-600 ring-2 ring-${kpi.color}-100 dark:ring-${kpi.color}-900 shadow-inner` 
-                : 'border-slate-200 dark:border-slate-700 panel-shadow hover:border-slate-400 dark:hover:border-slate-600'
-            }`}
-          >
+          <button key={i} onClick={() => toggleFilter('status', kpi.filter)} className={`flex-1 bg-white dark:bg-slate-800 border p-3 flex items-center gap-3 transition-all text-left relative ${activeFilters.status === kpi.filter ? `border-${kpi.color}-600 ring-2 ring-${kpi.color}-100 dark:ring-${kpi.color}-900 shadow-inner` : 'border-slate-200 dark:border-slate-700 panel-shadow hover:border-slate-400 dark:hover:border-slate-600'}`}>
             <div className={`w-10 h-10 bg-${kpi.color}-50 dark:bg-${kpi.color}-900/20 flex items-center justify-center text-${kpi.color}-600 dark:text-${kpi.color}-400 shrink-0 rounded`}>
                <kpi.icon size={20} />
             </div>
@@ -405,31 +348,17 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
         </div>
       </div>
 
-      {/* BLOCO CENTRAL - Ajustado para 5 colunas no LG */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 flex-1 min-h-0">
-        {/* RANK SISTEMA (CADASTRO) */}
         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 panel-shadow flex flex-col overflow-hidden">
           <div className="bg-slate-50 dark:bg-slate-900/50 px-3 py-2 border-b border-slate-200 dark:border-slate-700 shrink-0 flex items-center justify-between">
             <h3 className="text-[10px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest flex items-center gap-2">
               <ShieldCheck size={14} className="text-slate-700 dark:text-slate-400" /> Rank Sistema
             </h3>
-            {activeFilters.usuarioCadastro && (
-              <button onClick={() => toggleFilter('usuarioCadastro', activeFilters.usuarioCadastro)} className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors">
-                <X size={14} className="text-red-500" />
-              </button>
-            )}
+            {activeFilters.usuarioCadastro && <button onClick={() => toggleFilter('usuarioCadastro', activeFilters.usuarioCadastro)} className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors"><X size={14} className="text-red-500" /></button>}
           </div>
           <div className="flex-1 p-1 space-y-1 overflow-y-auto custom-scrollbar">
             {sistemaRank.map(([name, count], idx) => (
-              <button 
-                key={name} 
-                onClick={() => toggleFilter('usuarioCadastro', name)}
-                className={`w-full flex items-center justify-between py-1.5 px-2 border-l-2 transition-all ${
-                  activeFilters.usuarioCadastro === name 
-                    ? 'bg-slate-900 dark:bg-slate-100 dark:text-slate-900 text-white border-slate-950 dark:border-white' 
-                    : 'bg-slate-50/50 dark:bg-slate-900/30 text-slate-700 dark:text-slate-300 border-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900/20'
-                }`}
-              >
+              <button key={name} onClick={() => toggleFilter('usuarioCadastro', name)} className={`w-full flex items-center justify-between py-1.5 px-2 border-l-2 transition-all ${activeFilters.usuarioCadastro === name ? 'bg-slate-900 dark:bg-slate-100 dark:text-slate-900 text-white border-slate-950 dark:border-white' : 'bg-slate-50/50 dark:bg-slate-900/30 text-slate-700 dark:text-slate-300 border-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900/20'}`}>
                 <span className="text-[10px] font-black uppercase truncate pr-1">#{idx+1} {name}</span>
                 <span className="text-[11px] font-black font-mono-tech">{count}</span>
               </button>
@@ -437,29 +366,16 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
           </div>
         </div>
 
-        {/* RANK OPERAÇÃO */}
         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 panel-shadow flex flex-col overflow-hidden">
           <div className="bg-slate-50 dark:bg-slate-900/50 px-3 py-2 border-b border-slate-200 dark:border-slate-700 shrink-0 flex items-center justify-between">
             <h3 className="text-[10px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest flex items-center gap-2">
               <Award size={14} className="text-indigo-600" /> Rank Operação
             </h3>
-            {activeFilters.usuario && (
-              <button onClick={() => toggleFilter('usuario', activeFilters.usuario)} className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors">
-                <X size={14} className="text-red-500" />
-              </button>
-            )}
+            {activeFilters.usuario && <button onClick={() => toggleFilter('usuario', activeFilters.usuario)} className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors"><X size={14} className="text-red-500" /></button>}
           </div>
           <div className="flex-1 p-1 space-y-1 overflow-y-auto custom-scrollbar">
             {atribuicaoRank.map(([name, count], idx) => (
-              <button 
-                key={name} 
-                onClick={() => toggleFilter('usuario', name)}
-                className={`w-full flex items-center justify-between py-1.5 px-2 border-l-2 transition-all ${
-                  activeFilters.usuario === name 
-                    ? 'bg-indigo-600 text-white border-indigo-700' 
-                    : 'bg-slate-50/50 dark:bg-slate-900/30 text-slate-700 dark:text-slate-300 border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20'
-                }`}
-              >
+              <button key={name} onClick={() => toggleFilter('usuario', name)} className={`w-full flex items-center justify-between py-1.5 px-2 border-l-2 transition-all ${activeFilters.usuario === name ? 'bg-indigo-600 text-white border-indigo-700' : 'bg-slate-50/50 dark:bg-slate-900/30 text-slate-700 dark:text-slate-300 border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20'}`}>
                 <span className="text-[10px] font-black uppercase truncate pr-1">#{idx+1} {name}</span>
                 <span className="text-[11px] font-black font-mono-tech">{count}</span>
               </button>
@@ -467,7 +383,6 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
           </div>
         </div>
 
-        {/* ALERTAS */}
         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 panel-shadow flex flex-col overflow-hidden">
           <div className={`px-3 py-2 border-b transition-all shrink-0 flex items-center justify-between ${activeFilters.onlyViolations ? 'bg-red-600 border-red-700' : 'bg-red-50 dark:bg-red-900/20 border-red-100 dark:border-red-900/50'}`}>
             <div onClick={() => toggleFilter('onlyViolations', true)} className="flex items-center gap-2 cursor-pointer flex-1">
@@ -475,11 +390,7 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
                 <AlertTriangle size={14} /> Alertas & Conformidade
               </h3>
             </div>
-            {activeFilters.onlyViolations && (
-              <button onClick={() => toggleFilter('onlyViolations', true)} className="p-1 rounded transition-colors hover:bg-red-700">
-                <X size={14} className="text-white" />
-              </button>
-            )}
+            {activeFilters.onlyViolations && <button onClick={() => toggleFilter('onlyViolations', true)} className="p-1 rounded transition-colors hover:bg-red-700"><X size={14} className="text-white" /></button>}
           </div>
           <div className="flex-1 p-1 space-y-1 overflow-y-auto custom-scrollbar">
             {filteredManifestos.map((m) => {
@@ -487,48 +398,26 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
               const isActive = activeFilters.manifestoId === m.id;
               return (
                 <div key={m.id} className="flex gap-1 items-stretch group">
-                  <button 
-                    onClick={() => toggleFilter('manifestoId', m.id)}
-                    className={`flex-1 flex items-center justify-between py-1.5 px-2 border-l-2 transition-all ${
-                      isActive ? 'bg-slate-900 dark:bg-indigo-600 text-white border-indigo-500' : 
-                      violation ? 'bg-red-50 dark:bg-red-900/10 text-red-900 dark:text-red-300 border-red-500 hover:bg-red-100 dark:hover:bg-red-900/20' : 
-                      'bg-slate-50/50 dark:bg-slate-900/30 text-slate-700 dark:text-slate-400 border-slate-200 dark:border-slate-700'
-                    }`}
-                  >
+                  <button onClick={() => toggleFilter('manifestoId', m.id)} className={`flex-1 flex items-center justify-between py-1.5 px-2 border-l-2 transition-all ${isActive ? 'bg-slate-900 dark:bg-indigo-600 text-white border-indigo-500' : violation ? 'bg-red-50 dark:bg-red-900/10 text-red-900 dark:text-red-300 border-red-500 hover:bg-red-100 dark:hover:bg-red-900/20' : 'bg-slate-50/50 dark:bg-slate-900/30 text-slate-700 dark:text-slate-400 border-slate-200 dark:border-slate-700'}`}>
                     <div className="flex items-center gap-1.5 overflow-hidden">
                       <span className="text-[10px] font-black uppercase font-mono-tech truncate shrink-0">{m.id}</span>
-                      {violation && (
-                        <span className="text-[7px] font-black uppercase px-1 py-0.5 bg-red-600 text-white rounded-sm whitespace-nowrap">
-                          {violation}
-                        </span>
-                      )}
+                      {violation && <span className="text-[7px] font-black uppercase px-1 py-0.5 bg-red-600 text-white rounded-sm whitespace-nowrap">{violation}</span>}
                     </div>
                     <ChevronRight size={14} className="text-slate-300" />
                   </button>
-                  <button 
-                    title="Dossiê Completo"
-                    onClick={() => openHistory && openHistory(m.id)}
-                    className="w-10 flex items-center justify-center bg-slate-100 dark:bg-slate-900 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 text-slate-400 transition-all border border-slate-200 dark:border-slate-700"
-                  >
-                    <FileSearch size={14} />
-                  </button>
+                  <button title="Dossiê Completo" onClick={() => openHistory && openHistory(m.id)} className="w-10 flex items-center justify-center bg-slate-100 dark:bg-slate-900 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 text-slate-400 transition-all border border-slate-200 dark:border-slate-700"><FileSearch size={14} /></button>
                 </div>
               );
             })}
           </div>
         </div>
 
-        {/* VOLUME POR TURNO */}
         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 panel-shadow flex flex-col overflow-hidden">
           <div className="bg-slate-50 dark:bg-slate-900/50 px-3 py-2 border-b border-slate-200 dark:border-slate-700 shrink-0 flex items-center justify-between">
             <h3 className="text-[10px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest flex items-center gap-2">
               <PieChart size={14} className="text-indigo-600" /> Volume por Turno
             </h3>
-            {activeFilters.turno && (
-              <button onClick={() => toggleFilter('turno', activeFilters.turno)} className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors">
-                <X size={14} className="text-red-500" />
-              </button>
-            )}
+            {activeFilters.turno && <button onClick={() => toggleFilter('turno', activeFilters.turno)} className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors"><X size={14} className="text-red-500" /></button>}
           </div>
           <div className="flex-1 flex flex-col items-center justify-center p-4">
             <DonutChart data={turnStats} colorMapper={getTurnColor} filterType="turno" total={turnStats.reduce((acc, curr) => acc + curr.count, 0)} />
@@ -549,7 +438,6 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
           </div>
         </div>
 
-        {/* PERFORMANCE SLA */}
         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 panel-shadow flex flex-col overflow-hidden">
           <div className="bg-slate-50 dark:bg-slate-900/50 px-3 py-2 border-b border-slate-200 dark:border-slate-700 shrink-0">
             <h3 className="text-[10px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest flex items-center gap-2">
@@ -558,9 +446,9 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
           </div>
           <div className="flex-1 flex flex-col gap-2 p-3 overflow-hidden">
             {[
-              { label: 'SLA RESPOSTA', avg: slaStats.avgE, max: slaStats.maxE, target: '---', pct: 100, color: 'blue' },
-              { label: 'SLA PRODUÇÃO', avg: slaStats.avgP, max: slaStats.maxP, target: '2h', pct: slaStats.pctP, color: 'amber' },
-              { label: 'SLA CONFORMIDADE', avg: slaStats.avgA, max: slaStats.maxA, target: '15m', pct: slaStats.pctA, color: 'emerald' }
+              { label: 'SLA RESPOSTA', avg: slaStats.avgE, max: slaStats.maxE, target: '10m', pct: slaStats.pctE, color: 'blue' },
+              { label: 'MANIFESTO DISPONÍVEL (WFS)', avg: slaStats.avgP, max: slaStats.maxP, target: '2h', pct: slaStats.pctP, color: 'amber' },
+              { label: 'COMPARECIMENTO (CIA)', avg: slaStats.avgA, max: slaStats.maxA, target: '15m', pct: slaStats.pctA, color: 'emerald' }
             ].map((s, i) => (
               <div key={i} className="flex-1 flex flex-col border border-slate-100 dark:border-slate-700 shadow-sm min-h-0 overflow-hidden">
                 <div className={`bg-${s.color}-50/50 dark:bg-${s.color}-900/20 px-2 py-1 border-b border-${s.color}-100 dark:border-${s.color}-900/50`}>
@@ -582,7 +470,7 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
                     </div>
                     <div className="text-center">
                       <p className="text-[7px] font-black text-slate-300 uppercase leading-none mb-1">SLA</p>
-                      <p className={`text-[11px] font-black font-mono-tech ${s.target === '---' ? 'text-slate-300' : s.pct >= 95 ? 'text-emerald-600' : 'text-amber-500'}`}>{s.target === '---' ? '---' : `${Math.round(s.pct)}%`}</p>
+                      <p className={`text-[11px] font-black font-mono-tech ${s.pct >= 95 ? 'text-emerald-600' : 'text-amber-500'}`}>{`${Math.round(s.pct)}%`}</p>
                     </div>
                   </div>
                 </div>
@@ -592,19 +480,13 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
         </div>
       </div>
 
-      {/* BLOCO INFERIOR */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 h-[40%] shrink-0">
-        {/* MARKET SHARE */}
         <div className="lg:col-span-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 panel-shadow flex flex-col overflow-hidden">
           <div className="bg-slate-50 dark:bg-slate-900/50 px-3 py-2 border-b border-slate-200 dark:border-slate-700 shrink-0 flex items-center justify-between">
             <h3 className="text-[10px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest flex items-center gap-2">
               <BarChart3 size={14} className="text-slate-500" /> Market Share por CIA
             </h3>
-            {activeFilters.cia && (
-              <button onClick={() => toggleFilter('cia', activeFilters.cia)} className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors">
-                <X size={14} className="text-red-500" />
-              </button>
-            )}
+            {activeFilters.cia && <button onClick={() => toggleFilter('cia', activeFilters.cia)} className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors"><X size={14} className="text-red-500" /></button>}
           </div>
           <div className="flex-1 flex flex-col gap-1 p-3 overflow-hidden">
             {ciaStats.map((item, i) => (
@@ -619,75 +501,26 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
                     <span className="text-[9px] font-black text-indigo-500/60 font-mono-tech">{item.pct.toFixed(1)}%</span>
                   </div>
                 </div>
-                <div className="h-2 bg-slate-100 dark:bg-slate-900 rounded-sm overflow-hidden flex items-center px-0.5">
-                  <div className="h-1 rounded-xs transition-all duration-500 shadow-sm" style={{ width: `${item.pct}%`, backgroundColor: getCiaColor(item.label) }}></div>
-                </div>
+                <div className="h-2 bg-slate-100 dark:bg-slate-900 rounded-sm overflow-hidden flex items-center px-0.5"><div className="h-1 rounded-xs transition-all duration-500 shadow-sm" style={{ width: `${item.pct}%`, backgroundColor: getCiaColor(item.label) }}></div></div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* FLUXO HORA A HORA */}
         <div className="lg:col-span-9 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 panel-shadow flex flex-col overflow-hidden">
           <div className="bg-slate-900 dark:bg-slate-950 px-5 py-2.5 flex items-center justify-between shrink-0">
-            <h3 className="text-[10px] font-black text-white uppercase tracking-[0.2em] flex items-center gap-2">
-               <BarChart3 size={16} className="text-indigo-400" /> Fluxo de Recebimento Hora a Hora
-            </h3>
+            <h3 className="text-[10px] font-black text-white uppercase tracking-[0.2em] flex items-center gap-2"><BarChart3 size={16} className="text-indigo-400" /> Fluxo de Recebimento Hora a Hora</h3>
             <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">WFS MONITORING CENTER</span>
           </div>
           <div className="flex-1 flex flex-col p-4 px-12 relative overflow-hidden">
-            <div className="absolute inset-x-12 bottom-12 top-6 pointer-events-none">
-               <div className="absolute inset-0 flex flex-col justify-between">
-                  {[...Array(5)].map((_, i) => <div key={i} className="w-full border-t border-dashed border-slate-100 dark:border-slate-700/50"></div>)}
-                  <div className="w-full h-px bg-slate-400 dark:bg-slate-600"></div> 
-               </div>
-            </div>
-
+            <div className="absolute inset-x-12 bottom-12 top-6 pointer-events-none"><div className="absolute inset-0 flex flex-col justify-between">{[...Array(5)].map((_, i) => <div key={i} className="w-full border-t border-dashed border-slate-100 dark:border-slate-700/50"></div>)}<div className="w-full h-px bg-slate-400 dark:bg-slate-600"></div></div></div>
             <div className="flex-1 flex items-end gap-1 relative z-10">
-              {/* Linha de Pico (Máxima) - Badge na lateral esquerda */}
-              <div className="absolute left-0 right-0 border-t-2 border-dashed border-red-500 z-40 transition-all duration-500 flex items-center" style={{ bottom: `${(flowStats.max / maxHourlyCount) * 100}%` }}>
-                <div className="absolute left-0 -translate-x-1/2 bg-red-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap">
-                  PICO (MÁX): {flowStats.max}
-                </div>
-              </div>
-
-              {/* Linha do 3º Quartil (75%) */}
-              <div className="absolute left-0 right-0 border-t-2 border-dashed border-indigo-500 z-30 transition-all duration-500 flex items-center" style={{ bottom: `${(flowStats.q3 / maxHourlyCount) * 100}%` }}>
-                <div className="absolute right-0 translate-x-1/2 bg-indigo-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap">
-                  75% (Q3): {flowStats.q3.toFixed(1)}
-                </div>
-              </div>
-
-              {/* Linha de Média Operacional - Badge na lateral esquerda */}
-              <div className="absolute left-0 right-0 border-t-2 border-dashed border-amber-500 z-30 transition-all duration-500 flex items-center" style={{ bottom: `${(flowStats.avg / maxHourlyCount) * 100}%` }}>
-                <div className="absolute left-0 -translate-x-1/2 bg-amber-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap">
-                  MÉDIA: {flowStats.avg.toFixed(1)}
-                </div>
-              </div>
-
-              {hourlyStats.map((h) => (
-                <div key={h.hour} className="flex-1 flex flex-col items-center h-full justify-end group">
-                  {!h.isFuture && (
-                    <div className="flex items-end justify-center w-full h-full pb-1">
-                       <div className="w-full max-w-[36px] bg-gradient-to-t from-indigo-700 to-indigo-500 dark:from-indigo-600 dark:to-indigo-400 group-hover:scale-y-105 transition-all rounded-t-sm relative shadow-sm" style={{ height: h.received > 0 ? `${(h.received / maxHourlyCount) * 100}%` : '2px' }}>
-                          {h.received > 0 && <div className="absolute -top-6 left-0 right-0 text-center text-[10px] font-black text-indigo-700 dark:text-indigo-300 bg-white/90 dark:bg-slate-900/90 rounded border border-indigo-100 dark:border-indigo-900 shadow-sm z-20">{h.received}</div>}
-                          {h.received === 0 && <div className="absolute -top-6 left-0 right-0 text-center text-[10px] font-black text-slate-400 bg-white/50 dark:bg-slate-900/50 rounded z-20">0</div>}
-                       </div>
-                    </div>
-                  )}
-                </div>
-              ))}
+              <div className="absolute left-0 right-0 border-t-2 border-dashed border-red-500 z-40 transition-all duration-500 flex items-center" style={{ bottom: `${(flowStats.max / maxHourlyCount) * 100}%` }}><div className="absolute left-0 -translate-x-1/2 bg-red-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap">PICO (MÁX): {flowStats.max}</div></div>
+              <div className="absolute left-0 right-0 border-t-2 border-dashed border-indigo-500 z-30 transition-all duration-500 flex items-center" style={{ bottom: `${(flowStats.q3 / maxHourlyCount) * 100}%` }}><div className="absolute right-0 translate-x-1/2 bg-indigo-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap">75% (Q3): {flowStats.q3.toFixed(1)}</div></div>
+              <div className="absolute left-0 right-0 border-t-2 border-dashed border-amber-500 z-30 transition-all duration-500 flex items-center" style={{ bottom: `${(flowStats.avg / maxHourlyCount) * 100}%` }}><div className="absolute left-0 -translate-x-1/2 bg-amber-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap">MÉDIA: {flowStats.avg.toFixed(1)}</div></div>
+              {hourlyStats.map((h) => (<div key={h.hour} className="flex-1 flex flex-col items-center h-full justify-end group">{!h.isFuture && (<div className="flex items-end justify-center w-full h-full pb-1"><div className="w-full max-w-[36px] bg-gradient-to-t from-indigo-700 to-indigo-500 dark:from-indigo-600 dark:to-indigo-400 group-hover:scale-y-105 transition-all rounded-t-sm relative shadow-sm" style={{ height: h.received > 0 ? `${(h.received / maxHourlyCount) * 100}%` : '2px' }}>{h.received > 0 && <div className="absolute -top-6 left-0 right-0 text-center text-[10px] font-black text-indigo-700 dark:text-indigo-300 bg-white/90 dark:bg-slate-900/90 rounded border border-indigo-100 dark:border-indigo-900 shadow-sm z-20">{h.received}</div>}{h.received === 0 && <div className="absolute -top-6 left-0 right-0 text-center text-[10px] font-black text-slate-400 bg-white/50 dark:bg-slate-900/50 rounded z-20">0</div>}</div></div>)}</div>))}
             </div>
-
-            <div className="h-8 mt-2 flex items-center border-t border-slate-900 dark:border-slate-700 pt-2 relative z-20">
-              {hourlyStats.map((h) => (
-                <div key={h.hour} className="flex-1 text-center">
-                  <span className={`text-[9px] font-black font-mono-tech tracking-tighter ${h.received > 0 ? 'text-indigo-600 dark:text-indigo-400' : h.isFuture ? 'text-slate-200 dark:text-slate-800' : 'text-slate-400 dark:text-slate-600'}`}>
-                    {!h.isFuture ? String(h.hour).padStart(2, '0') : ''}
-                  </span>
-                </div>
-              ))}
-            </div>
+            <div className="h-8 mt-2 flex items-center border-t border-slate-900 dark:border-slate-700 pt-2 relative z-20">{hourlyStats.map((h) => (<div key={h.hour} className="flex-1 text-center"><span className={`text-[9px] font-black font-mono-tech tracking-tighter ${h.received > 0 ? 'text-indigo-600 dark:text-indigo-400' : h.isFuture ? 'text-slate-200 dark:text-slate-800' : 'text-slate-400 dark:text-slate-600'}`}>{!h.isFuture ? String(h.hour).padStart(2, '0') : ''}</span></div>))}</div>
           </div>
         </div>
       </div>
