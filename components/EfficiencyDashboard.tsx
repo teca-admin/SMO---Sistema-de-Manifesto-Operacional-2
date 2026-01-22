@@ -1,3 +1,4 @@
+
 import React, { useMemo, useState } from 'react';
 import { Manifesto, CIAS } from '../types';
 import { 
@@ -310,8 +311,8 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
   return (
     <div className="flex flex-col gap-4 animate-fadeIn h-[calc(100vh-100px)] overflow-hidden">
       
-      {/* LINHA SUPERIOR: KPIs */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-3 shrink-0">
+      {/* LINHA SUPERIOR: KPIs + SELETOR (300px) */}
+      <div className="flex flex-col md:flex-row gap-3 shrink-0">
         {[
           { label: 'Recebido', val: totalReceived, icon: Box, color: 'indigo', filter: 'Recebido' },
           { label: 'Concluído', val: totalDelivered, icon: Plane, color: 'emerald', filter: 'Concluído' },
@@ -321,7 +322,7 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
           <button 
             key={i} 
             onClick={() => toggleFilter('status', kpi.filter)}
-            className={`bg-white dark:bg-slate-800 border p-3 flex items-center gap-3 transition-all text-left relative ${
+            className={`flex-1 bg-white dark:bg-slate-800 border p-3 flex items-center gap-3 transition-all text-left relative ${
               activeFilters.status === kpi.filter 
                 ? `border-${kpi.color}-600 ring-2 ring-${kpi.color}-100 dark:ring-${kpi.color}-900 shadow-inner` 
                 : 'border-slate-200 dark:border-slate-700 panel-shadow hover:border-slate-400 dark:hover:border-slate-600'
@@ -341,7 +342,8 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
             )}
           </button>
         ))}
-        <div className="bg-white dark:bg-slate-800 border-2 border-slate-900 dark:border-indigo-600 panel-shadow p-3 flex items-center gap-2">
+        {/* CONTAINER DO SELETOR DE DATA COM LARGURA FIXA DE 300PX */}
+        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 panel-shadow p-3 flex items-center gap-2 w-full md:w-[300px] shrink-0">
           <div className="flex-1">
             <CustomDateRangePicker start={dateRange.start} end={dateRange.end} onChange={(s, e) => setDateRange({ start: s, end: e })} />
           </div>
@@ -461,7 +463,7 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
           </div>
         </div>
 
-        {/* INDICADORES DE PERFORMANCE SLA (OCUPANDO 100% DO ESPAÇO DIVIDIDO POR 3) */}
+        {/* INDICADORES DE PERFORMANCE SLA */}
         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 panel-shadow flex flex-col overflow-hidden">
           <div className="bg-slate-50 dark:bg-slate-900/50 px-3 py-2 border-b border-slate-200 dark:border-slate-700 shrink-0">
             <h3 className="text-[10px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest flex items-center gap-2">
@@ -506,10 +508,10 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
         </div>
       </div>
 
-      {/* BLOCO INFERIOR: CIA (BARRAS VERTICAIS EQUILIBRADAS) & FLUXO HORA A HORA */}
+      {/* BLOCO INFERIOR: CIA & FLUXO HORA A HORA */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 h-[40%] shrink-0">
         
-        {/* CIA (GRÁFICO DE BARRAS - OCUPANDO 100% DO ESPAÇO DIVIDIDO POR 5) */}
+        {/* CIA */}
         <div className="lg:col-span-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 panel-shadow flex flex-col overflow-hidden">
           <div className="bg-slate-50 dark:bg-slate-900/50 px-3 py-2 border-b border-slate-200 dark:border-slate-700 shrink-0 flex items-center justify-between">
             <h3 className="text-[10px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest flex items-center gap-2">
@@ -556,7 +558,7 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
           </div>
         </div>
 
-        {/* FLUXO DE RECEBIMENTO HORA A HORA (EXPANDIDO) */}
+        {/* FLUXO DE RECEBIMENTO HORA A HORA */}
         <div className="lg:col-span-9 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 panel-shadow flex flex-col overflow-hidden">
           <div className="bg-slate-900 dark:bg-slate-950 px-5 py-2.5 flex items-center justify-between shrink-0">
             <h3 className="text-[10px] font-black text-white uppercase tracking-[0.2em] flex items-center gap-2">
