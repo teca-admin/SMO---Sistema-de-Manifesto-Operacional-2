@@ -17,7 +17,8 @@ import {
   ChevronRight,
   PieChart,
   X,
-  Timer
+  Timer,
+  ShieldCheck
 } from 'lucide-react';
 import { CustomDateRangePicker } from './CustomDateRangePicker';
 
@@ -29,6 +30,7 @@ interface ActiveFilters {
   cia: string | null;
   turno: string | null;
   usuario: string | null;
+  usuarioCadastro: string | null;
   status: string | null;
   manifestoId: string | null;
   onlyViolations: boolean;
@@ -44,6 +46,7 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
     cia: null,
     turno: null,
     usuario: null,
+    usuarioCadastro: null,
     status: null,
     manifestoId: null,
     onlyViolations: false
@@ -117,6 +120,7 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
       if (activeFilters.cia && m.cia.toUpperCase() !== activeFilters.cia.toUpperCase()) return false;
       if (activeFilters.turno && m.turno !== activeFilters.turno) return false;
       if (activeFilters.usuario && m.usuarioResponsavel !== activeFilters.usuario) return false;
+      if (activeFilters.usuarioCadastro && m.usuario !== activeFilters.usuarioCadastro) return false;
       if (activeFilters.manifestoId && m.id !== activeFilters.manifestoId) return false;
       if (activeFilters.onlyViolations && !getViolationReason(m)) return false;
       
@@ -142,6 +146,14 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
     const counts: Record<string, number> = {};
     filteredManifestos.forEach(m => {
       if (m.usuarioResponsavel) counts[m.usuarioResponsavel] = (counts[m.usuarioResponsavel] || 0) + 1;
+    });
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  }, [filteredManifestos]);
+
+  const sistemaRank = useMemo(() => {
+    const counts: Record<string, number> = {};
+    filteredManifestos.forEach(m => {
+      if (m.usuario) counts[m.usuario] = (counts[m.usuario] || 0) + 1;
     });
     return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 10);
   }, [filteredManifestos]);
@@ -360,8 +372,8 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
         </div>
       </div>
 
-      {/* BLOCO CENTRAL */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 flex-1 min-h-0">
+      {/* BLOCO CENTRAL - Ajustado para 5 colunas no LG */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 flex-1 min-h-0">
         {/* ATRIBUIÇÃO */}
         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 panel-shadow flex flex-col overflow-hidden">
           <div className="bg-slate-50 dark:bg-slate-900/50 px-3 py-2 border-b border-slate-200 dark:border-slate-700 shrink-0 flex items-center justify-between">
@@ -383,6 +395,36 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
                   activeFilters.usuario === name 
                     ? 'bg-indigo-600 text-white border-indigo-700' 
                     : 'bg-slate-50/50 dark:bg-slate-900/30 text-slate-700 dark:text-slate-300 border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20'
+                }`}
+              >
+                <span className="text-[10px] font-black uppercase truncate pr-1">#{idx+1} {name}</span>
+                <span className="text-[11px] font-black font-mono-tech">{count}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* RANK SISTEMA (CADASTRO) */}
+        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 panel-shadow flex flex-col overflow-hidden">
+          <div className="bg-slate-50 dark:bg-slate-900/50 px-3 py-2 border-b border-slate-200 dark:border-slate-700 shrink-0 flex items-center justify-between">
+            <h3 className="text-[10px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest flex items-center gap-2">
+              <ShieldCheck size={14} className="text-slate-700 dark:text-slate-400" /> Rank Sistema
+            </h3>
+            {activeFilters.usuarioCadastro && (
+              <button onClick={() => toggleFilter('usuarioCadastro', activeFilters.usuarioCadastro)} className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors">
+                <X size={14} className="text-red-500" />
+              </button>
+            )}
+          </div>
+          <div className="flex-1 p-1 space-y-1 overflow-y-auto custom-scrollbar">
+            {sistemaRank.map(([name, count], idx) => (
+              <button 
+                key={name} 
+                onClick={() => toggleFilter('usuarioCadastro', name)}
+                className={`w-full flex items-center justify-between py-1.5 px-2 border-l-2 transition-all ${
+                  activeFilters.usuarioCadastro === name 
+                    ? 'bg-slate-900 dark:bg-slate-100 dark:text-slate-900 text-white border-slate-950 dark:border-white' 
+                    : 'bg-slate-50/50 dark:bg-slate-900/30 text-slate-700 dark:text-slate-300 border-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900/20'
                 }`}
               >
                 <span className="text-[10px] font-black uppercase truncate pr-1">#{idx+1} {name}</span>
@@ -450,7 +492,7 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
                 <div key={i} onClick={() => toggleFilter('turno', item.label)} className="flex items-center justify-between cursor-pointer p-1.5 rounded hover:bg-slate-50 dark:hover:bg-slate-900/50">
                   <div className="flex items-center gap-2 overflow-hidden">
                     <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: getTurnColor(item.label) }}></div>
-                    <span className="text-[8px] font-black uppercase truncate text-slate-400">{item.label}</span>
+                    <span className="text-[10px] font-black uppercase truncate text-slate-400">{item.label}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] font-black font-mono-tech text-slate-900 dark:text-slate-100">{item.count}</span>
