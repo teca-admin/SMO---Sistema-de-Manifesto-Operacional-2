@@ -586,7 +586,7 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
                        style={{ height: h.received > 0 ? `${(h.received / maxHourlyCount) * 100}%` : '2px' }}
                      >
                         {h.received > 0 && (
-                          <div className="absolute -top-6 left-0 right-0 text-center text-[10px] font-black text-indigo-700 dark:text-indigo-300 bg-white/90 dark:bg-slate-900/90 rounded border border-indigo-100 dark:border-indigo-900 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="absolute -top-6 left-0 right-0 text-center text-[10px] font-black text-indigo-700 dark:text-indigo-300 bg-white/90 dark:bg-slate-900/90 rounded border border-indigo-100 dark:border-indigo-900 shadow-sm z-20">
                             {h.received}
                           </div>
                         )}
