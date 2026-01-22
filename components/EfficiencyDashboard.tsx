@@ -374,11 +374,11 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
 
       {/* BLOCO CENTRAL - Ajustado para 5 colunas no LG */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 flex-1 min-h-0">
-        {/* ATRIBUIÇÃO */}
+        {/* RANK OPERAÇÃO */}
         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 panel-shadow flex flex-col overflow-hidden">
           <div className="bg-slate-50 dark:bg-slate-900/50 px-3 py-2 border-b border-slate-200 dark:border-slate-700 shrink-0 flex items-center justify-between">
             <h3 className="text-[10px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest flex items-center gap-2">
-              <Award size={14} className="text-indigo-600" /> Atribuição
+              <Award size={14} className="text-indigo-600" /> Rank Operação
             </h3>
             {activeFilters.usuario && (
               <button onClick={() => toggleFilter('usuario', activeFilters.usuario)} className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors">
