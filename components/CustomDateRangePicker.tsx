@@ -22,7 +22,6 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({ st
   const [endDate, setEndDate] = useState<Date>(new Date(end));
   const [viewDate, setViewDate] = useState(new Date(start));
 
-  // Estado unificado para os campos HH:MM
   const [timeInputs, setTimeInputs] = useState({
     start: `${startDate.getHours().toString().padStart(2, '0')}:${startDate.getMinutes().toString().padStart(2, '0')}`,
     end: `${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}`
@@ -124,11 +123,6 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({ st
         break;
     }
 
-    // Se o atalho resultar em data futura (como o T3 cruzando a meia-noite), 
-    // precisamos garantir que não ultrapasse o "agora" se o objetivo for apenas dados reais.
-    // Mas para atalhos de turnos padrão, mantemos a lógica, pois o EfficiencyDashboard 
-    // já filtra horas futuras. O bloqueio principal é no clique manual.
-
     setStartDate(s);
     setEndDate(e);
     setViewDate(new Date(s));
@@ -145,12 +139,8 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({ st
 
   const handleDateSelect = (day: number) => {
     const clickedDate = new Date(viewDate.getFullYear(), viewDate.getMonth(), day);
-    
-    // Bloqueio de data futura
     if (isFutureDate(clickedDate)) return;
-
     setActiveShortcut(null);
-    
     if (selectionStep === 1) {
       const newStart = new Date(clickedDate);
       newStart.setHours(startDate.getHours(), startDate.getMinutes());
@@ -235,10 +225,10 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({ st
             isStart || isEnd
               ? 'bg-indigo-600 border-indigo-600 text-white z-10'
               : inRange
-                ? 'bg-indigo-50 border-indigo-100 text-indigo-600'
+                ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-100 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400'
                 : future
-                  ? 'border-transparent text-slate-200 cursor-not-allowed opacity-40'
-                  : 'border-transparent text-slate-600 hover:bg-slate-100'
+                  ? 'border-transparent text-slate-200 dark:text-slate-700 cursor-not-allowed opacity-40'
+                  : 'border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
           }`}
         >
           {d}
@@ -254,34 +244,34 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({ st
     <div className="relative w-full" ref={containerRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full h-10 px-3 flex items-center justify-between border-2 transition-all outline-none bg-slate-50 border-slate-200 hover:border-slate-300 ${isOpen ? 'border-indigo-600 bg-white ring-4 ring-indigo-50 shadow-sm' : ''}`}
+        className={`w-full h-10 px-3 flex items-center justify-between border-2 transition-all outline-none bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 ${isOpen ? 'border-indigo-600 dark:border-indigo-500 bg-white dark:bg-slate-800 ring-4 ring-indigo-50 dark:ring-indigo-900/20 shadow-sm' : ''}`}
       >
         <div className="flex items-center gap-2 overflow-hidden">
-          <CalendarIcon size={14} className="text-indigo-600 shrink-0" />
-          <span className="text-[9px] font-black text-slate-800 font-mono-tech whitespace-nowrap">
+          <CalendarIcon size={14} className="text-indigo-600 dark:text-indigo-400 shrink-0" />
+          <span className="text-[9px] font-black text-slate-800 dark:text-slate-200 font-mono-tech whitespace-nowrap">
             {formatDate(startDate)}
           </span>
-          <ArrowRight size={10} className="text-slate-300 shrink-0" />
-          <span className="text-[9px] font-black text-slate-800 font-mono-tech whitespace-nowrap">
+          <ArrowRight size={10} className="text-slate-300 dark:text-slate-600 shrink-0" />
+          <span className="text-[9px] font-black text-slate-800 dark:text-slate-200 font-mono-tech whitespace-nowrap">
             {formatDate(endDate)}
           </span>
         </div>
-        <ChevronDown size={14} className={`text-slate-400 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown size={14} className={`text-slate-400 dark:text-slate-500 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && createPortal(
         <div 
           ref={popoverRef}
-          className="fixed z-[10050] bg-white border-2 border-slate-900 shadow-2xl flex flex-col w-[320px] animate-fadeIn"
+          className="fixed z-[10050] bg-white dark:bg-slate-800 border-2 border-slate-900 dark:border-slate-700 shadow-2xl flex flex-col w-[320px] animate-fadeIn"
           style={{ top: coords.top + 4, left: coords.left }}
         >
-          <div className="p-3 bg-white border-b border-slate-100">
+          <div className="p-3 bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700">
             <div className="grid grid-cols-4 gap-1.5">
               {[
-                { label: 'Hoje', type: 'hoje', colorClass: 'bg-slate-600 text-white border-slate-700', inactiveClass: 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50' },
-                { label: '1º T', type: 't1', colorClass: 'bg-blue-600 text-white border-blue-700', inactiveClass: 'bg-white text-blue-600 border-slate-200 hover:bg-blue-50' },
-                { label: '2º T', type: 't2', colorClass: 'bg-amber-500 text-white border-amber-600', inactiveClass: 'bg-white text-amber-600 border-slate-200 hover:bg-amber-50' },
-                { label: '3º T', type: 't3', colorClass: 'bg-indigo-600 text-white border-indigo-700', inactiveClass: 'bg-white text-indigo-600 border-slate-200 hover:bg-indigo-50' }
+                { label: 'Hoje', type: 'hoje', colorClass: 'bg-slate-600 text-white border-slate-700', inactiveClass: 'bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700' },
+                { label: '1º T', type: 't1', colorClass: 'bg-blue-600 text-white border-blue-700', inactiveClass: 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 border-slate-200 dark:border-slate-700 hover:bg-blue-50 dark:hover:bg-blue-900/20' },
+                { label: '2º T', type: 't2', colorClass: 'bg-amber-500 text-white border-amber-600', inactiveClass: 'bg-white dark:bg-slate-900 text-amber-600 dark:text-amber-400 border-slate-200 dark:border-slate-700 hover:bg-amber-50 dark:hover:bg-amber-900/20' },
+                { label: '3º T', type: 't3', colorClass: 'bg-indigo-600 text-white border-indigo-700', inactiveClass: 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 border-slate-200 dark:border-slate-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/20' }
               ].map(bt => {
                 const isActive = activeShortcut === bt.type;
                 return (
@@ -299,7 +289,7 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({ st
             </div>
           </div>
 
-          <div className="bg-slate-900 text-white p-2 flex items-center justify-between">
+          <div className="bg-slate-900 dark:bg-slate-950 text-white p-2 flex items-center justify-between">
             <button onClick={() => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1))} className="p-1 hover:bg-slate-700 rounded"><ChevronLeft size={14} /></button>
             <div className="text-[9px] font-black uppercase tracking-widest">{months[viewDate.getMonth()]} {viewDate.getFullYear()}</div>
             <button onClick={() => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1))} className="p-1 hover:bg-slate-700 rounded"><ChevronRight size={14} /></button>
@@ -307,18 +297,17 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({ st
 
           <div className="p-3">
             <div className="grid grid-cols-7 mb-1 text-center">
-              {['D','S','T','Q','Q','S','S'].map(d => <div key={d} className="text-[8px] font-black text-slate-400 uppercase">{d}</div>)}
+              {['D','S','T','Q','Q','S','S'].map(d => <div key={d} className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase">{d}</div>)}
             </div>
-            <div className="grid grid-cols-7 gap-px bg-slate-100 border border-slate-100">
+            <div className="grid grid-cols-7 gap-px bg-slate-100 dark:bg-slate-700 border border-slate-100 dark:border-slate-700">
               {renderCalendar()}
             </div>
           </div>
 
-          <div className="p-3 bg-slate-50 border-t border-slate-100 flex flex-col gap-4">
+          <div className="p-3 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-700 flex flex-col gap-4">
             <div className="grid grid-cols-2 gap-4">
-               {/* Início */}
                <div className="space-y-1">
-                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                  <p className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-1">
                     <Clock size={10} /> Início
                   </p>
                   <div className="flex items-center gap-1">
@@ -328,14 +317,12 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({ st
                        onChange={(e) => handleTimeInputChange('start', e.target.value)}
                        onBlur={() => handleTimeBlur('start')}
                        placeholder="00:00"
-                       className="w-full h-8 text-center text-[11px] font-black font-mono-tech bg-white border border-slate-200 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-100 transition-all"
+                       className="w-full h-8 text-center text-[11px] font-black font-mono-tech bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition-all"
                      />
                   </div>
                </div>
-
-               {/* Fim */}
                <div className="space-y-1">
-                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                  <p className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-1">
                     <Clock size={10} /> Fim
                   </p>
                   <div className="flex items-center gap-1">
@@ -345,15 +332,14 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({ st
                        onChange={(e) => handleTimeInputChange('end', e.target.value)}
                        onBlur={() => handleTimeBlur('end')}
                        placeholder="23:59"
-                       className="w-full h-8 text-center text-[11px] font-black font-mono-tech bg-white border border-slate-200 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-100 transition-all"
+                       className="w-full h-8 text-center text-[11px] font-black font-mono-tech bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition-all"
                      />
                   </div>
                </div>
             </div>
-
             <button 
               onClick={applyChanges}
-              className="w-full h-9 bg-indigo-600 text-white text-[9px] font-black uppercase tracking-widest hover:bg-slate-900 transition-all flex items-center justify-center gap-2 shadow-lg"
+              className="w-full h-9 bg-indigo-600 dark:bg-indigo-500 text-white text-[9px] font-black uppercase tracking-widest hover:bg-slate-900 dark:hover:bg-indigo-600 transition-all flex items-center justify-center gap-2 shadow-lg"
             >
               <Check size={14} /> Aplicar Período
             </button>
