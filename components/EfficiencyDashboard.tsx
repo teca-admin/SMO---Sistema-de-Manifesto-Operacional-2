@@ -374,36 +374,6 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
 
       {/* BLOCO CENTRAL - Ajustado para 5 colunas no LG */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 flex-1 min-h-0">
-        {/* RANK OPERAÇÃO */}
-        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 panel-shadow flex flex-col overflow-hidden">
-          <div className="bg-slate-50 dark:bg-slate-900/50 px-3 py-2 border-b border-slate-200 dark:border-slate-700 shrink-0 flex items-center justify-between">
-            <h3 className="text-[10px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest flex items-center gap-2">
-              <Award size={14} className="text-indigo-600" /> Rank Operação
-            </h3>
-            {activeFilters.usuario && (
-              <button onClick={() => toggleFilter('usuario', activeFilters.usuario)} className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors">
-                <X size={14} className="text-red-500" />
-              </button>
-            )}
-          </div>
-          <div className="flex-1 p-1 space-y-1 overflow-y-auto custom-scrollbar">
-            {atribuicaoRank.map(([name, count], idx) => (
-              <button 
-                key={name} 
-                onClick={() => toggleFilter('usuario', name)}
-                className={`w-full flex items-center justify-between py-1.5 px-2 border-l-2 transition-all ${
-                  activeFilters.usuario === name 
-                    ? 'bg-indigo-600 text-white border-indigo-700' 
-                    : 'bg-slate-50/50 dark:bg-slate-900/30 text-slate-700 dark:text-slate-300 border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20'
-                }`}
-              >
-                <span className="text-[10px] font-black uppercase truncate pr-1">#{idx+1} {name}</span>
-                <span className="text-[11px] font-black font-mono-tech">{count}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
         {/* RANK SISTEMA (CADASTRO) */}
         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 panel-shadow flex flex-col overflow-hidden">
           <div className="bg-slate-50 dark:bg-slate-900/50 px-3 py-2 border-b border-slate-200 dark:border-slate-700 shrink-0 flex items-center justify-between">
@@ -425,6 +395,36 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
                   activeFilters.usuarioCadastro === name 
                     ? 'bg-slate-900 dark:bg-slate-100 dark:text-slate-900 text-white border-slate-950 dark:border-white' 
                     : 'bg-slate-50/50 dark:bg-slate-900/30 text-slate-700 dark:text-slate-300 border-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900/20'
+                }`}
+              >
+                <span className="text-[10px] font-black uppercase truncate pr-1">#{idx+1} {name}</span>
+                <span className="text-[11px] font-black font-mono-tech">{count}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* RANK OPERAÇÃO */}
+        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 panel-shadow flex flex-col overflow-hidden">
+          <div className="bg-slate-50 dark:bg-slate-900/50 px-3 py-2 border-b border-slate-200 dark:border-slate-700 shrink-0 flex items-center justify-between">
+            <h3 className="text-[10px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest flex items-center gap-2">
+              <Award size={14} className="text-indigo-600" /> Rank Operação
+            </h3>
+            {activeFilters.usuario && (
+              <button onClick={() => toggleFilter('usuario', activeFilters.usuario)} className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors">
+                <X size={14} className="text-red-500" />
+              </button>
+            )}
+          </div>
+          <div className="flex-1 p-1 space-y-1 overflow-y-auto custom-scrollbar">
+            {atribuicaoRank.map(([name, count], idx) => (
+              <button 
+                key={name} 
+                onClick={() => toggleFilter('usuario', name)}
+                className={`w-full flex items-center justify-between py-1.5 px-2 border-l-2 transition-all ${
+                  activeFilters.usuario === name 
+                    ? 'bg-indigo-600 text-white border-indigo-700' 
+                    : 'bg-slate-50/50 dark:bg-slate-900/30 text-slate-700 dark:text-slate-300 border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20'
                 }`}
               >
                 <span className="text-[10px] font-black uppercase truncate pr-1">#{idx+1} {name}</span>
