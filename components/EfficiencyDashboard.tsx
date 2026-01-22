@@ -517,24 +517,28 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
               { label: 'SLA PRODUÇÃO', avg: slaStats.avgP, max: slaStats.maxP, target: '2h', pct: slaStats.pctP, color: 'amber' },
               { label: 'SLA CONFORMIDADE', avg: slaStats.avgA, max: slaStats.maxA, target: '15m', pct: slaStats.pctA, color: 'emerald' }
             ].map((s, i) => (
-              <div key={i} className={`flex-1 flex flex-col justify-center p-2 border-l-4 border-${s.color}-600 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-700 shadow-sm min-h-0`}>
-                <p className="text-[8px] font-black text-slate-500 dark:text-slate-400 uppercase leading-none mb-2">{s.label}</p>
-                <div className="grid grid-cols-4 gap-1">
-                  <div className="text-center">
-                    <p className="text-[7px] font-black text-slate-300 uppercase leading-none mb-1">Média</p>
-                    <p className={`text-[11px] font-black font-mono-tech text-${s.color}-600 dark:text-${s.color}-400`}>{formatMinutes(s.avg)}</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-[7px] font-black text-slate-300 uppercase leading-none mb-1">Máx</p>
-                    <p className="text-[11px] font-black font-mono-tech text-slate-400">{formatMinutes(s.max)}</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-[7px] font-black text-slate-300 uppercase leading-none mb-1">Meta</p>
-                    <p className="text-[11px] font-black font-mono-tech text-slate-700 dark:text-slate-300">{s.target}</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-[7px] font-black text-slate-300 uppercase leading-none mb-1">SLA</p>
-                    <p className={`text-[11px] font-black font-mono-tech ${s.target === '---' ? 'text-slate-300' : s.pct >= 95 ? 'text-emerald-600' : 'text-amber-500'}`}>{s.target === '---' ? '---' : `${Math.round(s.pct)}%`}</p>
+              <div key={i} className="flex-1 flex flex-col border border-slate-100 dark:border-slate-700 shadow-sm min-h-0 overflow-hidden">
+                <div className={`bg-${s.color}-50/50 dark:bg-${s.color}-900/20 px-2 py-1 border-b border-${s.color}-100 dark:border-${s.color}-900/50`}>
+                  <p className={`text-[8px] font-black text-${s.color}-600 dark:text-${s.color}-400 uppercase tracking-[0.2em] leading-none`}>{s.label}</p>
+                </div>
+                <div className={`flex-1 flex flex-col justify-center p-2 border-l-4 border-${s.color}-600 bg-white dark:bg-slate-900 min-h-0`}>
+                  <div className="grid grid-cols-4 gap-1">
+                    <div className="text-center">
+                      <p className="text-[7px] font-black text-slate-300 uppercase leading-none mb-1">Média</p>
+                      <p className={`text-[11px] font-black font-mono-tech text-${s.color}-600 dark:text-${s.color}-400`}>{formatMinutes(s.avg)}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[7px] font-black text-slate-300 uppercase leading-none mb-1">Máx</p>
+                      <p className="text-[11px] font-black font-mono-tech text-slate-400">{formatMinutes(s.max)}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[7px] font-black text-slate-300 uppercase leading-none mb-1">Meta</p>
+                      <p className="text-[11px] font-black font-mono-tech text-slate-700 dark:text-slate-300">{s.target}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[7px] font-black text-slate-300 uppercase leading-none mb-1">SLA</p>
+                      <p className={`text-[11px] font-black font-mono-tech ${s.target === '---' ? 'text-slate-300' : s.pct >= 95 ? 'text-emerald-600' : 'text-amber-500'}`}>{s.target === '---' ? '---' : `${Math.round(s.pct)}%`}</p>
+                    </div>
                   </div>
                 </div>
               </div>
