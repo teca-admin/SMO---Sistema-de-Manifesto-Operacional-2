@@ -20,6 +20,7 @@ export const CustomDateTimePicker: React.FC<CustomDateTimePickerProps> = ({
   const [viewDate, setViewDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
   const [coords, setCoords] = useState({ top: 0, left: 0 });
 
   // Sincroniza valor externo (ISO string) com o input visual
@@ -45,6 +46,31 @@ export const CustomDateTimePicker: React.FC<CustomDateTimePickerProps> = ({
       const rect = containerRef.current.getBoundingClientRect();
       setCoords({ top: rect.bottom + window.scrollY, left: rect.left });
     }
+  }, [isOpen]);
+
+  // Lógica para fechar ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      // Se o clique não foi no container do input E não foi no popover do calendário, fecha.
+      if (
+        containerRef.current && 
+        !containerRef.current.contains(event.target as Node) &&
+        popoverRef.current &&
+        !popoverRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    } else {
+      document.removeEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, [isOpen]);
 
   const daysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
@@ -168,6 +194,7 @@ export const CustomDateTimePicker: React.FC<CustomDateTimePickerProps> = ({
 
       {isOpen && createPortal(
         <div 
+          ref={popoverRef}
           className="fixed z-[10050] bg-white border-2 border-slate-800 shadow-2xl flex flex-col w-[280px] animate-fadeIn"
           style={{ top: coords.top + 4, left: coords.left }}
         >
@@ -223,8 +250,6 @@ export const CustomDateTimePicker: React.FC<CustomDateTimePickerProps> = ({
                <Check size={18} />
              </button>
           </div>
-          
-          <div className="fixed inset-0 z-[-1]" onClick={() => setIsOpen(false)}></div>
         </div>,
         document.body
       )}
