@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, Check, ArrowRight, Zap } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, Check, ArrowRight, ChevronDown } from 'lucide-react';
 
 interface CustomDateRangePickerProps {
   start: string;
@@ -11,11 +12,10 @@ interface CustomDateRangePickerProps {
 export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({ start, end, onChange }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
   const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
   
-  // Controle inteligente de cliques: 1 (selecionando início), 2 (selecionando fim)
   const [selectionStep, setSelectionStep] = useState<1 | 2>(1);
-  const [timeMode, setTimeMode] = useState<'start' | 'end'>('start');
   const [activeShortcut, setActiveShortcut] = useState<string | null>(null);
 
   const [startDate, setStartDate] = useState<Date>(new Date(start));
@@ -28,6 +28,29 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({ st
     if (start) setStartDate(new Date(start));
     if (end) setEndDate(new Date(end));
   }, [start, end]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        containerRef.current && 
+        !containerRef.current.contains(event.target as Node) &&
+        popoverRef.current &&
+        !popoverRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    } else {
+      document.removeEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
 
   useEffect(() => {
     if (isOpen && containerRef.current) {
@@ -64,7 +87,6 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({ st
         break;
       case 't3':
         s.setHours(22, 0, 0, 0);
-        // Turno 3 termina às 05:59 do dia seguinte
         e = new Date(s);
         e.setDate(e.getDate() + 1);
         e.setHours(5, 59, 59, 999);
@@ -91,15 +113,12 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({ st
     if (selectionStep === 1) {
       const newStart = new Date(clickedDate);
       newStart.setHours(startDate.getHours(), startDate.getMinutes());
-      
       setStartDate(newStart);
       setEndDate(newStart); 
       setSelectionStep(2);
-      setTimeMode('start');
     } else {
       const newEnd = new Date(clickedDate);
       newEnd.setHours(endDate.getHours(), endDate.getMinutes());
-
       if (newEnd < startDate) {
         const temp = new Date(startDate);
         setStartDate(newEnd);
@@ -108,22 +127,21 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({ st
         setEndDate(newEnd);
       }
       setSelectionStep(1);
-      setTimeMode('end');
     }
   };
 
-  const handleTimeChange = (type: 'hour' | 'minute', val: number) => {
+  const handleTimeChange = (target: 'start' | 'end', type: 'hour' | 'minute', val: number) => {
     setActiveShortcut(null);
-    if (timeMode === 'start') {
-      const newStart = new Date(startDate);
-      if (type === 'hour') newStart.setHours(val);
-      else newStart.setMinutes(val);
-      setStartDate(newStart);
+    if (target === 'start') {
+      const newDate = new Date(startDate);
+      if (type === 'hour') newDate.setHours(val);
+      else newDate.setMinutes(val);
+      setStartDate(newDate);
     } else {
-      const newEnd = new Date(endDate);
-      if (type === 'hour') newEnd.setHours(val);
-      else newEnd.setMinutes(val);
-      setEndDate(newEnd);
+      const newDate = new Date(endDate);
+      if (type === 'hour') newDate.setHours(val);
+      else newDate.setMinutes(val);
+      setEndDate(newDate);
     }
   };
 
@@ -172,7 +190,7 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({ st
     <div className="relative w-full" ref={containerRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full h-10 px-3 flex items-center justify-between border-2 transition-all outline-none bg-slate-50 border-slate-200 hover:border-slate-300 ${isOpen ? 'border-indigo-600 bg-white ring-4 ring-indigo-50' : ''}`}
+        className={`w-full h-10 px-3 flex items-center justify-between border-2 transition-all outline-none bg-slate-50 border-slate-200 hover:border-slate-300 ${isOpen ? 'border-indigo-600 bg-white ring-4 ring-indigo-50 shadow-sm' : ''}`}
       >
         <div className="flex items-center gap-2 overflow-hidden">
           <CalendarIcon size={14} className="text-indigo-600 shrink-0" />
@@ -184,15 +202,15 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({ st
             {formatDate(endDate)}
           </span>
         </div>
-        <ChevronDownIcon size={14} className="text-slate-400 shrink-0" />
+        <ChevronDown size={14} className={`text-slate-400 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && createPortal(
         <div 
+          ref={popoverRef}
           className="fixed z-[10050] bg-white border-2 border-slate-900 shadow-2xl flex flex-col w-[320px] animate-fadeIn"
           style={{ top: coords.top + 4, left: coords.left }}
         >
-          {/* ATALHOS RÁPIDOS */}
           <div className="p-3 bg-white border-b border-slate-100">
             <div className="grid grid-cols-4 gap-1.5">
               {[
@@ -217,7 +235,6 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({ st
             </div>
           </div>
 
-          {/* NAVEGAÇÃO DO MÊS */}
           <div className="bg-slate-900 text-white p-2 flex items-center justify-between">
             <button onClick={() => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1))} className="p-1 hover:bg-slate-700 rounded"><ChevronLeft size={14} /></button>
             <div className="text-[9px] font-black uppercase tracking-widest">{months[viewDate.getMonth()]} {viewDate.getFullYear()}</div>
@@ -233,48 +250,67 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({ st
             </div>
           </div>
 
-          {/* AJUSTE DE HORÁRIO E APLICAÇÃO */}
-          <div className="p-3 bg-slate-50 border-t border-slate-100 flex flex-col gap-3">
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-2">
-                <Clock size={12} className="text-slate-400" />
-                <div className="flex items-center gap-1">
-                   <select 
-                     value={timeMode === 'start' ? startDate.getHours() : endDate.getHours()} 
-                     onChange={(e) => handleTimeChange('hour', parseInt(e.target.value))}
-                     className="text-[10px] font-black font-mono-tech bg-white border border-slate-200 px-1 py-0.5 rounded outline-none"
-                   >
-                     {Array.from({length: 24}, (_, i) => <option key={i} value={i}>{String(i).padStart(2, '0')}</option>)}
-                   </select>
-                   <span className="text-[10px] font-bold text-slate-400">:</span>
-                   <select 
-                     value={timeMode === 'start' ? startDate.getMinutes() : endDate.getMinutes()} 
-                     onChange={(e) => handleTimeChange('minute', parseInt(e.target.value))}
-                     className="text-[10px] font-black font-mono-tech bg-white border border-slate-200 px-1 py-0.5 rounded outline-none"
-                   >
-                     {Array.from({length: 60}, (_, i) => <option key={i} value={i}>{String(i).padStart(2, '0')}</option>)}
-                   </select>
-                </div>
-              </div>
-              <button 
-                onClick={applyChanges}
-                className="bg-indigo-600 text-white px-4 h-8 text-[9px] font-black uppercase tracking-widest hover:bg-slate-900 transition-all flex items-center gap-2"
-              >
-                <Check size={14} /> Aplicar
-              </button>
+          <div className="p-3 bg-slate-50 border-t border-slate-100 flex flex-col gap-4">
+            <div className="grid grid-cols-2 gap-4">
+               {/* Início */}
+               <div className="space-y-1">
+                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                    <Clock size={10} /> Início
+                  </p>
+                  <div className="flex items-center gap-1">
+                     <select 
+                       value={startDate.getHours()} 
+                       onChange={(e) => handleTimeChange('start', 'hour', parseInt(e.target.value))}
+                       className="flex-1 h-7 text-[10px] font-black font-mono-tech bg-white border border-slate-200 px-1 outline-none focus:border-indigo-500"
+                     >
+                       {Array.from({length: 24}, (_, i) => <option key={i} value={i}>{String(i).padStart(2, '0')}</option>)}
+                     </select>
+                     <span className="text-[10px] font-bold text-slate-300">:</span>
+                     <select 
+                       value={startDate.getMinutes()} 
+                       onChange={(e) => handleTimeChange('start', 'minute', parseInt(e.target.value))}
+                       className="flex-1 h-7 text-[10px] font-black font-mono-tech bg-white border border-slate-200 px-1 outline-none focus:border-indigo-500"
+                     >
+                       {Array.from({length: 60}, (_, i) => <option key={i} value={i}>{String(i).padStart(2, '0')}</option>)}
+                     </select>
+                  </div>
+               </div>
+
+               {/* Fim */}
+               <div className="space-y-1">
+                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                    <Clock size={10} /> Fim
+                  </p>
+                  <div className="flex items-center gap-1">
+                     <select 
+                       value={endDate.getHours()} 
+                       onChange={(e) => handleTimeChange('end', 'hour', parseInt(e.target.value))}
+                       className="flex-1 h-7 text-[10px] font-black font-mono-tech bg-white border border-slate-200 px-1 outline-none focus:border-indigo-500"
+                     >
+                       {Array.from({length: 24}, (_, i) => <option key={i} value={i}>{String(i).padStart(2, '0')}</option>)}
+                     </select>
+                     <span className="text-[10px] font-bold text-slate-300">:</span>
+                     <select 
+                       value={endDate.getMinutes()} 
+                       onChange={(e) => handleTimeChange('end', 'minute', parseInt(e.target.value))}
+                       className="flex-1 h-7 text-[10px] font-black font-mono-tech bg-white border border-slate-200 px-1 outline-none focus:border-indigo-500"
+                     >
+                       {Array.from({length: 60}, (_, i) => <option key={i} value={i}>{String(i).padStart(2, '0')}</option>)}
+                     </select>
+                  </div>
+               </div>
             </div>
+
+            <button 
+              onClick={applyChanges}
+              className="w-full h-9 bg-indigo-600 text-white text-[9px] font-black uppercase tracking-widest hover:bg-slate-900 transition-all flex items-center justify-center gap-2 shadow-lg"
+            >
+              <Check size={14} /> Aplicar Período
+            </button>
           </div>
-          
-          <div className="fixed inset-0 z-[-1]" onClick={() => setIsOpen(false)}></div>
         </div>,
         document.body
       )}
     </div>
   );
 };
-
-const ChevronDownIcon = ({ size, className }: { size: number, className: string }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d="m6 9 6 6 6-6"/>
-  </svg>
-);
