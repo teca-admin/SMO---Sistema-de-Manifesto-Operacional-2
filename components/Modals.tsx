@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { Manifesto, Funcionario, OperationalLog } from '../types';
 import { CustomDateTimePicker } from './CustomDateTimePicker';
@@ -274,8 +275,13 @@ export const HistoryModal: React.FC<{ data: Manifesto, onClose: () => void }> = 
         </div>
         
         <div className="flex-1 overflow-y-auto p-8 space-y-12 custom-scrollbar">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-             {[{label: 'CIA Aérea', val: data.cia}, {label: 'Turno', val: data.turno}, {label: 'Operador Atribuído', val: data.usuarioResponsavel || '---'}].map((item, i) => (
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+             {[
+               {label: 'CIA Aérea', val: data.cia}, 
+               {label: 'Turno', val: data.turno}, 
+               {label: 'Cadastrado por', val: data.usuario},
+               {label: 'Operador Atribuído', val: data.usuarioResponsavel || '---'}
+             ].map((item, i) => (
                <div key={i} className="p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg">
                   <p className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase mb-1">{item.label}</p>
                   <p className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase">{item.val}</p>

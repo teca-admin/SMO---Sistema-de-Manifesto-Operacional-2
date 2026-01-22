@@ -18,12 +18,15 @@ import {
   PieChart,
   X,
   Timer,
-  ShieldCheck
+  ShieldCheck,
+  Search,
+  FileSearch
 } from 'lucide-react';
 import { CustomDateRangePicker } from './CustomDateRangePicker';
 
 interface EfficiencyDashboardProps {
   manifestos: Manifesto[];
+  openHistory?: (id: string) => void;
 }
 
 interface ActiveFilters {
@@ -36,7 +39,7 @@ interface ActiveFilters {
   onlyViolations: boolean;
 }
 
-export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manifestos }) => {
+export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manifestos, openHistory }) => {
   const [dateRange, setDateRange] = useState({
     start: new Date(new Date().setHours(0, 0, 0, 0)).toISOString(),
     end: new Date(new Date().setHours(23, 59, 59, 999)).toISOString()
@@ -483,21 +486,29 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
               const violation = getViolationReason(m);
               const isActive = activeFilters.manifestoId === m.id;
               return (
-                <button 
-                  key={m.id} 
-                  onClick={() => toggleFilter('manifestoId', m.id)}
-                  className={`w-full flex items-center justify-between py-1.5 px-2 border-l-2 transition-all ${
-                    isActive ? 'bg-slate-900 dark:bg-indigo-600 text-white border-indigo-500' : 
-                    violation ? 'bg-red-50 dark:bg-red-900/10 text-red-900 dark:text-red-300 border-red-500 hover:bg-red-100 dark:hover:bg-red-900/20' : 
-                    'bg-slate-50/50 dark:bg-slate-900/30 text-slate-700 dark:text-slate-400 border-slate-200 dark:border-slate-700'
-                  }`}
-                >
-                  <div className="flex flex-col items-start overflow-hidden">
-                    <span className="text-[10px] font-black uppercase font-mono-tech truncate">{m.id}</span>
-                    {violation && <span className="text-[8px] font-bold uppercase text-red-500">{violation}</span>}
-                  </div>
-                  <ChevronRight size={14} className="text-slate-300" />
-                </button>
+                <div key={m.id} className="flex gap-1 items-stretch group">
+                  <button 
+                    onClick={() => toggleFilter('manifestoId', m.id)}
+                    className={`flex-1 flex items-center justify-between py-1.5 px-2 border-l-2 transition-all ${
+                      isActive ? 'bg-slate-900 dark:bg-indigo-600 text-white border-indigo-500' : 
+                      violation ? 'bg-red-50 dark:bg-red-900/10 text-red-900 dark:text-red-300 border-red-500 hover:bg-red-100 dark:hover:bg-red-900/20' : 
+                      'bg-slate-50/50 dark:bg-slate-900/30 text-slate-700 dark:text-slate-400 border-slate-200 dark:border-slate-700'
+                    }`}
+                  >
+                    <div className="flex flex-col items-start overflow-hidden">
+                      <span className="text-[10px] font-black uppercase font-mono-tech truncate">{m.id}</span>
+                      {violation && <span className="text-[8px] font-bold uppercase text-red-500">{violation}</span>}
+                    </div>
+                    <ChevronRight size={14} className="text-slate-300" />
+                  </button>
+                  <button 
+                    title="Dossiê Completo"
+                    onClick={() => openHistory && openHistory(m.id)}
+                    className="w-10 flex items-center justify-center bg-slate-100 dark:bg-slate-900 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 text-slate-400 transition-all border border-slate-200 dark:border-slate-700"
+                  >
+                    <FileSearch size={14} />
+                  </button>
+                </div>
               );
             })}
           </div>

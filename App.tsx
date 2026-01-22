@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Dashboard } from './components/Dashboard';
 import { OperationalDashboard } from './components/OperationalDashboard';
@@ -338,7 +339,7 @@ function App() {
           ) : activeTab === 'fluxo' ? (
             <KanbanBoard manifestos={manifestos} />
           ) : (
-            <EfficiencyDashboard manifestos={manifestos} />
+            <EfficiencyDashboard manifestos={manifestos} openHistory={setViewingHistoryId} />
           )}
         </div>
       </main>
