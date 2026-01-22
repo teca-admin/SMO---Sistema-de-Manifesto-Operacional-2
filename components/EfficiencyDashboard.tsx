@@ -236,6 +236,33 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
     return Object.entries(hours).map(([h, counts]) => ({ hour: parseInt(h), ...counts }));
   }, [filteredManifestos]);
 
+  // Cálculo de Médias e Quartis Operacionais
+  const flowStats = useMemo(() => {
+    const activeCounts = hourlyStats
+      .filter(h => h.received > 0)
+      .map(h => h.received)
+      .sort((a, b) => a - b);
+
+    // Fixed: replaced undefined 'activeHours' with 'activeCounts'
+    if (activeCounts.length === 0) return { avg: 0, q3: 0 };
+    
+    // Média
+    const total = activeCounts.reduce((acc, curr) => acc + curr, 0);
+    const avg = total / activeCounts.length;
+
+    // 3º Quartil (75%)
+    let q3 = 0;
+    if (activeCounts.length > 0) {
+      const index = 0.75 * (activeCounts.length - 1);
+      const lower = Math.floor(index);
+      const upper = Math.ceil(index);
+      const weight = index - lower;
+      q3 = activeCounts[lower] * (1 - weight) + activeCounts[upper] * weight;
+    }
+
+    return { avg, q3 };
+  }, [hourlyStats]);
+
   const maxHourlyCount = Math.max(...hourlyStats.map(h => h.received), 10) + 2;
 
   const formatMinutes = (min: number) => {
@@ -243,7 +270,7 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
     if (min < 60) return `${Math.round(min)}m`;
     const h = Math.floor(min / 60);
     const m = Math.round(min % 60);
-    return `${h}h ${m}m`;
+    return `${h} h ${m} m`;
   };
 
   // Componente Gráfico Donut (SVG) Reutilizável
@@ -576,8 +603,28 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
                </div>
             </div>
 
-            {/* Barras */}
+            {/* Barras e Linhas de Indicadores (Média e Q3) */}
             <div className="flex-1 flex items-end gap-1 relative z-10">
+              {/* Linha do 3º Quartil (75%) */}
+              <div 
+                className="absolute left-0 right-0 border-t-2 border-dashed border-indigo-500 z-30 transition-all duration-500 flex items-center"
+                style={{ bottom: `${(flowStats.q3 / maxHourlyCount) * 100}%` }}
+              >
+                <div className="absolute right-0 translate-x-1/2 bg-indigo-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap">
+                  75% (Q3): {flowStats.q3.toFixed(1)}
+                </div>
+              </div>
+
+              {/* Linha de Média Operacional */}
+              <div 
+                className="absolute left-0 right-0 border-t-2 border-dashed border-amber-500 z-30 transition-all duration-500 flex items-center"
+                style={{ bottom: `${(flowStats.avg / maxHourlyCount) * 100}%` }}
+              >
+                <div className="absolute left-0 -translate-x-1/2 bg-amber-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap">
+                  MÉDIA: {flowStats.avg.toFixed(1)}
+                </div>
+              </div>
+
               {hourlyStats.map((h) => (
                 <div key={h.hour} className="flex-1 flex flex-col items-center h-full justify-end group">
                   <div className="flex items-end justify-center w-full h-full pb-1">
