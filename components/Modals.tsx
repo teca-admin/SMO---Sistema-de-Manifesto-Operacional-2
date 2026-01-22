@@ -280,7 +280,7 @@ export const HistoryModal: React.FC<{ data: Manifesto, onClose: () => void }> = 
                {label: 'CIA Aérea', val: data.cia}, 
                {label: 'Turno', val: data.turno}, 
                {label: 'Cadastrado por', val: data.usuario},
-               {label: 'Operador Atribuído', val: data.usuarioResponsavel || '---'}
+               {label: 'Manifesto puxado por', val: data.usuarioResponsavel || '---'}
              ].map((item, i) => (
                <div key={i} className="p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg">
                   <p className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase mb-1">{item.label}</p>
