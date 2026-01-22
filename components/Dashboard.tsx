@@ -170,10 +170,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const renderTable = (data: Manifesto[], isHistory: boolean = false) => {
-    const activeHeaders = ['ID Operacional', 'Status Atual', 'Companhia', 'Puxado', 'Receivado', 'Repr. CIA', 'Turno', 'Ação'];
-    const activeWidths = ['14%', '16%', '11%', '14%', '14%', '14%', '9%', '8%'];
-    const historyHeaders = ['ID Operacional', 'Status Atual', 'Companhia', 'Puxado', 'Recebido', 'Repr. CIA', 'Entregue', 'Turno', 'Ação'];
-    const historyWidths = ['12%', '14%', '9%', '12%', '12%', '12%', '12%', '9%', '8%'];
+    // Labels atualizados conforme solicitação do usuário
+    const activeHeaders = ['ID MANIFESTO', 'STATUS ATUAL', 'CIA', 'MANIFESTO PUXADO', 'MANIFESTO RECEBIDO', 'CIA', 'TURNO', 'AÇÃO'];
+    const activeWidths = ['12%', '14%', '8%', '16%', '18%', '8%', '12%', '12%'];
+    
+    const historyHeaders = ['ID MANIFESTO', 'STATUS ATUAL', 'CIA', 'MANIFESTO PUXADO', 'MANIFESTO RECEBIDO', 'CIA', 'ENTREGUE', 'TURNO', 'AÇÃO'];
+    const historyWidths = ['10%', '14%', '7%', '14%', '14%', '7%', '12%', '12%', '10%'];
+    
     const headers = isHistory ? historyHeaders : activeHeaders;
     const columnWidths = isHistory ? historyWidths : activeWidths;
 
@@ -184,7 +187,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <tr className={`${isHistory ? 'bg-slate-200 dark:bg-slate-900' : 'bg-slate-100/50 dark:bg-slate-900/50'} border-b border-slate-200 dark:border-slate-700`}>
               {headers.map((h, idx, arr) => (
                 <th 
-                  key={h} 
+                  key={`${h}-${idx}`} 
                   style={{ width: columnWidths[idx] }}
                   className={`${idx === arr.length - 1 ? 'text-right' : 'text-left'} py-3 px-5 text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider whitespace-nowrap overflow-hidden text-ellipsis`}
                 >
