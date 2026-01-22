@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, Check, ArrowRight, ChevronDown } from 'lucide-react';
@@ -22,11 +21,35 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({ st
   const [endDate, setEndDate] = useState<Date>(new Date(end));
   const [viewDate, setViewDate] = useState(new Date(start));
 
+  // Estados locais para inputs de texto de hora/minuto para permitir edição livre com validação
+  const [timeInputs, setTimeInputs] = useState({
+    startH: startDate.getHours().toString().padStart(2, '0'),
+    startM: startDate.getMinutes().toString().padStart(2, '0'),
+    endH: endDate.getHours().toString().padStart(2, '0'),
+    endM: endDate.getMinutes().toString().padStart(2, '0')
+  });
+
   const MODAL_WIDTH = 320;
 
   useEffect(() => {
-    if (start) setStartDate(new Date(start));
-    if (end) setEndDate(new Date(end));
+    if (start) {
+      const d = new Date(start);
+      setStartDate(d);
+      setTimeInputs(prev => ({ 
+        ...prev, 
+        startH: d.getHours().toString().padStart(2, '0'),
+        startM: d.getMinutes().toString().padStart(2, '0')
+      }));
+    }
+    if (end) {
+      const d = new Date(end);
+      setEndDate(d);
+      setTimeInputs(prev => ({ 
+        ...prev, 
+        endH: d.getHours().toString().padStart(2, '0'),
+        endM: d.getMinutes().toString().padStart(2, '0')
+      }));
+    }
   }, [start, end]);
 
   useEffect(() => {
@@ -99,6 +122,12 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({ st
     setStartDate(s);
     setEndDate(e);
     setViewDate(new Date(s));
+    setTimeInputs({
+      startH: s.getHours().toString().padStart(2, '0'),
+      startM: s.getMinutes().toString().padStart(2, '0'),
+      endH: e.getHours().toString().padStart(2, '0'),
+      endM: e.getMinutes().toString().padStart(2, '0')
+    });
     setActiveShortcut(type);
     setSelectionStep(1); 
   };
@@ -130,16 +159,43 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({ st
     }
   };
 
-  const handleTimeChange = (target: 'start' | 'end', type: 'hour' | 'minute', val: number) => {
-    setActiveShortcut(null);
-    if (target === 'start') {
+  const handleTimeInputChange = (field: keyof typeof timeInputs, val: string) => {
+    // Apenas números
+    const numeric = val.replace(/\D/g, '').slice(0, 2);
+    // Convert field to String to avoid TypeScript error about 'endsWith' on keyof
+    const isHour = String(field).endsWith('H');
+    const max = isHour ? 23 : 59;
+    
+    // Se o valor numérico for válido dentro do range, atualiza o estado visual
+    if (numeric === "" || parseInt(numeric, 10) <= max) {
+      setTimeInputs(prev => ({ ...prev, [field]: numeric }));
+    }
+  };
+
+  const handleTimeBlur = (field: keyof typeof timeInputs) => {
+    // Convert field to String to avoid TypeScript error about 'startsWith/endsWith' on keyof
+    const fieldStr = String(field);
+    const isStart = fieldStr.startsWith('start');
+    const isHour = fieldStr.endsWith('H');
+    const max = isHour ? 23 : 59;
+    let val = parseInt(timeInputs[field], 10);
+    
+    // Validação de fallback para vazio ou inválido
+    if (isNaN(val)) val = 0;
+    if (val > max) val = max;
+    
+    const formatted = val.toString().padStart(2, '0');
+    setTimeInputs(prev => ({ ...prev, [field]: formatted }));
+
+    // Atualiza os objetos Date reais
+    if (isStart) {
       const newDate = new Date(startDate);
-      if (type === 'hour') newDate.setHours(val);
+      if (isHour) newDate.setHours(val);
       else newDate.setMinutes(val);
       setStartDate(newDate);
     } else {
       const newDate = new Date(endDate);
-      if (type === 'hour') newDate.setHours(val);
+      if (isHour) newDate.setHours(val);
       else newDate.setMinutes(val);
       setEndDate(newDate);
     }
@@ -258,21 +314,23 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({ st
                     <Clock size={10} /> Início
                   </p>
                   <div className="flex items-center gap-1">
-                     <select 
-                       value={startDate.getHours()} 
-                       onChange={(e) => handleTimeChange('start', 'hour', parseInt(e.target.value))}
-                       className="flex-1 h-7 text-[10px] font-black font-mono-tech bg-white border border-slate-200 px-1 outline-none focus:border-indigo-500"
-                     >
-                       {Array.from({length: 24}, (_, i) => <option key={i} value={i}>{String(i).padStart(2, '0')}</option>)}
-                     </select>
+                     <input 
+                       type="text"
+                       value={timeInputs.startH} 
+                       onChange={(e) => handleTimeInputChange('startH', e.target.value)}
+                       onBlur={() => handleTimeBlur('startH')}
+                       placeholder="HH"
+                       className="flex-1 h-7 text-center text-[10px] font-black font-mono-tech bg-white border border-slate-200 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-100 transition-all"
+                     />
                      <span className="text-[10px] font-bold text-slate-300">:</span>
-                     <select 
-                       value={startDate.getMinutes()} 
-                       onChange={(e) => handleTimeChange('start', 'minute', parseInt(e.target.value))}
-                       className="flex-1 h-7 text-[10px] font-black font-mono-tech bg-white border border-slate-200 px-1 outline-none focus:border-indigo-500"
-                     >
-                       {Array.from({length: 60}, (_, i) => <option key={i} value={i}>{String(i).padStart(2, '0')}</option>)}
-                     </select>
+                     <input 
+                       type="text"
+                       value={timeInputs.startM} 
+                       onChange={(e) => handleTimeInputChange('startM', e.target.value)}
+                       onBlur={() => handleTimeBlur('startM')}
+                       placeholder="MM"
+                       className="flex-1 h-7 text-center text-[10px] font-black font-mono-tech bg-white border border-slate-200 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-100 transition-all"
+                     />
                   </div>
                </div>
 
@@ -282,21 +340,23 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({ st
                     <Clock size={10} /> Fim
                   </p>
                   <div className="flex items-center gap-1">
-                     <select 
-                       value={endDate.getHours()} 
-                       onChange={(e) => handleTimeChange('end', 'hour', parseInt(e.target.value))}
-                       className="flex-1 h-7 text-[10px] font-black font-mono-tech bg-white border border-slate-200 px-1 outline-none focus:border-indigo-500"
-                     >
-                       {Array.from({length: 24}, (_, i) => <option key={i} value={i}>{String(i).padStart(2, '0')}</option>)}
-                     </select>
+                     <input 
+                       type="text"
+                       value={timeInputs.endH} 
+                       onChange={(e) => handleTimeInputChange('endH', e.target.value)}
+                       onBlur={() => handleTimeBlur('endH')}
+                       placeholder="HH"
+                       className="flex-1 h-7 text-center text-[10px] font-black font-mono-tech bg-white border border-slate-200 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-100 transition-all"
+                     />
                      <span className="text-[10px] font-bold text-slate-300">:</span>
-                     <select 
-                       value={endDate.getMinutes()} 
-                       onChange={(e) => handleTimeChange('end', 'minute', parseInt(e.target.value))}
-                       className="flex-1 h-7 text-[10px] font-black font-mono-tech bg-white border border-slate-200 px-1 outline-none focus:border-indigo-500"
-                     >
-                       {Array.from({length: 60}, (_, i) => <option key={i} value={i}>{String(i).padStart(2, '0')}</option>)}
-                     </select>
+                     <input 
+                       type="text"
+                       value={timeInputs.endM} 
+                       onChange={(e) => handleTimeInputChange('endM', e.target.value)}
+                       onBlur={() => handleTimeBlur('endM')}
+                       placeholder="MM"
+                       className="flex-1 h-7 text-center text-[10px] font-black font-mono-tech bg-white border border-slate-200 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-100 transition-all"
+                     />
                   </div>
                </div>
             </div>
