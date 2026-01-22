@@ -93,10 +93,10 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
     const com = parseAnyDate(m.dataHoraCompleto);
     const ass = parseAnyDate(m.dataHoraRepresentanteCIA);
     
-    // Alerta Resposta: Recebido - Puxado > 10m
+    // Alerta Apresentação (CIA): Recebido - Puxado > 10m
     if (pux && rec) {
       const diff = (rec.getTime() - pux.getTime()) / 60000;
-      if (diff > 10) return 'RESP. > 10M';
+      if (diff > 10) return 'APRE. > 10M';
     }
     // Alerta Produção: Completo - Iniciado > 2h
     if (ini && com) {
@@ -195,7 +195,7 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
   }, [filteredManifestos]);
 
   const slaStats = useMemo(() => {
-    let tE = 0, cE = 0, maxE = 0, withinE = 0; // SLA Resposta
+    let tE = 0, cE = 0, maxE = 0, withinE = 0; // Apresentação (CIA)
     let tP = 0, cP = 0, maxP = 0, withinP = 0; // Disponível (WFS)
     let tA = 0, cA = 0, maxA = 0, withinA = 0; // Comparecimento (CIA)
     
@@ -206,7 +206,7 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
       const com = parseAnyDate(m.dataHoraCompleto);
       const ass = parseAnyDate(m.dataHoraRepresentanteCIA);
       
-      // SLA Resposta: Recebido - Puxado
+      // Apresentação (CIA): Recebido - Puxado
       if (pux && rec) { 
         const diff = (rec.getTime() - pux.getTime()) / 60000;
         tE += diff; cE++;
@@ -446,7 +446,7 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
           </div>
           <div className="flex-1 flex flex-col gap-2 p-3 overflow-hidden">
             {[
-              { label: 'SLA RESPOSTA', avg: slaStats.avgE, max: slaStats.maxE, target: '10m', pct: slaStats.pctE, color: 'blue' },
+              { label: 'APRESENTAÇÃO (CIA)', avg: slaStats.avgE, max: slaStats.maxE, target: '10m', pct: slaStats.pctE, color: 'blue' },
               { label: 'MANIFESTO DISPONÍVEL (WFS)', avg: slaStats.avgP, max: slaStats.maxP, target: '2h', pct: slaStats.pctP, color: 'amber' },
               { label: 'COMPARECIMENTO (CIA)', avg: slaStats.avgA, max: slaStats.maxA, target: '15m', pct: slaStats.pctA, color: 'emerald' }
             ].map((s, i) => (
