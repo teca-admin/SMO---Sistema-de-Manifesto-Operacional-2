@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Manifesto, User as UserType } from '../types';
@@ -246,11 +247,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <div className="w-full space-y-4">
             <div className="relative">
               <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              <input type="text" placeholder="USUÁRIO" value={loginId} onChange={(e) => setLoginId(e.target.value)} className="w-full h-14 pl-12 pr-4 bg-slate-50 dark:bg-slate-900/50 border-2 border-slate-200 dark:border-slate-700 text-xs font-black uppercase tracking-[0.1em] outline-none focus:border-indigo-600 dark:focus:border-indigo-500 dark:text-white focus:bg-white dark:focus:bg-slate-900 transition-all" />
+              <input type="text" placeholder="USUÁRIO" value={loginId} onChange={(e) => setLoginId(e.target.value)} className="w-full h-14 pl-12 pr-4 bg-slate-50 dark:bg-slate-900/50 border-2 border-slate-200 dark:border-slate-700 text-xs font-black tracking-[0.1em] outline-none focus:border-indigo-600 dark:focus:border-indigo-500 dark:text-white focus:bg-white dark:focus:bg-slate-900 transition-all" />
             </div>
             <div className="relative">
               <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              <input type="password" placeholder="SENHA" value={loginPass} onChange={(e) => setLoginPass(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleLogin()} className="w-full h-14 pl-12 pr-4 bg-slate-50 dark:bg-slate-900/50 border-2 border-slate-200 dark:border-slate-700 text-xs font-black uppercase tracking-[0.1em] outline-none focus:border-indigo-600 dark:focus:border-indigo-500 dark:text-white focus:bg-white dark:focus:bg-slate-900 transition-all" />
+              <input type="password" placeholder="SENHA" value={loginPass} onChange={(e) => setLoginPass(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleLogin()} className="w-full h-14 pl-12 pr-4 bg-slate-50 dark:bg-slate-900/50 border-2 border-slate-200 dark:border-slate-700 text-xs font-black tracking-[0.1em] outline-none focus:border-indigo-600 dark:focus:border-indigo-500 dark:text-white focus:bg-white dark:focus:bg-slate-900 transition-all" />
             </div>
             <button onClick={handleLogin} disabled={isLoggingIn} className="w-full h-14 bg-slate-900 dark:bg-indigo-600 hover:bg-indigo-700 text-white font-black text-[11px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 shadow-xl">{isLoggingIn ? <Loader2 className="animate-spin" size={18} /> : 'Acessar Terminal'}</button>
           </div>
