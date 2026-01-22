@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Check } from 'lucide-react';
@@ -19,7 +20,6 @@ export const CustomDateTimePicker: React.FC<CustomDateTimePickerProps> = ({
   const [viewDate, setViewDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  // Fixed double assignment in useState
   const [coords, setCoords] = useState({ top: 0, left: 0 });
 
   // Sincroniza valor externo (ISO string) com o input visual
@@ -50,22 +50,48 @@ export const CustomDateTimePicker: React.FC<CustomDateTimePickerProps> = ({
   const daysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
   const firstDayOfMonth = (year: number, month: number) => new Date(year, month, 1).getDay();
 
-  // Função para processar entrada manual
-  const handleManualInput = (val: string) => {
-    setInputValue(val);
+  // Função para processar entrada manual com máscara estrita
+  const handleManualInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let val = e.target.value.replace(/\D/g, ""); // Remove tudo que não for número
+    
+    // Limita a 12 dígitos (DDMMYYYYHHMM)
+    if (val.length > 12) val = val.slice(0, 12);
 
-    // Regex para validar formato DD/MM/AAAA HH:MM
-    const regex = /^(\d{2})\/(\d{2})\/(\d{4})\s(\d{2}):(\d{2})$/;
-    const match = val.match(regex);
+    let formatted = "";
+    if (val.length > 0) {
+      // Dia
+      formatted = val.substring(0, 2);
+      if (val.length > 2) {
+        // Mês
+        formatted += "/" + val.substring(2, 4);
+        if (val.length > 4) {
+          // Ano
+          formatted += "/" + val.substring(4, 8);
+          if (val.length > 8) {
+            // Hora
+            formatted += " " + val.substring(8, 10);
+            if (val.length > 10) {
+              // Minuto
+              formatted += ":" + val.substring(10, 12);
+            }
+          }
+        }
+      }
+    }
 
-    if (match) {
-      const [_, day, month, year, hour, minute] = match;
-      const parsedDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(minute));
-      
-      if (!isNaN(parsedDate.getTime())) {
-        setSelectedDate(parsedDate);
-        setViewDate(new Date(parsedDate.getFullYear(), parsedDate.getMonth(), 1));
-        onChange(parsedDate.toISOString());
+    setInputValue(formatted);
+
+    // Se estiver completo, tenta validar e disparar o onChange
+    if (formatted.length === 16) {
+      const parts = formatted.match(/^(\d{2})\/(\d{2})\/(\d{4})\s(\d{2}):(\d{2})$/);
+      if (parts) {
+        const [, d, m, y, h, min] = parts;
+        const dateObj = new Date(Number(y), Number(m) - 1, Number(d), Number(h), Number(min));
+        if (!isNaN(dateObj.getTime())) {
+          setSelectedDate(dateObj);
+          setViewDate(new Date(dateObj.getFullYear(), dateObj.getMonth(), 1));
+          onChange(dateObj.toISOString());
+        }
       }
     }
   };
@@ -77,7 +103,6 @@ export const CustomDateTimePicker: React.FC<CustomDateTimePickerProps> = ({
     newDate.setDate(day);
     setSelectedDate(newDate);
     onChange(newDate.toISOString());
-    // Removido o fechamento automático para permitir confirmação manual
   };
 
   const renderCalendar = () => {
@@ -121,11 +146,12 @@ export const CustomDateTimePicker: React.FC<CustomDateTimePickerProps> = ({
         <input 
           type="text"
           value={inputValue}
-          onChange={(e) => handleManualInput(e.target.value)}
+          onChange={handleManualInput}
           onFocus={() => !disabled && setIsOpen(true)}
           placeholder="DD/MM/AAAA HH:MM"
           disabled={disabled}
-          className={`w-full h-10 pl-3 pr-10 border-2 text-xs font-bold transition-all outline-none ${
+          maxLength={16}
+          className={`w-full h-10 pl-3 pr-10 border-2 text-xs font-bold font-mono-tech transition-all outline-none ${
             disabled 
               ? 'bg-slate-100 text-slate-400 border-slate-200' 
               : isOpen 
