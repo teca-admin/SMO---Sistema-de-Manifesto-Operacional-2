@@ -68,14 +68,6 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
     return '#6366f1';
   };
 
-  // Check if any filter is currently applied
-  const hasAnyFilter = activeFilters.cia !== null || 
-                       activeFilters.turno !== null || 
-                       activeFilters.usuario !== null || 
-                       activeFilters.status !== null || 
-                       activeFilters.manifestoId !== null || 
-                       activeFilters.onlyViolations;
-
   const parseAnyDate = (dateStr: string | undefined): Date | null => {
     if (!dateStr || dateStr === '---' || dateStr === '') return null;
     try {
@@ -111,10 +103,6 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
       ...prev,
       [type]: prev[type] === value ? (type === 'onlyViolations' ? false : null) : value
     }));
-  };
-
-  const clearAllFilters = () => {
-    setActiveFilters({ cia: null, turno: null, usuario: null, status: null, manifestoId: null, onlyViolations: false });
   };
 
   const filteredManifestos = useMemo(() => {
@@ -236,15 +224,16 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
     return Object.entries(hours).map(([h, counts]) => ({ hour: parseInt(h), ...counts }));
   }, [filteredManifestos]);
 
-  // Cálculo de Médias e Quartis Operacionais
+  // Cálculo de Médias, Pico e Quartis Operacionais
   const flowStats = useMemo(() => {
-    const activeCounts = hourlyStats
-      .filter(h => h.received > 0)
-      .map(h => h.received)
+    const rawCounts = hourlyStats.map(h => h.received);
+    const max = Math.max(...rawCounts);
+    
+    const activeCounts = rawCounts
+      .filter(v => v > 0)
       .sort((a, b) => a - b);
 
-    // Fixed: replaced undefined 'activeHours' with 'activeCounts'
-    if (activeCounts.length === 0) return { avg: 0, q3: 0 };
+    if (activeCounts.length === 0) return { avg: 0, q3: 0, max: 0 };
     
     // Média
     const total = activeCounts.reduce((acc, curr) => acc + curr, 0);
@@ -260,10 +249,10 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
       q3 = activeCounts[lower] * (1 - weight) + activeCounts[upper] * weight;
     }
 
-    return { avg, q3 };
+    return { avg, q3, max };
   }, [hourlyStats]);
 
-  const maxHourlyCount = Math.max(...hourlyStats.map(h => h.received), 10) + 2;
+  const maxHourlyCount = Math.max(flowStats.max, 10) + 2;
 
   const formatMinutes = (min: number) => {
     if (min <= 0) return "0m";
@@ -362,14 +351,8 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">{kpi.label}</p>
               <p className="text-2xl font-black text-slate-900 dark:text-white font-mono-tech leading-none">{kpi.val}</p>
             </div>
-            {activeFilters.status === kpi.filter && (
-              <div className="absolute top-1 right-1">
-                 <X size={10} className="text-slate-400" />
-              </div>
-            )}
           </button>
         ))}
-        {/* CONTAINER DO SELETOR DE DATA COM LARGURA FIXA DE 300PX */}
         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 panel-shadow p-3 flex items-center gap-2 w-full md:w-[300px] shrink-0">
           <div className="flex-1">
             <CustomDateRangePicker start={dateRange.start} end={dateRange.end} onChange={(s, e) => setDateRange({ start: s, end: e })} />
@@ -377,9 +360,8 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
         </div>
       </div>
 
-      {/* BLOCO CENTRAL: MONITORAMENTO OPERACIONAL (4 COLUNAS) */}
+      {/* BLOCO CENTRAL */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 flex-1 min-h-0">
-        
         {/* ATRIBUIÇÃO */}
         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 panel-shadow flex flex-col overflow-hidden">
           <div className="bg-slate-50 dark:bg-slate-900/50 px-3 py-2 border-b border-slate-200 dark:border-slate-700 shrink-0 flex items-center justify-between">
@@ -387,7 +369,7 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
               <Award size={14} className="text-indigo-600" /> Atribuição
             </h3>
             {activeFilters.usuario && (
-              <button onClick={(e) => { e.stopPropagation(); toggleFilter('usuario', activeFilters.usuario); }} className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors">
+              <button onClick={() => toggleFilter('usuario', activeFilters.usuario)} className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors">
                 <X size={14} className="text-red-500" />
               </button>
             )}
@@ -410,7 +392,7 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
           </div>
         </div>
 
-        {/* ALERTAS & CONFORMIDADE */}
+        {/* ALERTAS */}
         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 panel-shadow flex flex-col overflow-hidden">
           <div className={`px-3 py-2 border-b transition-all shrink-0 flex items-center justify-between ${activeFilters.onlyViolations ? 'bg-red-600 border-red-700' : 'bg-red-50 dark:bg-red-900/20 border-red-100 dark:border-red-900/50'}`}>
             <div onClick={() => toggleFilter('onlyViolations', true)} className="flex items-center gap-2 cursor-pointer flex-1">
@@ -418,9 +400,9 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
                 <AlertTriangle size={14} /> Alertas & Conformidade
               </h3>
             </div>
-            {(activeFilters.onlyViolations || activeFilters.manifestoId) && (
-              <button onClick={(e) => { e.stopPropagation(); if(activeFilters.onlyViolations) toggleFilter('onlyViolations', true); if(activeFilters.manifestoId) toggleFilter('manifestoId', activeFilters.manifestoId); }} className={`p-1 rounded transition-colors ${activeFilters.onlyViolations ? 'hover:bg-red-700' : 'hover:bg-slate-200 dark:hover:bg-slate-700'}`}>
-                <X size={14} className={activeFilters.onlyViolations ? "text-white" : "text-red-500"} />
+            {activeFilters.onlyViolations && (
+              <button onClick={() => toggleFilter('onlyViolations', true)} className="p-1 rounded transition-colors hover:bg-red-700">
+                <X size={14} className="text-white" />
               </button>
             )}
           </div>
@@ -449,65 +431,51 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
           </div>
         </div>
 
-        {/* VOLUME POR TURNO (GRÁFICO DE ROSCA) */}
+        {/* VOLUME POR TURNO */}
         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 panel-shadow flex flex-col overflow-hidden">
           <div className="bg-slate-50 dark:bg-slate-900/50 px-3 py-2 border-b border-slate-200 dark:border-slate-700 shrink-0 flex items-center justify-between">
             <h3 className="text-[10px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest flex items-center gap-2">
               <PieChart size={14} className="text-indigo-600" /> Volume por Turno
             </h3>
             {activeFilters.turno && (
-              <button onClick={(e) => { e.stopPropagation(); toggleFilter('turno', activeFilters.turno); }} className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors">
+              <button onClick={() => toggleFilter('turno', activeFilters.turno)} className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors">
                 <X size={14} className="text-red-500" />
               </button>
             )}
           </div>
           <div className="flex-1 flex flex-col items-center justify-center p-4">
-            <div className="flex-1 w-full max-h-[160px]">
-              <DonutChart 
-                data={turnStats} 
-                colorMapper={getTurnColor} 
-                filterType="turno" 
-                total={turnStats.reduce((acc, curr) => acc + curr.count, 0)} 
-              />
-            </div>
+            <DonutChart data={turnStats} colorMapper={getTurnColor} filterType="turno" total={turnStats.reduce((acc, curr) => acc + curr.count, 0)} />
             <div className="flex flex-col gap-1 w-full mt-4">
-              {turnStats.map((item, i) => {
-                const isFiltered = activeFilters.turno === item.label;
-                return (
-                  <div key={i} onClick={() => toggleFilter('turno', item.label)} className={`flex items-center justify-between cursor-pointer p-1.5 rounded transition-colors ${isFiltered ? 'bg-indigo-50 dark:bg-indigo-900/40 ring-1 ring-indigo-200' : 'hover:bg-slate-50 dark:hover:bg-slate-900/50'}`}>
-                    <div className="flex items-center gap-2 overflow-hidden">
-                      <div className={`w-2 h-2 rounded-full shrink-0`} style={{ backgroundColor: getTurnColor(item.label) }}></div>
-                      <span className={`text-[8px] font-black uppercase truncate ${isFiltered ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400'}`}>{item.label}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-black font-mono-tech text-slate-900 dark:text-slate-100">{item.count}</span>
-                      <span className="text-[9px] font-black font-mono-tech text-indigo-500 dark:text-indigo-400">{item.pct.toFixed(1)}%</span>
-                    </div>
+              {turnStats.map((item, i) => (
+                <div key={i} onClick={() => toggleFilter('turno', item.label)} className="flex items-center justify-between cursor-pointer p-1.5 rounded hover:bg-slate-50 dark:hover:bg-slate-900/50">
+                  <div className="flex items-center gap-2 overflow-hidden">
+                    <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: getTurnColor(item.label) }}></div>
+                    <span className="text-[8px] font-black uppercase truncate text-slate-400">{item.label}</span>
                   </div>
-                );
-              })}
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-black font-mono-tech text-slate-900 dark:text-slate-100">{item.count}</span>
+                    <span className="text-[9px] font-black font-mono-tech text-indigo-500 dark:text-indigo-400">{item.pct.toFixed(1)}%</span>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
 
-        {/* INDICADORES DE PERFORMANCE SLA */}
+        {/* PERFORMANCE SLA */}
         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 panel-shadow flex flex-col overflow-hidden">
           <div className="bg-slate-50 dark:bg-slate-900/50 px-3 py-2 border-b border-slate-200 dark:border-slate-700 shrink-0">
             <h3 className="text-[10px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest flex items-center gap-2">
               <Target size={14} className="text-slate-600" /> Indicadores Performance SLA
             </h3>
           </div>
-          
           <div className="flex-1 flex flex-col gap-2 p-3 overflow-hidden">
             {[
-              { label: 'SLA RESPOSTA (INICIAR)', avg: slaStats.avgE, max: slaStats.maxE, target: '---', pct: 100, color: 'blue' },
-              { label: 'SLA PRODUÇÃO (PUXE)', avg: slaStats.avgP, max: slaStats.maxP, target: '2h', pct: slaStats.pctP, color: 'amber' },
-              { label: 'SLA CONFORMIDADE (ASSINATURA)', avg: slaStats.avgA, max: slaStats.maxA, target: '15m', pct: slaStats.pctA, color: 'emerald' }
+              { label: 'SLA RESPOSTA', avg: slaStats.avgE, max: slaStats.maxE, target: '---', pct: 100, color: 'blue' },
+              { label: 'SLA PRODUÇÃO', avg: slaStats.avgP, max: slaStats.maxP, target: '2h', pct: slaStats.pctP, color: 'amber' },
+              { label: 'SLA CONFORMIDADE', avg: slaStats.avgA, max: slaStats.maxA, target: '15m', pct: slaStats.pctA, color: 'emerald' }
             ].map((s, i) => (
-              <div 
-                key={i} 
-                className={`flex-1 flex flex-col justify-center p-2 border-l-4 border-${s.color}-600 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-700 shadow-sm transition-all min-h-0`}
-              >
+              <div key={i} className={`flex-1 flex flex-col justify-center p-2 border-l-4 border-${s.color}-600 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-700 shadow-sm min-h-0`}>
                 <p className="text-[8px] font-black text-slate-500 dark:text-slate-400 uppercase leading-none mb-2">{s.label}</p>
                 <div className="grid grid-cols-4 gap-1">
                   <div className="text-center">
@@ -524,9 +492,7 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
                   </div>
                   <div className="text-center">
                     <p className="text-[7px] font-black text-slate-300 uppercase leading-none mb-1">SLA</p>
-                    <p className={`text-[11px] font-black font-mono-tech ${s.target === '---' ? 'text-slate-300' : s.pct >= 95 ? 'text-emerald-600' : 'text-amber-500'}`}>
-                      {s.target === '---' ? '---' : `${Math.round(s.pct)}%`}
-                    </p>
+                    <p className={`text-[11px] font-black font-mono-tech ${s.target === '---' ? 'text-slate-300' : s.pct >= 95 ? 'text-emerald-600' : 'text-amber-500'}`}>{s.target === '---' ? '---' : `${Math.round(s.pct)}%`}</p>
                   </div>
                 </div>
               </div>
@@ -535,57 +501,42 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
         </div>
       </div>
 
-      {/* BLOCO INFERIOR: CIA & FLUXO HORA A HORA */}
+      {/* BLOCO INFERIOR */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 h-[40%] shrink-0">
-        
-        {/* CIA */}
+        {/* MARKET SHARE */}
         <div className="lg:col-span-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 panel-shadow flex flex-col overflow-hidden">
           <div className="bg-slate-50 dark:bg-slate-900/50 px-3 py-2 border-b border-slate-200 dark:border-slate-700 shrink-0 flex items-center justify-between">
             <h3 className="text-[10px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest flex items-center gap-2">
               <BarChart3 size={14} className="text-slate-500" /> Market Share por CIA
             </h3>
             {activeFilters.cia && (
-              <button onClick={(e) => { e.stopPropagation(); toggleFilter('cia', activeFilters.cia); }} className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors">
+              <button onClick={() => toggleFilter('cia', activeFilters.cia)} className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors">
                 <X size={14} className="text-red-500" />
               </button>
             )}
           </div>
-          
           <div className="flex-1 flex flex-col gap-1 p-3 overflow-hidden">
-            {ciaStats.map((item, i) => {
-              const isFiltered = activeFilters.cia?.toUpperCase() === item.label.toUpperCase();
-              return (
-                <div 
-                  key={i} 
-                  onClick={() => toggleFilter('cia', item.label)} 
-                  className={`flex-1 flex flex-col justify-center cursor-pointer group px-2 rounded transition-all min-h-0 ${isFiltered ? 'bg-indigo-50 dark:bg-indigo-900/20 ring-1 ring-indigo-200' : 'hover:bg-slate-50 dark:hover:bg-slate-900/20'}`}
-                >
-                  <div className="flex justify-between items-end mb-1">
-                    <div className="flex items-center gap-1.5 overflow-hidden">
-                      <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: getCiaColor(item.label) }}></div>
-                      <span className={`text-[8px] font-black uppercase truncate transition-colors ${isFiltered ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white'}`}>{item.label}</span>
-                    </div>
-                    <div className="flex items-baseline gap-2 shrink-0">
-                      <span className={`text-[12px] font-black font-mono-tech ${isFiltered ? 'text-indigo-700 dark:text-indigo-300' : 'text-slate-900 dark:text-white'}`}>{item.count}</span>
-                      <span className="text-[9px] font-black text-indigo-500/60 font-mono-tech">{item.pct.toFixed(1)}%</span>
-                    </div>
+            {ciaStats.map((item, i) => (
+              <div key={i} onClick={() => toggleFilter('cia', item.label)} className="flex-1 flex flex-col justify-center cursor-pointer group px-2 rounded hover:bg-slate-50 dark:hover:bg-slate-900/20">
+                <div className="flex justify-between items-end mb-1">
+                  <div className="flex items-center gap-1.5 overflow-hidden">
+                    <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: getCiaColor(item.label) }}></div>
+                    <span className="text-[8px] font-black uppercase truncate text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white">{item.label}</span>
                   </div>
-                  <div className="h-2 bg-slate-100 dark:bg-slate-900 rounded-sm overflow-hidden flex items-center px-0.5">
-                    <div 
-                      className="h-1 rounded-xs transition-all duration-500 shadow-sm" 
-                      style={{ 
-                        width: `${item.pct}%`, 
-                        backgroundColor: getCiaColor(item.label) 
-                      }}
-                    ></div>
+                  <div className="flex items-baseline gap-2 shrink-0">
+                    <span className="text-[12px] font-black font-mono-tech text-slate-900 dark:text-slate-100">{item.count}</span>
+                    <span className="text-[9px] font-black text-indigo-500/60 font-mono-tech">{item.pct.toFixed(1)}%</span>
                   </div>
                 </div>
-              );
-            })}
+                <div className="h-2 bg-slate-100 dark:bg-slate-900 rounded-sm overflow-hidden flex items-center px-0.5">
+                  <div className="h-1 rounded-xs transition-all duration-500 shadow-sm" style={{ width: `${item.pct}%`, backgroundColor: getCiaColor(item.label) }}></div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* FLUXO DE RECEBIMENTO HORA A HORA */}
+        {/* FLUXO HORA A HORA */}
         <div className="lg:col-span-9 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 panel-shadow flex flex-col overflow-hidden">
           <div className="bg-slate-900 dark:bg-slate-950 px-5 py-2.5 flex items-center justify-between shrink-0">
             <h3 className="text-[10px] font-black text-white uppercase tracking-[0.2em] flex items-center gap-2">
@@ -593,9 +544,7 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
             </h3>
             <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">WFS MONITORING CENTER</span>
           </div>
-          
           <div className="flex-1 flex flex-col p-4 px-12 relative overflow-hidden">
-            {/* Eixos Guia */}
             <div className="absolute inset-x-12 bottom-12 top-6 pointer-events-none">
                <div className="absolute inset-0 flex flex-col justify-between">
                   {[...Array(5)].map((_, i) => <div key={i} className="w-full border-t border-dashed border-slate-100 dark:border-slate-700/50"></div>)}
@@ -603,23 +552,23 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
                </div>
             </div>
 
-            {/* Barras e Linhas de Indicadores (Média e Q3) */}
             <div className="flex-1 flex items-end gap-1 relative z-10">
+              {/* Linha de Pico (Máxima) */}
+              <div className="absolute left-0 right-0 border-t-2 border-dashed border-red-500 z-40 transition-all duration-500 flex items-center" style={{ bottom: `${(flowStats.max / maxHourlyCount) * 100}%` }}>
+                <div className="absolute left-1/2 -translate-x-1/2 -translate-y-full mb-1 bg-red-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap">
+                  PICO (MÁX): {flowStats.max}
+                </div>
+              </div>
+
               {/* Linha do 3º Quartil (75%) */}
-              <div 
-                className="absolute left-0 right-0 border-t-2 border-dashed border-indigo-500 z-30 transition-all duration-500 flex items-center"
-                style={{ bottom: `${(flowStats.q3 / maxHourlyCount) * 100}%` }}
-              >
+              <div className="absolute left-0 right-0 border-t-2 border-dashed border-indigo-500 z-30 transition-all duration-500 flex items-center" style={{ bottom: `${(flowStats.q3 / maxHourlyCount) * 100}%` }}>
                 <div className="absolute right-0 translate-x-1/2 bg-indigo-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap">
                   75% (Q3): {flowStats.q3.toFixed(1)}
                 </div>
               </div>
 
               {/* Linha de Média Operacional */}
-              <div 
-                className="absolute left-0 right-0 border-t-2 border-dashed border-amber-500 z-30 transition-all duration-500 flex items-center"
-                style={{ bottom: `${(flowStats.avg / maxHourlyCount) * 100}%` }}
-              >
+              <div className="absolute left-0 right-0 border-t-2 border-dashed border-amber-500 z-30 transition-all duration-500 flex items-center" style={{ bottom: `${(flowStats.avg / maxHourlyCount) * 100}%` }}>
                 <div className="absolute left-0 -translate-x-1/2 bg-amber-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap">
                   MÉDIA: {flowStats.avg.toFixed(1)}
                 </div>
@@ -628,33 +577,22 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
               {hourlyStats.map((h) => (
                 <div key={h.hour} className="flex-1 flex flex-col items-center h-full justify-end group">
                   <div className="flex items-end justify-center w-full h-full pb-1">
-                     <div 
-                       className="w-full max-w-[36px] bg-gradient-to-t from-indigo-700 to-indigo-500 dark:from-indigo-600 dark:to-indigo-400 group-hover:scale-y-105 transition-all rounded-t-sm relative shadow-sm"
-                       style={{ height: h.received > 0 ? `${(h.received / maxHourlyCount) * 100}%` : '2px' }}
-                     >
-                        {h.received > 0 && (
-                          <div className="absolute -top-6 left-0 right-0 text-center text-[10px] font-black text-indigo-700 dark:text-indigo-300 bg-white/90 dark:bg-slate-900/90 rounded border border-indigo-100 dark:border-indigo-900 shadow-sm z-20">
-                            {h.received}
-                          </div>
-                        )}
+                     <div className="w-full max-w-[36px] bg-gradient-to-t from-indigo-700 to-indigo-500 dark:from-indigo-600 dark:to-indigo-400 group-hover:scale-y-105 transition-all rounded-t-sm relative shadow-sm" style={{ height: h.received > 0 ? `${(h.received / maxHourlyCount) * 100}%` : '2px' }}>
+                        {h.received > 0 && <div className="absolute -top-6 left-0 right-0 text-center text-[10px] font-black text-indigo-700 dark:text-indigo-300 bg-white/90 dark:bg-slate-900/90 rounded border border-indigo-100 dark:border-indigo-900 shadow-sm z-20">{h.received}</div>}
                      </div>
                   </div>
                 </div>
               ))}
             </div>
 
-            {/* Legenda Horária */}
             <div className="h-8 mt-2 flex items-center border-t border-slate-900 dark:border-slate-700 pt-2 relative z-20">
               {hourlyStats.map((h) => (
                 <div key={h.hour} className="flex-1 text-center">
-                  <span className={`text-[9px] font-black font-mono-tech tracking-tighter ${h.received > 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-600'}`}>
-                    {String(h.hour).padStart(2, '0')}
-                  </span>
+                  <span className={`text-[9px] font-black font-mono-tech tracking-tighter ${h.received > 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-600'}`}>{String(h.hour).padStart(2, '0')}</span>
                 </div>
               ))}
             </div>
           </div>
-
           <div className="p-2.5 bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0">
             <div className="flex items-center gap-2">
               <Info size={12} className="text-indigo-500" />
