@@ -163,18 +163,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
       case 'Manifesto Recebido': return 'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800/50';
       case 'Manifesto Iniciado': return 'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800/50';
       case 'Manifesto Finalizado': return 'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800/50';
-      case 'Manifesto Entregue': return 'bg-slate-100 text-slate-500 border-slate-200 opacity-75 dark:bg-slate-700/50 dark:text-slate-400 dark:border-slate-600/50';
+      case 'Manifesto Entregue': return 'bg-emerald-600 text-white border-emerald-700 dark:bg-emerald-600 dark:text-white dark:border-emerald-500';
       case 'Manifesto Cancelado': return 'bg-red-50 text-red-600 border-red-200 opacity-75 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800/50';
       default: return 'bg-indigo-50 text-indigo-600 border-indigo-200 dark:bg-indigo-900/20 dark:text-indigo-400 dark:border-indigo-800/50';
     }
   };
 
   const renderTable = (data: Manifesto[], isHistory: boolean = false) => {
-    const activeHeaders = ['ID MANIFESTO', 'STATUS ATUAL', 'CIA', 'MANIFESTO PUXADO', 'MANIFESTO RECEBIDO', 'CIA', 'TURNO', 'AÇÃO'];
-    const activeWidths = ['12%', '14%', '8%', '16%', '18%', '8%', '12%', '12%'];
+    const activeHeaders = ['ID MANIFESTO', 'STATUS', 'CIA', 'PUXADO', 'RECEBIDO', 'REPR. CIA', 'TURNO', 'AÇÃO'];
+    const activeWidths = ['12%', '14%', '7%', '16%', '16%', '16%', '10%', '9%'];
     
-    const historyHeaders = ['ID MANIFESTO', 'STATUS ATUAL', 'CIA', 'MANIFESTO PUXADO', 'MANIFESTO RECEBIDO', 'CIA', 'ENTREGUE', 'TURNO', 'AÇÃO'];
-    const historyWidths = ['10%', '14%', '7%', '14%', '14%', '7%', '12%', '12%', '10%'];
+    const historyHeaders = ['ID MANIFESTO', 'STATUS', 'CIA', 'PUXADO', 'RECEBIDO', 'REPR. CIA', 'ENTREGUE', 'TURNO', 'AÇÃO'];
+    const historyWidths = ['10%', '11%', '6%', '13%', '13%', '13%', '13%', '11%', '10%'];
     
     const headers = isHistory ? historyHeaders : activeHeaders;
     const columnWidths = isHistory ? historyWidths : activeWidths;
@@ -208,17 +208,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 const hasReprDate = m.dataHoraRepresentanteCIA && m.dataHoraRepresentanteCIA !== '---' && m.dataHoraRepresentanteCIA !== '';
                 return (
                   <tr key={m.id} className={`group hover:bg-indigo-50/40 dark:hover:bg-indigo-900/10 transition-colors ${isHistory ? 'opacity-70 grayscale-[0.2]' : ''}`}>
-                    <td className="py-3 px-5 text-xs font-bold text-slate-900 dark:text-slate-100 font-mono-tech tracking-tighter whitespace-nowrap overflow-hidden text-ellipsis">{m.id}</td>
+                    <td className="py-3 px-5 text-xs font-bold text-slate-950 dark:text-slate-100 font-mono-tech tracking-tighter whitespace-nowrap overflow-hidden text-ellipsis">{m.id}</td>
                     <td className="py-3 px-5 whitespace-nowrap overflow-hidden">
                       <span className={`px-2.5 py-1 border text-[9px] font-black uppercase tracking-tight inline-block ${getStatusClass(m.status)}`}>
                         {m.status}
                       </span>
                     </td>
                     <td className="py-3 px-5 text-[10px] font-black text-slate-950 dark:text-slate-100 uppercase tracking-tighter whitespace-nowrap overflow-hidden text-ellipsis">{m.cia}</td>
-                    <td className="py-3 px-5 text-[10px] font-bold text-slate-900 dark:text-slate-200 font-mono-tech tracking-tight whitespace-nowrap overflow-hidden text-ellipsis">{formatDisplayDate(m.dataHoraPuxado)}</td>
-                    <td className="py-3 px-5 text-[10px] font-bold text-slate-900 dark:text-slate-200 font-mono-tech tracking-tight whitespace-nowrap overflow-hidden text-ellipsis">{formatDisplayDate(m.dataHoraRecebido)}</td>
+                    <td className="py-3 px-5 text-[10px] font-bold text-slate-950 dark:text-slate-200 font-mono-tech tracking-tight whitespace-nowrap overflow-hidden text-ellipsis">{formatDisplayDate(m.dataHoraPuxado)}</td>
+                    <td className="py-3 px-5 text-[10px] font-bold text-slate-950 dark:text-slate-200 font-mono-tech tracking-tight whitespace-nowrap overflow-hidden text-ellipsis">{formatDisplayDate(m.dataHoraRecebido)}</td>
                     <td onClick={() => !isHistory && canFillRepr && onOpenReprFill(m.id)} className={`py-3 px-5 transition-all overflow-hidden text-ellipsis ${!isHistory && canFillRepr ? 'cursor-pointer hover:bg-indigo-100/60 dark:hover:bg-indigo-900/30' : ''}`}>
-                      <div className={`flex items-center gap-1.5 text-[10px] font-mono-tech tracking-tight whitespace-nowrap ${!isHistory && canFillRepr ? 'text-indigo-600 dark:text-indigo-400 font-black' : 'text-slate-900 dark:text-slate-200 font-bold'}`}>
+                      <div className={`flex items-center gap-1.5 text-[10px] font-mono-tech tracking-tight whitespace-nowrap ${!isHistory && canFillRepr ? 'text-indigo-600 dark:text-indigo-400 font-black' : 'text-slate-950 dark:text-slate-200 font-bold'}`}>
                         {formatDisplayDate(m.dataHoraRepresentanteCIA)}
                         {!isHistory && canFillRepr && !hasReprDate && <Edit size={10} className="text-indigo-400 animate-pulse" />}
                       </div>
@@ -226,7 +226,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     {isHistory && (
                       <td className="py-3 px-5 text-[10px] font-bold font-mono-tech tracking-tight whitespace-nowrap overflow-hidden text-ellipsis text-emerald-600 dark:text-emerald-400">{formatDisplayDate(m.dataHoraEntregue)}</td>
                     )}
-                    <td className="py-3 px-5 text-[10px] font-bold text-slate-900 dark:text-slate-200 uppercase whitespace-nowrap overflow-hidden text-ellipsis">{m.turno}</td>
+                    <td className="py-3 px-5 text-[10px] font-bold text-slate-950 dark:text-slate-200 uppercase whitespace-nowrap overflow-hidden text-ellipsis">{m.turno}</td>
                     <td className="py-3 px-5 text-right">
                       <button onClick={(e) => handleOpenMenu(e, m.id)} className="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition-all border border-transparent hover:border-indigo-200 dark:hover:border-indigo-800">
                         <History size={16} />
@@ -306,7 +306,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
       <div className="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 panel-shadow">
         <div className="bg-slate-50 dark:bg-slate-900/50 px-5 py-2.5 border-b-2 border-slate-200 dark:border-slate-700 flex items-center justify-between">
-          <h3 className="text-[10px] font-black text-slate-900 dark:text-slate-100 uppercase tracking-[0.2em] flex items-center gap-2">
+          <h3 className="text-[10px] font-black text-slate-950 dark:text-slate-100 uppercase tracking-[0.2em] flex items-center gap-2">
             <span className="flex items-center justify-center w-5 h-5 bg-indigo-600 text-white rounded-sm"><Plus size={12} /></span>
             Registro de Novo Manifesto
           </h3>
@@ -315,15 +315,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
         <div className="p-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
             <div className="space-y-1.5">
-              <label className="text-[9px] font-black text-slate-900 dark:text-slate-300 uppercase tracking-tighter">Companhia Aérea</label>
+              <label className="text-[9px] font-black text-slate-950 dark:text-slate-300 uppercase tracking-tighter">Companhia Aérea</label>
               <CustomSelect value={formData.cia} onChange={v => setFormData({...formData, cia: v})} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-[9px] font-black text-slate-900 dark:text-slate-300 uppercase tracking-tighter">Manifesto Puxado</label>
+              <label className="text-[9px] font-black text-slate-950 dark:text-slate-300 uppercase tracking-tighter">Manifesto Puxado</label>
               <CustomDateTimePicker value={formData.dataHoraPuxado} onChange={v => setFormData({...formData, dataHoraPuxado: v})} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-[9px] font-black text-slate-900 dark:text-slate-300 uppercase tracking-tighter">Manifesto Recebido</label>
+              <label className="text-[9px] font-black text-slate-950 dark:text-slate-300 uppercase tracking-tighter">Manifesto Recebido</label>
               <CustomDateTimePicker value={formData.dataHoraRecebido} onChange={v => setFormData({...formData, dataHoraRecebido: v})} />
             </div>
             <div>

@@ -20,7 +20,7 @@ export const OperationalDashboard: React.FC<OperationalDashboardProps> = ({ mani
   const availablePool = manifestos.filter(m => m.status === 'Manifesto Recebido' && !m.usuarioResponsavel);
   const myActiveLoads = manifestos.filter(m => 
     m.usuarioResponsavel === activeOperator?.Nome && 
-    (m.status === 'Manifesto Iniciado' || m.status === 'Manifesto Recebido' || m.status === 'Manifesto Finalizado')
+    (m.status === 'Manifesto Iniciado' || m.status === 'Manifesto Recebido' || m.status === 'Manifesto Finalizado' || m.status === 'Manifesto Entregue')
   );
 
   // Lógica de Busca de Operador
@@ -49,6 +49,7 @@ export const OperationalDashboard: React.FC<OperationalDashboardProps> = ({ mani
       case 'Manifesto Iniciado': return 'bg-amber-100 text-amber-700 border-amber-200';
       case 'Manifesto Recebido': return 'bg-blue-100 text-blue-700 border-blue-200';
       case 'Manifesto Finalizado': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+      case 'Manifesto Entregue': return 'bg-emerald-600 text-white border-emerald-700';
       default: return 'bg-slate-100 text-slate-600 border-slate-200';
     }
   };
@@ -202,7 +203,7 @@ export const OperationalDashboard: React.FC<OperationalDashboardProps> = ({ mani
             <div className="grid grid-cols-1 gap-4">
               {myActiveLoads.map(m => (
                 <div key={m.id} className={`bg-white border-2 p-6 flex flex-col md:flex-row items-center justify-between gap-8 transition-all relative overflow-hidden ${m.status === 'Manifesto Iniciado' ? 'border-amber-400 shadow-xl' : 'border-slate-200 shadow-sm'}`}>
-                   <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${m.status === 'Manifesto Iniciado' ? 'bg-amber-400' : m.status === 'Manifesto Finalizado' ? 'bg-emerald-500' : 'bg-blue-500'}`}></div>
+                   <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${m.status === 'Manifesto Iniciado' ? 'bg-amber-400' : (m.status === 'Manifesto Finalizado' || m.status === 'Manifesto Entregue') ? 'bg-emerald-500' : 'bg-blue-500'}`}></div>
 
                    <div className="flex flex-wrap items-center gap-8 flex-1">
                       <div className="min-w-[140px]">
@@ -251,9 +252,9 @@ export const OperationalDashboard: React.FC<OperationalDashboardProps> = ({ mani
                         </button>
                       )}
 
-                      {m.status === 'Manifesto Finalizado' && (
+                      {(m.status === 'Manifesto Finalizado' || m.status === 'Manifesto Entregue') && (
                         <div className="flex-1 md:flex-none h-14 px-8 bg-slate-100 border-2 border-slate-200 text-slate-400 text-[10px] font-black uppercase tracking-[0.1em] flex items-center justify-center gap-3">
-                          <Clock size={18} /> PENDENTE CIA
+                          <Clock size={18} /> {m.status === 'Manifesto Entregue' ? 'CONCLUÍDO' : 'PENDENTE CIA'}
                         </div>
                       )}
                    </div>

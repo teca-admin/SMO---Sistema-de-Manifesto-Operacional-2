@@ -4,6 +4,7 @@ import { Dashboard } from './components/Dashboard';
 import { OperationalDashboard } from './components/OperationalDashboard';
 import { KanbanBoard } from './components/KanbanBoard';
 import { EfficiencyDashboard } from './components/EfficiencyDashboard';
+import { MobileView } from './components/MobileView';
 import { EditModal, LoadingOverlay, HistoryModal, AlertToast, CancellationModal, AssignResponsibilityModal, ReprFillModal } from './components/Modals';
 import { Manifesto, User, SMO_Sistema_DB } from './types';
 import { supabase } from './supabaseClient';
@@ -13,6 +14,7 @@ function App() {
   const [activeTab, setActiveTab] = useState<'sistema' | 'operacional' | 'fluxo' | 'eficiencia'>('sistema');
   const [manifestos, setManifestos] = useState<Manifesto[]>([]);
   const [nextId, setNextId] = useState<string>('Automático');
+  const [isMobile, setIsMobile] = useState(false);
   
   // Dark Mode State
   const [darkMode, setDarkMode] = useState(() => {
@@ -27,7 +29,13 @@ function App() {
   const [loadingMsg, setLoadingMsg] = useState<string | null>(null);
   const [alert, setAlert] = useState<{type: 'success' | 'error', msg: string} | null>(null);
   
-  const [activeOperatorName, setActiveOperatorName] = useState<string | null>(null);
+  const [activeOperatorName, setActiveOperatorName] = useState<string | null>(() => {
+    const saved = localStorage.getItem('smo_active_profile');
+    try {
+      const parsed = saved ? JSON.parse(saved) : null;
+      return parsed ? parsed.Nome_Completo : null;
+    } catch { return null; }
+  });
 
   // Sync Dark Mode with Document
   useEffect(() => {
@@ -39,6 +47,14 @@ function App() {
       localStorage.setItem('smo_theme', 'light');
     }
   }, [darkMode]);
+
+  // Handle Resize for Responsiveness
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const getCurrentTimestampBR = () => new Date().toLocaleString('pt-BR');
 
@@ -219,9 +235,80 @@ function App() {
     }
   };
 
+  const handleLogout = () => {
+    setActiveOperatorName(null);
+    localStorage.removeItem('smo_active_profile');
+    window.location.reload();
+  };
+
+  // RENDER SELECTION
+  if (isMobile) {
+    return (
+      <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950">
+        <MobileView 
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          manifestos={manifestos}
+          darkMode={darkMode}
+          setDarkMode={setDarkMode}
+          onSave={async (d, operatorName) => {
+            setLoadingMsg("Registrando...");
+            const id = await fetchNextId();
+            const turno = getTurnoAtual();
+            const { error } = await supabase.from('SMO_Sistema').insert({
+              ID_Manifesto: id, 
+              Usuario_Sistema: operatorName, 
+              CIA: d.cia, 
+              Manifesto_Puxado: d.dataHoraPuxado, 
+              Manifesto_Recebido: d.dataHoraRecebido,
+              Status: "Manifesto Recebido", 
+              Turno: turno, 
+              "Carimbo_Data/HR": getCurrentTimestampBR(), 
+              "Usuario_Ação": operatorName
+            });
+            if (error) showAlert('error', error.message);
+            else { showAlert('success', `Registro Concluído (${turno})`); fetchManifestos(); }
+            setLoadingMsg(null);
+          }}
+          onAction={(act, id) => {
+            if (act === 'entregar') updateStatus(id, 'Manifesto Entregue');
+            else if (act === 'Manifesto Iniciado') updateStatus(id, 'Manifesto Iniciado', { Manifesto_Iniciado: getCurrentTimestampBR() });
+            else if (act === 'Manifesto Finalizado') updateStatus(id, 'Manifesto Finalizado', { Manifesto_Completo: getCurrentTimestampBR() });
+            else if (act === 'Manifesto Recebido') updateStatus(id, 'Manifesto Recebido', { "Usuario_Operação": activeOperatorName });
+            else if (act === 'cancelar') setCancellationId(id);
+          }}
+          openHistory={setViewingHistoryId}
+          openEdit={setEditingId}
+          onOpenReprFill={setFillingReprId}
+          showAlert={showAlert}
+          activeOperatorName={activeOperatorName}
+          setActiveOperatorName={setActiveOperatorName}
+          onLogout={handleLogout}
+        />
+        {editingId && (
+          <EditModal data={manifestos.find(m => m.id === editingId)!} onClose={() => setEditingId(null)} onSave={handleSaveEdit} />
+        )}
+        {viewingHistoryId && <HistoryModal data={manifestos.find(m => m.id === viewingHistoryId)!} onClose={() => setViewingHistoryId(null)} />}
+        {fillingReprId && (
+          <ReprFillModal
+            manifesto={manifestos.find(m => m.id === fillingReprId)!}
+            onClose={() => setFillingReprId(null)}
+            onConfirm={(date) => handleSaveReprDate(fillingReprId, date)}
+          />
+        )}
+        {cancellationId && <CancellationModal onConfirm={() => {
+          updateStatus(cancellationId, 'Manifesto Cancelado');
+          setCancellationId(null);
+        }} onClose={() => setCancellationId(null)} />}
+        {loadingMsg && <LoadingOverlay msg={loadingMsg} />}
+        {alert && <AlertToast type={alert.type} msg={alert.msg} />}
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-[#f8fafc] dark:bg-[#0f172a] transition-colors duration-300 custom-scrollbar">
-      <header className="bg-[#0f172a] dark:bg-[#020617] text-white border-b-2 border-slate-800 dark:border-slate-900 shadow-2xl shrink-0 z-50">
+      <header className="bg-[#0f172a] dark:bg-[#020617] text-white border-b-2 border-slate-800 dark:border-slate-900 shadow-2xl shrink-0 z-50 hidden md:block">
         <div className="flex items-center justify-between h-16 px-8">
           <div className="flex items-center gap-4 h-full">
             <div className="flex items-center gap-2">
@@ -290,7 +377,7 @@ function App() {
         </div>
       </header>
 
-      <main className="flex-1 overflow-auto p-6">
+      <main className={`flex-1 overflow-auto p-6`}>
         <div className="max-w-[1700px] mx-auto space-y-6">
           {activeTab === 'sistema' ? (
             <Dashboard 
@@ -348,9 +435,7 @@ function App() {
         <EditModal 
           data={manifestos.find(m => m.id === editingId)!} 
           onClose={() => setEditingId(null)} 
-          onSave={(data) => {
-            handleSaveEdit(data);
-          }} 
+          onSave={handleSaveEdit} 
         />
       )}
       {fillingReprId && (
