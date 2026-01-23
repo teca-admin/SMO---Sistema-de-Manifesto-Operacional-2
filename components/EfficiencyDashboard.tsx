@@ -296,7 +296,7 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
     let currentAngle = 0;
     return (
       <div className="flex items-center justify-center relative w-full h-full p-2">
-        <svg viewBox="0 0 100 100" className="w-full h-full max-h-[160px] -rotate-90">
+        <svg viewBox="0 0 100 100" className="w-full h-full max-h-[120px] -rotate-90">
           {data.map((item, i) => {
             const angle = (item.pct / 100) * 360;
             const color = colorMapper(item.label);
@@ -419,18 +419,18 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
             </h3>
             {activeFilters.turno && <button onClick={() => toggleFilter('turno', activeFilters.turno)} className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors"><X size={14} className="text-red-500" /></button>}
           </div>
-          <div className="flex-1 flex flex-col items-center justify-center p-4">
+          <div className="flex-1 flex flex-col items-center justify-start p-3 min-h-0 overflow-hidden">
             <DonutChart data={turnStats} colorMapper={getTurnColor} filterType="turno" total={turnStats.reduce((acc, curr) => acc + curr.count, 0)} />
-            <div className="flex flex-col gap-1 w-full mt-4">
+            <div className="flex flex-col gap-0.5 w-full mt-2">
               {turnStats.map((item, i) => (
-                <div key={i} onClick={() => toggleFilter('turno', item.label)} className="flex items-center justify-between cursor-pointer p-1.5 rounded hover:bg-slate-50 dark:hover:bg-slate-900/50">
+                <div key={i} onClick={() => toggleFilter('turno', item.label)} className="flex items-center justify-between cursor-pointer p-1 rounded hover:bg-slate-50 dark:hover:bg-slate-900/50">
                   <div className="flex items-center gap-2 overflow-hidden">
                     <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: getTurnColor(item.label) }}></div>
-                    <span className="text-[11px] font-black uppercase truncate text-slate-600 dark:text-slate-200">{item.label}</span>
+                    <span className="text-[10px] font-black uppercase truncate text-slate-600 dark:text-slate-200">{item.label}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-black font-mono-tech text-slate-900 dark:text-slate-100">{item.count}</span>
-                    <span className="text-[11px] font-black font-mono-tech text-indigo-500 dark:text-indigo-300">{item.pct.toFixed(1)}%</span>
+                    <span className="text-[10px] font-black font-mono-tech text-slate-900 dark:text-slate-100">{item.count}</span>
+                    <span className="text-[10px] font-black font-mono-tech text-indigo-500 dark:text-indigo-300">{item.pct.toFixed(1)}%</span>
                   </div>
                 </div>
               ))}
