@@ -94,7 +94,8 @@ function App() {
 
   const fetchManifestos = useCallback(async () => {
     try {
-      const { data, error } = await supabase.from('SMO_Sistema').select('*').order('id', { ascending: false }).limit(200);
+      // Aumentado o limite para 500 para garantir que tenhamos itens concluídos suficientes
+      const { data, error } = await supabase.from('SMO_Sistema').select('*').order('id', { ascending: false }).limit(500);
       if (error) throw error;
       if (data) {
         setManifestos(data.map((item: SMO_Sistema_DB) => ({
@@ -325,28 +326,28 @@ function App() {
                 onClick={() => setActiveTab('sistema')} 
                 className={`group flex items-center gap-2 px-5 h-16 text-[9px] font-black uppercase tracking-widest transition-all border-b-4 ${activeTab === 'sistema' ? 'border-indigo-500 bg-slate-800/50' : 'border-transparent text-slate-400 hover:text-white hover:bg-slate-800/30'}`}
               >
-                <LayoutGrid size={13} className={activeTab === 'sistema' ? 'text-indigo-400' : 'text-slate-500'} />
+                <LayoutGrid size={13} className={activeTab === 'sistema' ? 'text-indigo-400' : 'text-slate-50'} />
                 CADASTRO
               </button>
               <button 
                 onClick={() => setActiveTab('operacional')} 
                 className={`group flex items-center gap-2 px-5 h-16 text-[9px] font-black uppercase tracking-widest transition-all border-b-4 ${activeTab === 'operacional' ? 'border-red-500 bg-slate-800/50' : 'border-transparent text-slate-400 hover:text-white hover:bg-slate-800/30'}`}
               >
-                <Plane size={13} className={activeTab === 'operacional' ? 'text-red-400' : 'text-slate-500'} />
+                <Plane size={13} className={activeTab === 'operacional' ? 'text-red-400' : 'text-slate-50'} />
                 PUXE
               </button>
               <button 
                 onClick={() => setActiveTab('fluxo')} 
                 className={`group flex items-center gap-2 px-5 h-16 text-[9px] font-black uppercase tracking-widest transition-all border-b-4 ${activeTab === 'fluxo' ? 'border-emerald-500 bg-slate-800/50' : 'border-transparent text-slate-400 hover:text-white hover:bg-slate-800/30'}`}
               >
-                <Columns size={13} className={activeTab === 'fluxo' ? 'text-emerald-400' : 'text-slate-500'} />
+                <Columns size={13} className={activeTab === 'fluxo' ? 'text-emerald-400' : 'text-slate-50'} />
                 FLUXO
               </button>
               <button 
                 onClick={() => setActiveTab('eficiencia')} 
                 className={`group flex items-center gap-2 px-5 h-16 text-[9px] font-black uppercase tracking-widest transition-all border-b-4 ${activeTab === 'eficiencia' ? 'border-indigo-400 bg-slate-800/50' : 'border-transparent text-slate-400 hover:text-white hover:bg-slate-800/30'}`}
               >
-                <BarChart3 size={13} className={activeTab === 'eficiencia' ? 'text-indigo-300' : 'text-slate-500'} />
+                <BarChart3 size={13} className={activeTab === 'eficiencia' ? 'text-indigo-300' : 'text-slate-50'} />
                 EFICIÊNCIA
               </button>
             </nav>

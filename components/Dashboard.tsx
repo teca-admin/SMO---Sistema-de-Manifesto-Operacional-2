@@ -119,9 +119,29 @@ export const Dashboard: React.FC<DashboardProps> = ({
     m.status !== 'Manifesto Entregue' && m.status !== 'Manifesto Cancelado'
   );
 
-  const allHistory = manifestos.filter(m => 
-    m.status === 'Manifesto Entregue' || m.status === 'Manifesto Cancelado'
-  );
+  // Helper para converter a string de data BR (DD/MM/YYYY HH:MM) para Date
+  const parseBRDate = (brStr: string | undefined): Date | null => {
+    if (!brStr || brStr === '---' || brStr === '') return null;
+    try {
+      const parts = brStr.split(/[\/\s,:]+/);
+      if (parts.length < 5) return null;
+      const day = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const year = parseInt(parts[2], 10);
+      const hour = parseInt(parts[3], 10);
+      const minute = parseInt(parts[4], 10);
+      return new Date(year, month, day, hour, minute);
+    } catch { return null; }
+  };
+
+  // Histórico ordenado pela data de atualização (mais recentes primeiro)
+  const allHistory = manifestos
+    .filter(m => m.status === 'Manifesto Entregue' || m.status === 'Manifesto Cancelado')
+    .sort((a, b) => {
+      const dateA = parseBRDate(a.carimboDataHR);
+      const dateB = parseBRDate(b.carimboDataHR);
+      return (dateB?.getTime() || 0) - (dateA?.getTime() || 0);
+    });
 
   const formatDisplayDate = (isoStr: string | undefined) => {
     if (!isoStr || isoStr === '---' || isoStr === '') return '---';
