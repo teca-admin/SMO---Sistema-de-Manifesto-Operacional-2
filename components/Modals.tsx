@@ -358,7 +358,7 @@ export const HistoryModal: React.FC<{ data: Manifesto, onClose: () => void }> = 
                                   <UserCircle size={14} className="text-slate-400" />
                                   <span className="text-[9px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-tighter">{log.usuario}</span>
                                </div>
-                               <span className="text-[8px] font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-900 px-2 py-0.5 rounded-full">{log.createdAtBR}</span>
+                               <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-900 px-2 py-0.5 rounded-full">{log.createdAtBR.replace(/:\d{2}$/, '').replace(',', '')}</span>
                             </div>
                             <span className={`text-[9px] font-black px-2 py-0.5 rounded border ${log.acao.includes('Edição') ? 'bg-indigo-50 text-indigo-600 border-indigo-100 dark:bg-indigo-900/20 dark:text-indigo-400 dark:border-indigo-800/50' : 'bg-slate-50 text-slate-600 border-slate-100 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-700'} uppercase`}>{log.acao}</span>
                             {log.justificativa && <div className="mt-2 p-2 bg-indigo-50/50 dark:bg-indigo-900/10 border-l-4 border-indigo-400"><p className="text-[10px] font-bold text-slate-700 dark:text-slate-300 italic">"{log.justificativa}"</p></div>}
