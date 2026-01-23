@@ -33,10 +33,10 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
       <div 
         className={`h-10 px-3 border-2 flex items-center justify-between text-xs font-bold transition-all cursor-pointer ${
           disabled 
-            ? 'bg-slate-100 text-slate-400 border-slate-200' 
+            ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600 border-slate-200 dark:border-slate-800' 
             : isOpen 
-              ? 'bg-white border-indigo-600 text-slate-900' 
-              : 'bg-slate-50 border-slate-200 text-slate-800 hover:border-slate-300'
+              ? 'bg-white dark:bg-slate-900 border-indigo-600 dark:border-indigo-500 text-slate-900 dark:text-white' 
+              : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600'
         }`}
         onClick={() => !disabled && setIsOpen(!isOpen)}
       >
@@ -46,7 +46,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
 
       {isOpen && createPortal(
         <div 
-          className="fixed z-[10050] bg-white border-2 border-slate-800 shadow-2xl overflow-y-auto animate-fadeIn"
+          className="fixed z-[10050] bg-white dark:bg-slate-800 border-2 border-slate-800 dark:border-slate-700 shadow-2xl overflow-y-auto animate-fadeIn"
           style={{ top: coords.top + 4, left: coords.left, width: coords.width, maxHeight: '240px' }} 
         >
           {CIAS.map(cia => (
@@ -56,7 +56,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
               className={`px-4 py-2.5 text-[10px] font-black uppercase tracking-widest cursor-pointer transition-colors ${
                 value === cia 
                   ? 'bg-indigo-600 text-white' 
-                  : 'text-slate-600 hover:bg-slate-50'
+                  : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
               }`}
             >
               {cia}
