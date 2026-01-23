@@ -305,7 +305,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       </div>
 
       <div className="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 panel-shadow">
-        <div className="bg-slate-50 dark:bg-slate-900/50 px-5 py-2.5 border-b-2 border-slate-200 dark:border-slate-700 flex items-center justify-between">
+        <div className="bg-slate-50 dark:bg-[#020617] px-5 py-2.5 border-b-2 border-slate-200 dark:border-slate-700 flex items-center justify-between">
           <h3 className="text-[10px] font-black text-slate-950 dark:text-slate-100 uppercase tracking-[0.2em] flex items-center gap-2">
             <span className="flex items-center justify-center w-5 h-5 bg-indigo-600 text-white rounded-sm"><Plus size={12} /></span>
             Registro de Novo Manifesto
@@ -334,7 +334,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       </div>
 
       <div className="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 panel-shadow overflow-hidden">
-        <div className="bg-[#0f172a] dark:bg-slate-900 px-5 py-3 border-b-2 border-slate-900 dark:border-slate-700 flex items-center justify-between">
+        <div className="bg-[#0f172a] dark:bg-[#020617] px-5 py-3 border-b-2 border-slate-900 dark:border-slate-700 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <h3 className="text-[10px] font-black text-white uppercase tracking-[0.2em] flex items-center gap-2">
               <Database size={14} className="text-indigo-400" /> Base de Dados Operacional
@@ -351,7 +351,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       </div>
 
       <div className="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 panel-shadow overflow-hidden">
-        <div onClick={() => setShowHistory(!showHistory)} className="w-full bg-slate-50 dark:bg-slate-900/50 px-5 py-3 border-b-2 border-slate-200 dark:border-slate-700 flex flex-col md:flex-row items-center justify-between gap-4 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+        <div onClick={() => setShowHistory(!showHistory)} className="w-full bg-slate-50 dark:bg-[#020617] px-5 py-3 border-b-2 border-slate-200 dark:border-slate-700 flex flex-col md:flex-row items-center justify-between gap-4 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
           <div className="flex items-center gap-4">
             <h3 className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
               <Archive size={14} className="text-slate-400" /> Arquivo de Manifestos Concluídos
