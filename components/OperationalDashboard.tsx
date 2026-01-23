@@ -62,7 +62,7 @@ export const OperationalDashboard: React.FC<OperationalDashboardProps> = ({ mani
   if (!activeOperator) {
     return (
       <div className="max-w-xl mx-auto mt-20 animate-fadeIn">
-        <div className="bg-white dark:bg-slate-900 border-2 border-slate-900 dark:border-slate-700 shadow-[0_30px_60px_-12px_rgba(0,0,0,0.25)] p-10 flex flex-col items-center text-center relative">
+        <div className="bg-white dark:bg-slate-900 border-2 border-slate-900 dark:border-slate-700 shadow-[0_30px_60px_-12px_rgba(0,0,0,0.25)] p-10 flex flex-col items-center text-center relative transition-colors duration-300">
           <div className="absolute top-0 left-0 w-full h-1 bg-indigo-600"></div>
           
           <div className="p-5 bg-slate-900 dark:bg-slate-800 mb-8 rounded-full border-4 border-slate-100 dark:border-slate-700">

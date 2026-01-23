@@ -144,19 +144,24 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const formatDisplayDate = (isoStr: string | undefined) => {
     if (!isoStr || isoStr === '---' || isoStr === '') return '---';
     try {
+      // Se a string já tiver segundos (formato legado), removemos antes de processar
+      const parts = isoStr.split(':');
+      const cleanStr = parts.length === 3 ? isoStr.substring(0, isoStr.lastIndexOf(':')) : isoStr;
+
       const d = new Date(isoStr);
-      // Se não for uma data válida, limpamos possíveis vírgulas da string original e retornamos
-      if (isNaN(d.getTime())) return isoStr.replace(',', '');
+      // Se não for uma data válida para o objeto Date, limpamos possíveis vírgulas e retornamos a string limpa (HH:MM)
+      if (isNaN(d.getTime())) return cleanStr.replace(',', '');
       
       const day = String(d.getDate()).padStart(2, '0');
       const month = String(d.getMonth() + 1).padStart(2, '0');
       const year = d.getFullYear();
       const hours = String(d.getHours()).padStart(2, '0');
       const minutes = String(d.getMinutes()).padStart(2, '0');
-      // Retornamos o formato limpo sem vírgula
       return `${day}/${month}/${year} ${hours}:${minutes}`;
     } catch (e) {
-      return isoStr.replace(',', '');
+      const parts = isoStr.split(':');
+      const cleanStr = parts.length === 3 ? isoStr.substring(0, isoStr.lastIndexOf(':')) : isoStr;
+      return cleanStr.replace(',', '');
     }
   };
 
@@ -347,7 +352,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <h2 className="text-sm font-black text-white uppercase tracking-tight">{activeProfile.Nome_Completo}</h2>
            </div>
         </div>
-        <button onClick={handleLogout} className="h-8 px-4 bg-red-600/10 hover:bg-red-600 border border-red-600/30 hover:border-red-600 text-red-500 hover:text-white text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2">
+        <button handleLogout={handleLogout} className="h-8 px-4 bg-red-600/10 hover:bg-red-600 border border-red-600/30 hover:border-red-600 text-red-500 hover:text-white text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2">
           <LogOut size={12} /> Sair do Terminal
         </button>
       </div>

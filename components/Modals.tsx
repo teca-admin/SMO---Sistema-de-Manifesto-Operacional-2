@@ -15,8 +15,11 @@ interface EditModalProps {
 const formatDisplayDate = (isoStr: string | undefined) => {
   if (!isoStr || isoStr === '---' || isoStr === '') return '---';
   try {
+    const parts = isoStr.split(':');
+    const cleanStr = parts.length === 3 ? isoStr.substring(0, isoStr.lastIndexOf(':')) : isoStr;
+
     const d = new Date(isoStr);
-    if (isNaN(d.getTime())) return isoStr.replace(',', '');
+    if (isNaN(d.getTime())) return cleanStr.replace(',', '');
     const day = String(d.getDate()).padStart(2, '0');
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const year = d.getFullYear();
@@ -24,7 +27,9 @@ const formatDisplayDate = (isoStr: string | undefined) => {
     const minutes = String(d.getMinutes()).padStart(2, '0');
     return `${day}/${month}/${year} ${hours}:${minutes}`;
   } catch (e) {
-    return isoStr.replace(',', '');
+    const parts = isoStr.split(':');
+    const cleanStr = parts.length === 3 ? isoStr.substring(0, isoStr.lastIndexOf(':')) : isoStr;
+    return cleanStr.replace(',', '');
   }
 };
 
