@@ -16,7 +16,6 @@ function App() {
   const [nextId, setNextId] = useState<string>('Automático');
   const [isMobile, setIsMobile] = useState(false);
   
-  // Dark Mode State
   const [darkMode, setDarkMode] = useState(() => {
     return localStorage.getItem('smo_theme') === 'dark';
   });
@@ -37,7 +36,6 @@ function App() {
     } catch { return null; }
   });
 
-  // Sync Dark Mode with Document
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add('dark');
@@ -48,7 +46,6 @@ function App() {
     }
   }, [darkMode]);
 
-  // Handle Resize for Responsiveness
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     handleResize();
@@ -56,7 +53,12 @@ function App() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const getCurrentTimestampBR = () => new Date().toLocaleString('pt-BR');
+  const getCurrentTimestampBR = () => {
+    const d = new Date();
+    const date = d.toLocaleDateString('pt-BR');
+    const time = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    return `${date} ${time}`;
+  };
 
   const getTurnoAtual = () => {
     const hora = new Date().getHours();
@@ -94,7 +96,6 @@ function App() {
 
   const fetchManifestos = useCallback(async () => {
     try {
-      // Aumentado o limite para 500 para garantir que tenhamos itens concluídos suficientes
       const { data, error } = await supabase.from('SMO_Sistema').select('*').order('id', { ascending: false }).limit(500);
       if (error) throw error;
       if (data) {
@@ -177,13 +178,14 @@ function App() {
     setLoadingMsg("Salvando Alterações...");
     try {
       const user = activeOperatorName || "Sistema";
+      const now = getCurrentTimestampBR();
       const { error } = await supabase.from('SMO_Sistema').update({
         CIA: data.cia,
         Manifesto_Puxado: data.dataHoraPuxado,
         Manifesto_Recebido: data.dataHoraRecebido,
         Representante_CIA: data.dataHoraRepresentanteCIA,
         Manifesto_Entregue: data.dataHoraEntregue,
-        "Carimbo_Data/HR": getCurrentTimestampBR(),
+        "Carimbo_Data/HR": now,
         "Usuario_Ação": user
       }).eq('ID_Manifesto', data.id);
 
@@ -194,7 +196,7 @@ function App() {
         "Ação": "Edição de Monitoramento", 
         Usuario: user, 
         Justificativa: data.justificativa,
-        "Created_At_BR": getCurrentTimestampBR() 
+        "Created_At_BR": now 
       });
 
       showAlert('success', 'Monitoramento Atualizado');
@@ -211,9 +213,10 @@ function App() {
     setLoadingMsg("Atualizando Representante...");
     try {
       const user = activeOperatorName || "Sistema";
+      const now = getCurrentTimestampBR();
       const { error } = await supabase.from('SMO_Sistema').update({
         Representante_CIA: date,
-        "Carimbo_Data/HR": getCurrentTimestampBR(),
+        "Carimbo_Data/HR": now,
         "Usuario_Ação": user
       }).eq('ID_Manifesto', id);
 
@@ -223,7 +226,7 @@ function App() {
         ID_Manifesto: id, 
         "Ação": "Registro Representante CIA", 
         Usuario: user, 
-        "Created_At_BR": getCurrentTimestampBR() 
+        "Created_At_BR": now 
       });
 
       showAlert('success', 'Data do Representante Salva');
@@ -242,7 +245,6 @@ function App() {
     window.location.reload();
   };
 
-  // RENDER SELECTION
   if (isMobile) {
     return (
       <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950">
@@ -256,6 +258,7 @@ function App() {
             setLoadingMsg("Registrando...");
             const id = await fetchNextId();
             const turno = getTurnoAtual();
+            const now = getCurrentTimestampBR();
             const { error } = await supabase.from('SMO_Sistema').insert({
               ID_Manifesto: id, 
               Usuario_Sistema: operatorName, 
@@ -264,7 +267,7 @@ function App() {
               Manifesto_Recebido: d.dataHoraRecebido,
               Status: "Manifesto Recebido", 
               Turno: turno, 
-              "Carimbo_Data/HR": getCurrentTimestampBR(), 
+              "Carimbo_Data/HR": now, 
               "Usuario_Ação": operatorName
             });
             if (error) showAlert('error', error.message);
@@ -387,6 +390,7 @@ function App() {
                 setLoadingMsg("Registrando...");
                 const id = await fetchNextId();
                 const turno = getTurnoAtual();
+                const now = getCurrentTimestampBR();
                 const { error } = await supabase.from('SMO_Sistema').insert({
                   ID_Manifesto: id, 
                   Usuario_Sistema: operatorName, 
@@ -395,7 +399,7 @@ function App() {
                   Manifesto_Recebido: d.dataHoraRecebido,
                   Status: "Manifesto Recebido", 
                   Turno: turno, 
-                  "Carimbo_Data/HR": getCurrentTimestampBR(), 
+                  "Carimbo_Data/HR": now, 
                   "Usuario_Ação": operatorName
                 });
                 if (error) showAlert('error', error.message);

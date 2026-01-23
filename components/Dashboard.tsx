@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Manifesto, User as UserType } from '../types';
@@ -119,7 +118,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
     m.status !== 'Manifesto Entregue' && m.status !== 'Manifesto Cancelado'
   );
 
-  // Helper para converter a string de data BR (DD/MM/YYYY HH:MM) para Date
   const parseBRDate = (brStr: string | undefined): Date | null => {
     if (!brStr || brStr === '---' || brStr === '') return null;
     try {
@@ -134,7 +132,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
     } catch { return null; }
   };
 
-  // Histórico limitado aos 100 mais recentes atualizados
   const allHistory = manifestos
     .filter(m => m.status === 'Manifesto Entregue' || m.status === 'Manifesto Cancelado')
     .sort((a, b) => {
@@ -148,15 +145,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
     if (!isoStr || isoStr === '---' || isoStr === '') return '---';
     try {
       const d = new Date(isoStr);
-      if (isNaN(d.getTime())) return isoStr;
+      // Se não for uma data válida, limpamos possíveis vírgulas da string original e retornamos
+      if (isNaN(d.getTime())) return isoStr.replace(',', '');
+      
       const day = String(d.getDate()).padStart(2, '0');
       const month = String(d.getMonth() + 1).padStart(2, '0');
       const year = d.getFullYear();
       const hours = String(d.getHours()).padStart(2, '0');
       const minutes = String(d.getMinutes()).padStart(2, '0');
+      // Retornamos o formato limpo sem vírgula
       return `${day}/${month}/${year} ${hours}:${minutes}`;
     } catch (e) {
-      return isoStr;
+      return isoStr.replace(',', '');
     }
   };
 
@@ -191,35 +191,37 @@ export const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const renderTable = (data: Manifesto[], isHistory: boolean = false) => {
-    const activeHeaders = ['ID MANIFESTO', 'STATUS', 'CIA', 'PUXADO', 'RECEBIDO', 'REPR. CIA', 'TURNO', 'AÇÃO'];
-    const activeWidths = ['12%', '14%', '7%', '16%', '16%', '16%', '10%', '9%'];
-    
     const historyHeaders = ['ID MANIFESTO', 'STATUS', 'CIA', 'PUXADO', 'RECEBIDO', 'REPR. CIA', 'ENTREGUE', 'TURNO', 'AÇÃO'];
-    const historyWidths = ['10%', '11%', '6%', '13%', '13%', '13%', '13%', '11%', '10%'];
+    const historyWidths = ['9%', '11%', '11%', '11%', '11%', '11%', '11%', '11%', '9%'];
+    
+    const activeHeaders = ['ID MANIFESTO', 'STATUS', 'CIA', 'PUXADO', 'RECEBIDO', 'REPR. CIA', 'TURNO', 'AÇÃO'];
+    const activeWidths = ['10%', '11%', '11%', '15%', '15%', '15%', '15%', '8%'];
     
     const headers = isHistory ? historyHeaders : activeHeaders;
     const columnWidths = isHistory ? historyWidths : activeWidths;
 
     return (
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse table-fixed">
+      <div className="w-full overflow-hidden">
+        <table className="w-full border-collapse table-fixed bg-white dark:bg-slate-800">
           <thead>
             <tr className={`${isHistory ? 'bg-slate-200 dark:bg-slate-900' : 'bg-slate-100/50 dark:bg-slate-900/50'} border-b border-slate-200 dark:border-slate-700`}>
-              {headers.map((h, idx, arr) => (
-                <th 
-                  key={`${h}-${idx}`} 
-                  style={{ width: columnWidths[idx] }}
-                  className={`${idx === arr.length - 1 ? 'text-right' : 'text-left'} py-3 px-5 text-[9px] font-black text-slate-800 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap overflow-hidden text-ellipsis`}
-                >
-                  {h}
-                </th>
-              ))}
+              {headers.map((h, idx) => {
+                return (
+                  <th 
+                    key={`${h}-${idx}`} 
+                    style={{ width: columnWidths[idx] }}
+                    className="text-center py-3 px-3 text-[12px] font-black text-slate-800 dark:text-slate-300 uppercase tracking-tighter whitespace-nowrap overflow-hidden text-ellipsis"
+                  >
+                    {h}
+                  </th>
+                );
+              })}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-700 bg-white dark:bg-slate-800">
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
             {data.length === 0 ? (
               <tr>
-                <td colSpan={isHistory ? 9 : 8} className="py-12 text-center text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase italic">
+                <td colSpan={isHistory ? 9 : 8} className="py-12 text-center text-[12px] font-bold text-slate-400 dark:text-slate-500 uppercase italic">
                   Nenhum manifesto registrado.
                 </td>
               </tr>
@@ -227,28 +229,53 @@ export const Dashboard: React.FC<DashboardProps> = ({
               data.map(m => {
                 const canFillRepr = m.status === 'Manifesto Finalizado';
                 const hasReprDate = m.dataHoraRepresentanteCIA && m.dataHoraRepresentanteCIA !== '---' && m.dataHoraRepresentanteCIA !== '';
+                
                 return (
-                  <tr key={m.id} className={`group hover:bg-indigo-50/40 dark:hover:bg-indigo-900/10 transition-colors ${isHistory ? 'opacity-80' : ''}`}>
-                    <td className="py-3 px-5 text-[12px] font-bold text-slate-950 dark:text-slate-100 font-mono-tech tracking-tighter whitespace-nowrap overflow-hidden text-ellipsis">{m.id}</td>
-                    <td className="py-3 px-5 whitespace-nowrap overflow-hidden">
-                      <span className={`px-2.5 py-1 border text-[12px] font-black uppercase tracking-tight inline-block ${getStatusClass(m.status)}`}>
-                        {m.status}
+                  <tr key={m.id} className={`group hover:bg-indigo-50/40 dark:hover:bg-indigo-900/10 transition-colors ${isHistory ? 'opacity-90' : ''}`}>
+                    <td style={{ width: columnWidths[0] }} className="py-3 px-3 text-[12px] font-bold text-slate-950 dark:text-slate-100 font-mono-tech tracking-tighter whitespace-nowrap overflow-hidden text-ellipsis text-center">
+                      {m.id}
+                    </td>
+
+                    <td style={{ width: columnWidths[1] }} className="py-3 px-3 whitespace-nowrap overflow-hidden text-center">
+                      <span className={`px-2 py-0.5 border text-[10px] font-black uppercase tracking-tighter inline-block ${getStatusClass(m.status)}`}>
+                        {m.status.replace('Manifesto ', '')}
                       </span>
                     </td>
-                    <td className="py-3 px-5 text-[12px] font-black text-slate-950 dark:text-slate-100 uppercase tracking-tighter whitespace-nowrap overflow-hidden text-ellipsis">{m.cia}</td>
-                    <td className="py-3 px-5 text-[12px] font-bold text-slate-950 dark:text-slate-200 font-mono-tech tracking-tight whitespace-nowrap overflow-hidden text-ellipsis">{formatDisplayDate(m.dataHoraPuxado)}</td>
-                    <td className="py-3 px-5 text-[12px] font-bold text-slate-950 dark:text-slate-200 font-mono-tech tracking-tight whitespace-nowrap overflow-hidden text-ellipsis">{formatDisplayDate(m.dataHoraRecebido)}</td>
-                    <td onClick={() => !isHistory && canFillRepr && onOpenReprFill(m.id)} className={`py-3 px-5 transition-all overflow-hidden text-ellipsis ${!isHistory && canFillRepr ? 'cursor-pointer hover:bg-indigo-100/60 dark:hover:bg-indigo-900/30' : ''}`}>
-                      <div className={`flex items-center gap-1.5 text-[12px] font-mono-tech tracking-tight whitespace-nowrap ${!isHistory && canFillRepr ? 'text-indigo-600 dark:text-indigo-400 font-black' : 'text-slate-950 dark:text-slate-200 font-bold'}`}>
+
+                    <td style={{ width: columnWidths[2] }} className="py-3 px-3 text-[12px] font-black text-slate-950 dark:text-slate-100 uppercase tracking-tighter whitespace-nowrap overflow-hidden text-ellipsis text-center">
+                      {m.cia}
+                    </td>
+
+                    <td style={{ width: columnWidths[3] }} className="py-3 px-3 text-[12px] font-bold text-slate-950 dark:text-slate-200 font-mono-tech tracking-tighter whitespace-nowrap overflow-hidden text-ellipsis text-center">
+                      {formatDisplayDate(m.dataHoraPuxado)}
+                    </td>
+
+                    <td style={{ width: columnWidths[4] }} className="py-3 px-3 text-[12px] font-bold text-slate-950 dark:text-slate-200 font-mono-tech tracking-tighter whitespace-nowrap overflow-hidden text-ellipsis text-center">
+                      {formatDisplayDate(m.dataHoraRecebido)}
+                    </td>
+
+                    <td 
+                      style={{ width: columnWidths[5] }}
+                      onClick={() => !isHistory && canFillRepr && onOpenReprFill(m.id)} 
+                      className={`py-3 px-3 transition-all overflow-hidden text-ellipsis text-center ${!isHistory && canFillRepr ? 'cursor-pointer hover:bg-indigo-100/60 dark:hover:bg-indigo-900/30' : ''}`}
+                    >
+                      <div className={`flex items-center justify-center gap-1.5 text-[12px] font-mono-tech tracking-tighter whitespace-nowrap ${!isHistory && canFillRepr ? 'text-indigo-600 dark:text-indigo-400 font-black' : 'text-slate-950 dark:text-slate-200 font-bold'}`}>
                         {formatDisplayDate(m.dataHoraRepresentanteCIA)}
                         {!isHistory && canFillRepr && !hasReprDate && <Edit size={10} className="text-indigo-400 animate-pulse" />}
                       </div>
                     </td>
+
                     {isHistory && (
-                      <td className="py-3 px-5 text-[12px] font-bold font-mono-tech tracking-tight whitespace-nowrap overflow-hidden text-ellipsis text-emerald-600 dark:text-emerald-400">{formatDisplayDate(m.dataHoraEntregue)}</td>
+                      <td style={{ width: columnWidths[6] }} className="py-3 px-3 text-[12px] font-bold font-mono-tech tracking-tighter whitespace-nowrap overflow-hidden text-ellipsis text-emerald-600 dark:text-emerald-400 text-center">
+                        {formatDisplayDate(m.dataHoraEntregue)}
+                      </td>
                     )}
-                    <td className="py-3 px-5 text-[12px] font-bold text-slate-950 dark:text-slate-200 uppercase whitespace-nowrap overflow-hidden text-ellipsis">{m.turno}</td>
-                    <td className="py-3 px-5 text-right">
+
+                    <td style={{ width: isHistory ? columnWidths[7] : columnWidths[6] }} className="py-3 px-3 text-[12px] font-black text-slate-950 dark:text-slate-200 uppercase tracking-tighter whitespace-nowrap overflow-hidden text-ellipsis text-center">
+                      {m.turno}
+                    </td>
+
+                    <td style={{ width: isHistory ? columnWidths[8] : columnWidths[7] }} className="py-3 px-3 text-center">
                       <button onClick={(e) => handleOpenMenu(e, m.id)} className="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition-all border border-transparent hover:border-indigo-200 dark:hover:border-indigo-800">
                         <History size={16} />
                       </button>
@@ -418,7 +445,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     ) : (
                       <div className="flex items-center gap-3 w-full px-4 py-2.5 text-left text-slate-300 dark:text-slate-600 text-[10px] font-black uppercase tracking-widest cursor-not-allowed group relative"><Lock size={14} className="text-slate-200 dark:text-slate-700"/> <span>Editar (Bloqueado)</span></div>
                     )}
-                    <button onClick={() => { onAction('cancelar', menuOpenId); setMenuOpenId(null); }} className="flex items-center gap-3 w-full px-4 py-2.5 text-left hover:bg-red-50 dark:hover:bg-red-900/20 text-red-700 dark:text-red-400 text-[10px] font-black uppercase tracking-widest transition-colors"><XCircle size={14} className="text-red-400"/> Cancelar Item</button>
+                    <button onClick={() => { onAction('cancelar', menuOpenId); setMenuOpenId(null); }} className="flex items-center gap-3 w-full px-4 py-2.5 text-left hover:bg-red-50 dark:hover:bg-red-900/20 text-red-700 dark:text-red-400 text-[10px] font-black uppercase tracking-widest transition-all"><XCircle size={14} className="text-red-400"/> Cancelar Item</button>
                   </>
                 );
               })()}

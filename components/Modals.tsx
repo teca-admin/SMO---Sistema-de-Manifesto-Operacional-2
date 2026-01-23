@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { Manifesto, Funcionario, OperationalLog } from '../types';
 import { CustomDateTimePicker } from './CustomDateTimePicker';
@@ -17,7 +16,7 @@ const formatDisplayDate = (isoStr: string | undefined) => {
   if (!isoStr || isoStr === '---' || isoStr === '') return '---';
   try {
     const d = new Date(isoStr);
-    if (isNaN(d.getTime())) return isoStr;
+    if (isNaN(d.getTime())) return isoStr.replace(',', '');
     const day = String(d.getDate()).padStart(2, '0');
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const year = d.getFullYear();
@@ -25,7 +24,7 @@ const formatDisplayDate = (isoStr: string | undefined) => {
     const minutes = String(d.getMinutes()).padStart(2, '0');
     return `${day}/${month}/${year} ${hours}:${minutes}`;
   } catch (e) {
-    return isoStr;
+    return isoStr.replace(',', '');
   }
 };
 
