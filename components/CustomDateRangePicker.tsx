@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, Check, ArrowRight, ChevronDown } from 'lucide-react';
 
@@ -13,7 +13,7 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({ st
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
-  const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
+  const [coords, setCoords] = useState({ top: -9999, left: -9999, width: 0 });
   
   const [selectionStep, setSelectionStep] = useState<1 | 2>(1);
   const [activeShortcut, setActiveShortcut] = useState<string | null>(null);
@@ -28,6 +28,20 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({ st
   });
 
   const MODAL_WIDTH = 320;
+
+  const updateCoords = useCallback(() => {
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const leftOffset = MODAL_WIDTH * 0.30;
+      const calculatedLeft = rect.left - leftOffset;
+      
+      setCoords({ 
+        top: rect.bottom, 
+        left: Math.max(10, calculatedLeft), 
+        width: rect.width 
+      });
+    }
+  }, []);
 
   useEffect(() => {
     if (start) {
@@ -72,18 +86,16 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({ st
   }, [isOpen]);
 
   useEffect(() => {
-    if (isOpen && containerRef.current) {
-      const rect = containerRef.current.getBoundingClientRect();
-      const leftOffset = MODAL_WIDTH * 0.30;
-      const calculatedLeft = rect.left - leftOffset;
-      
-      setCoords({ 
-        top: rect.bottom + window.scrollY, 
-        left: Math.max(10, calculatedLeft), 
-        width: rect.width 
-      });
+    if (isOpen) {
+      updateCoords();
+      window.addEventListener('scroll', updateCoords, true);
+      window.addEventListener('resize', updateCoords);
     }
-  }, [isOpen]);
+    return () => {
+      window.removeEventListener('scroll', updateCoords, true);
+      window.removeEventListener('resize', updateCoords);
+    };
+  }, [isOpen, updateCoords]);
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) + ' ' + 
@@ -263,7 +275,11 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({ st
         <div 
           ref={popoverRef}
           className="fixed z-[10050] bg-white dark:bg-slate-800 border-2 border-slate-900 dark:border-slate-700 shadow-2xl flex flex-col w-[320px] animate-fadeIn"
-          style={{ top: coords.top + 4, left: coords.left }}
+          style={{ 
+            top: coords.top + 4, 
+            left: coords.left,
+            visibility: coords.top === -9999 ? 'hidden' : 'visible'
+          }}
         >
           <div className="p-3 bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700">
             <div className="grid grid-cols-4 gap-1.5">

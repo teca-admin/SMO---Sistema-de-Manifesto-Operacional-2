@@ -163,7 +163,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       case 'Manifesto Recebido': return 'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800/50';
       case 'Manifesto Iniciado': return 'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800/50';
       case 'Manifesto Finalizado': return 'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800/50';
-      case 'Manifesto Entregue': return 'bg-emerald-600 text-white border-emerald-700 dark:bg-emerald-600 dark:text-white dark:border-emerald-500';
+      case 'Manifesto Entregue': return 'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800/50';
       case 'Manifesto Cancelado': return 'bg-red-50 text-red-600 border-red-200 opacity-75 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800/50';
       default: return 'bg-indigo-50 text-indigo-600 border-indigo-200 dark:bg-indigo-900/20 dark:text-indigo-400 dark:border-indigo-800/50';
     }
@@ -207,7 +207,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 const canFillRepr = m.status === 'Manifesto Finalizado';
                 const hasReprDate = m.dataHoraRepresentanteCIA && m.dataHoraRepresentanteCIA !== '---' && m.dataHoraRepresentanteCIA !== '';
                 return (
-                  <tr key={m.id} className={`group hover:bg-indigo-50/40 dark:hover:bg-indigo-900/10 transition-colors ${isHistory ? 'opacity-70 grayscale-[0.2]' : ''}`}>
+                  <tr key={m.id} className={`group hover:bg-indigo-50/40 dark:hover:bg-indigo-900/10 transition-colors ${isHistory ? 'opacity-80' : ''}`}>
                     <td className="py-3 px-5 text-xs font-bold text-slate-950 dark:text-slate-100 font-mono-tech tracking-tighter whitespace-nowrap overflow-hidden text-ellipsis">{m.id}</td>
                     <td className="py-3 px-5 whitespace-nowrap overflow-hidden">
                       <span className={`px-2.5 py-1 border text-[9px] font-black uppercase tracking-tight inline-block ${getStatusClass(m.status)}`}>

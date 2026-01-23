@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Check } from 'lucide-react';
 
@@ -21,7 +21,15 @@ export const CustomDateTimePicker: React.FC<CustomDateTimePickerProps> = ({
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
-  const [coords, setCoords] = useState({ top: 0, left: 0 });
+  const [coords, setCoords] = useState({ top: -9999, left: -9999 });
+
+  const updateCoords = useCallback(() => {
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      // Usamos apenas rect.bottom e rect.left porque o container é FIXED
+      setCoords({ top: rect.bottom, left: rect.left });
+    }
+  }, []);
 
   useEffect(() => {
     if (value) {
@@ -40,11 +48,16 @@ export const CustomDateTimePicker: React.FC<CustomDateTimePickerProps> = ({
   }, [value]);
 
   useEffect(() => {
-    if (isOpen && containerRef.current) {
-      const rect = containerRef.current.getBoundingClientRect();
-      setCoords({ top: rect.bottom + window.scrollY, left: rect.left });
+    if (isOpen) {
+      updateCoords();
+      window.addEventListener('scroll', updateCoords, true);
+      window.addEventListener('resize', updateCoords);
     }
-  }, [isOpen]);
+    return () => {
+      window.removeEventListener('scroll', updateCoords, true);
+      window.removeEventListener('resize', updateCoords);
+    };
+  }, [isOpen, updateCoords]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -175,7 +188,11 @@ export const CustomDateTimePicker: React.FC<CustomDateTimePickerProps> = ({
         <div 
           ref={popoverRef}
           className="fixed z-[10050] bg-white dark:bg-slate-800 border-2 border-slate-800 dark:border-slate-700 shadow-2xl flex flex-col w-[280px] animate-fadeIn"
-          style={{ top: coords.top + 4, left: coords.left }}
+          style={{ 
+            top: coords.top + 4, 
+            left: coords.left,
+            visibility: coords.top === -9999 ? 'hidden' : 'visible' 
+          }}
         >
           <div className="bg-slate-900 dark:bg-slate-950 text-white p-3 flex items-center justify-between">
             <button 

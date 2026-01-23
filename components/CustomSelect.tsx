@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronDown } from 'lucide-react';
 import { CIAS } from '../types';
@@ -19,14 +19,26 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
+  const [coords, setCoords] = useState({ top: -9999, left: -9999, width: 0 });
+
+  const updateCoords = useCallback(() => {
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      setCoords({ top: rect.bottom, left: rect.left, width: rect.width });
+    }
+  }, []);
 
   useEffect(() => {
-    if (isOpen && containerRef.current) {
-      const rect = containerRef.current.getBoundingClientRect();
-      setCoords({ top: rect.bottom + window.scrollY, left: rect.left, width: rect.width });
+    if (isOpen) {
+      updateCoords();
+      window.addEventListener('scroll', updateCoords, true);
+      window.addEventListener('resize', updateCoords);
     }
-  }, [isOpen]);
+    return () => {
+      window.removeEventListener('scroll', updateCoords, true);
+      window.removeEventListener('resize', updateCoords);
+    };
+  }, [isOpen, updateCoords]);
 
   return (
     <div className="relative w-full" ref={containerRef}>
@@ -47,7 +59,13 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
       {isOpen && createPortal(
         <div 
           className="fixed z-[10050] bg-white dark:bg-slate-800 border-2 border-slate-800 dark:border-slate-700 shadow-2xl overflow-y-auto animate-fadeIn"
-          style={{ top: coords.top + 4, left: coords.left, width: coords.width, maxHeight: '240px' }} 
+          style={{ 
+            top: coords.top + 4, 
+            left: coords.left, 
+            width: coords.width, 
+            maxHeight: '240px',
+            visibility: coords.top === -9999 ? 'hidden' : 'visible'
+          }} 
         >
           {CIAS.map(cia => (
             <div 
