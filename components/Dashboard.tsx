@@ -328,7 +328,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       <div className="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 panel-shadow">
         <div className="bg-[#020617] px-5 py-2.5 border-b-2 border-slate-900 dark:border-slate-700 flex items-center justify-between">
           <h3 className="text-[10px] font-black text-white uppercase tracking-[0.2em] flex items-center gap-2">
-            <span className="flex items-center justify-center w-5 h-5 bg-indigo-600 text-white rounded-sm"><Plus size={12} /></span>
+            <Plus size={14} className="text-indigo-400" />
             Registro de Novo Manifesto
           </h3>
           <span className="text-[9px] font-bold text-slate-400 uppercase">Input Terminal v2.5</span>
