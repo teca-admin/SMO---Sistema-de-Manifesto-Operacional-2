@@ -229,25 +229,25 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 const hasReprDate = m.dataHoraRepresentanteCIA && m.dataHoraRepresentanteCIA !== '---' && m.dataHoraRepresentanteCIA !== '';
                 return (
                   <tr key={m.id} className={`group hover:bg-indigo-50/40 dark:hover:bg-indigo-900/10 transition-colors ${isHistory ? 'opacity-80' : ''}`}>
-                    <td className="py-3 px-5 text-[11px] font-bold text-slate-950 dark:text-slate-100 font-mono-tech tracking-tighter whitespace-nowrap overflow-hidden text-ellipsis">{m.id}</td>
+                    <td className="py-3 px-5 text-[12px] font-bold text-slate-950 dark:text-slate-100 font-mono-tech tracking-tighter whitespace-nowrap overflow-hidden text-ellipsis">{m.id}</td>
                     <td className="py-3 px-5 whitespace-nowrap overflow-hidden">
-                      <span className={`px-2.5 py-1 border text-[11px] font-black uppercase tracking-tight inline-block ${getStatusClass(m.status)}`}>
+                      <span className={`px-2.5 py-1 border text-[12px] font-black uppercase tracking-tight inline-block ${getStatusClass(m.status)}`}>
                         {m.status}
                       </span>
                     </td>
-                    <td className="py-3 px-5 text-[11px] font-black text-slate-950 dark:text-slate-100 uppercase tracking-tighter whitespace-nowrap overflow-hidden text-ellipsis">{m.cia}</td>
-                    <td className="py-3 px-5 text-[11px] font-bold text-slate-950 dark:text-slate-200 font-mono-tech tracking-tight whitespace-nowrap overflow-hidden text-ellipsis">{formatDisplayDate(m.dataHoraPuxado)}</td>
-                    <td className="py-3 px-5 text-[11px] font-bold text-slate-950 dark:text-slate-200 font-mono-tech tracking-tight whitespace-nowrap overflow-hidden text-ellipsis">{formatDisplayDate(m.dataHoraRecebido)}</td>
+                    <td className="py-3 px-5 text-[12px] font-black text-slate-950 dark:text-slate-100 uppercase tracking-tighter whitespace-nowrap overflow-hidden text-ellipsis">{m.cia}</td>
+                    <td className="py-3 px-5 text-[12px] font-bold text-slate-950 dark:text-slate-200 font-mono-tech tracking-tight whitespace-nowrap overflow-hidden text-ellipsis">{formatDisplayDate(m.dataHoraPuxado)}</td>
+                    <td className="py-3 px-5 text-[12px] font-bold text-slate-950 dark:text-slate-200 font-mono-tech tracking-tight whitespace-nowrap overflow-hidden text-ellipsis">{formatDisplayDate(m.dataHoraRecebido)}</td>
                     <td onClick={() => !isHistory && canFillRepr && onOpenReprFill(m.id)} className={`py-3 px-5 transition-all overflow-hidden text-ellipsis ${!isHistory && canFillRepr ? 'cursor-pointer hover:bg-indigo-100/60 dark:hover:bg-indigo-900/30' : ''}`}>
-                      <div className={`flex items-center gap-1.5 text-[11px] font-mono-tech tracking-tight whitespace-nowrap ${!isHistory && canFillRepr ? 'text-indigo-600 dark:text-indigo-400 font-black' : 'text-slate-950 dark:text-slate-200 font-bold'}`}>
+                      <div className={`flex items-center gap-1.5 text-[12px] font-mono-tech tracking-tight whitespace-nowrap ${!isHistory && canFillRepr ? 'text-indigo-600 dark:text-indigo-400 font-black' : 'text-slate-950 dark:text-slate-200 font-bold'}`}>
                         {formatDisplayDate(m.dataHoraRepresentanteCIA)}
                         {!isHistory && canFillRepr && !hasReprDate && <Edit size={10} className="text-indigo-400 animate-pulse" />}
                       </div>
                     </td>
                     {isHistory && (
-                      <td className="py-3 px-5 text-[11px] font-bold font-mono-tech tracking-tight whitespace-nowrap overflow-hidden text-ellipsis text-emerald-600 dark:text-emerald-400">{formatDisplayDate(m.dataHoraEntregue)}</td>
+                      <td className="py-3 px-5 text-[12px] font-bold font-mono-tech tracking-tight whitespace-nowrap overflow-hidden text-ellipsis text-emerald-600 dark:text-emerald-400">{formatDisplayDate(m.dataHoraEntregue)}</td>
                     )}
-                    <td className="py-3 px-5 text-[11px] font-bold text-slate-950 dark:text-slate-200 uppercase whitespace-nowrap overflow-hidden text-ellipsis">{m.turno}</td>
+                    <td className="py-3 px-5 text-[12px] font-bold text-slate-950 dark:text-slate-200 uppercase whitespace-nowrap overflow-hidden text-ellipsis">{m.turno}</td>
                     <td className="py-3 px-5 text-right">
                       <button onClick={(e) => handleOpenMenu(e, m.id)} className="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition-all border border-transparent hover:border-indigo-200 dark:hover:border-indigo-800">
                         <History size={16} />
@@ -336,15 +336,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
         <div className="p-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
             <div className="space-y-1.5">
-              <label className="text-[11px] font-black text-slate-950 dark:text-slate-300 uppercase tracking-tighter">Companhia Aérea</label>
+              <label className="text-[12px] font-black text-slate-950 dark:text-slate-300 uppercase tracking-tighter">Companhia Aérea</label>
               <CustomSelect value={formData.cia} onChange={v => setFormData({...formData, cia: v})} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-[11px] font-black text-slate-950 dark:text-slate-300 uppercase tracking-tighter">Manifesto Puxado</label>
+              <label className="text-[12px] font-black text-slate-950 dark:text-slate-300 uppercase tracking-tighter">Manifesto Puxado</label>
               <CustomDateTimePicker value={formData.dataHoraPuxado} onChange={v => setFormData({...formData, dataHoraPuxado: v})} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-[11px] font-black text-slate-950 dark:text-slate-300 uppercase tracking-tighter">Manifesto Recebido</label>
+              <label className="text-[12px] font-black text-slate-950 dark:text-slate-300 uppercase tracking-tighter">Manifesto Recebido</label>
               <CustomDateTimePicker value={formData.dataHoraRecebido} onChange={v => setFormData({...formData, dataHoraRecebido: v})} />
             </div>
             <div>
