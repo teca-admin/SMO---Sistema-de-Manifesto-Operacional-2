@@ -134,14 +134,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
     } catch { return null; }
   };
 
-  // Histórico ordenado pela data de atualização (mais recentes primeiro)
+  // Histórico limitado aos 100 mais recentes atualizados
   const allHistory = manifestos
     .filter(m => m.status === 'Manifesto Entregue' || m.status === 'Manifesto Cancelado')
     .sort((a, b) => {
       const dateA = parseBRDate(a.carimboDataHR);
       const dateB = parseBRDate(b.carimboDataHR);
       return (dateB?.getTime() || 0) - (dateA?.getTime() || 0);
-    });
+    })
+    .slice(0, 100);
 
   const formatDisplayDate = (isoStr: string | undefined) => {
     if (!isoStr || isoStr === '---' || isoStr === '') return '---';
@@ -176,7 +177,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       entregue.includes(search) ||
       repr.includes(search)
     );
-  }).slice(0, 100);
+  });
 
   const getStatusClass = (status: string) => {
     switch (status) {
@@ -377,7 +378,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <Archive size={14} className="text-slate-400" /> Arquivo de Manifestos Concluídos
             </h3>
             <div className="h-4 w-[1px] bg-slate-300 dark:bg-slate-600" />
-            <span className="text-[9px] font-bold text-slate-400 uppercase italic">Processados: {allHistory.length}</span>
+            <span className="text-[9px] font-bold text-slate-400 uppercase italic">Recentes: {allHistory.length}</span>
           </div>
           <div className="flex items-center gap-4 w-full md:w-auto">
             {showHistory && (
