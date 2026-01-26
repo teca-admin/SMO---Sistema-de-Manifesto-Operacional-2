@@ -110,9 +110,12 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({ st
   };
 
   const setShortcut = (type: 't1' | 't2' | 't3' | 'hoje') => {
-    const now = new Date();
-    let s = new Date(now);
-    let e = new Date(now);
+    // Lógica alterada: Para turnos, usamos a data já selecionada (startDate) como base.
+    // Para o botão 'Hoje', resetamos para a data atual do sistema.
+    const baseDate = type === 'hoje' ? new Date() : new Date(startDate);
+    
+    let s = new Date(baseDate);
+    let e = new Date(baseDate);
 
     switch (type) {
       case 't1':
