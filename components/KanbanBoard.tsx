@@ -1,13 +1,16 @@
+
 import React, { useState, useEffect } from 'react';
 import { Manifesto } from '../types';
-import { Box, Play, CheckCircle2, UserCheck, Clock, Activity, Timer, AlertTriangle, ShieldAlert } from 'lucide-react';
+import { Box, Play, CheckCircle2, UserCheck, Clock, Activity, Timer, AlertTriangle, ShieldAlert, Share2, Copy, Check } from 'lucide-react';
 
 interface KanbanBoardProps {
   manifestos: Manifesto[];
+  isExternalView?: boolean;
 }
 
-export const KanbanBoard: React.FC<KanbanBoardProps> = ({ manifestos }) => {
+export const KanbanBoard: React.FC<KanbanBoardProps> = ({ manifestos, isExternalView = false }) => {
   const [, setTick] = useState(0);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -56,6 +59,14 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ manifestos }) => {
       bgColor: 'bg-indigo-50/30 dark:bg-indigo-900/10'
     }
   ];
+
+  const handleCopyLink = () => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('view', 'fluxo');
+    navigator.clipboard.writeText(url.toString());
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const parseBRDate = (brStr: string | undefined): Date | null => {
     if (!brStr || brStr === '---' || brStr === '') return null;
@@ -110,18 +121,31 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ manifestos }) => {
   };
 
   return (
-    <div className="flex flex-col gap-4 animate-fadeIn h-[calc(100vh-120px)] overflow-hidden">
-      <div className="bg-[#0f172a] dark:bg-[#020617] border-2 border-slate-800 dark:border-slate-900 p-4 flex items-center justify-between shadow-lg shrink-0">
+    <div className={`flex flex-col gap-4 animate-fadeIn ${isExternalView ? 'h-screen' : 'h-[calc(100vh-120px)]'} overflow-hidden`}>
+      <div className="bg-[#0f172a] dark:bg-[#020617] border-2 border-slate-800 dark:border-slate-900 p-4 flex items-center justify-between shadow-lg shrink-0 rounded-sm">
         <div className="flex items-center gap-4">
           <div className="p-2 bg-indigo-600 rounded">
             <Activity size={20} className="text-white" />
           </div>
           <div>
-            <h2 className="text-[14px] font-black text-white uppercase tracking-[0.2em]">Painel de Controle de Fluxo</h2>
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Monitoramento unificado em tempo real</p>
+            <h2 className="text-[14px] font-black text-white uppercase tracking-[0.2em]">
+              {isExternalView ? 'Visualização Externa - Monitor de Fluxo' : 'Painel de Controle de Fluxo'}
+            </h2>
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+              {isExternalView ? 'Acesso Restrito ao Fluxo Operacional' : 'Monitoramento unificado em tempo real'}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-4">
+           {!isExternalView && (
+             <button 
+                onClick={handleCopyLink}
+                className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black uppercase tracking-widest transition-all rounded"
+             >
+                {copied ? <Check size={12} /> : <Share2 size={12} />}
+                {copied ? 'Link Copiado!' : 'Gerar Link Externo'}
+             </button>
+           )}
            <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 border border-slate-700">
               <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
               <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Live Sync</span>
@@ -190,6 +214,11 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ manifestos }) => {
           </div>
         ))}
       </div>
+      {isExternalView && (
+        <div className="py-2 text-center border-t border-slate-200 dark:border-slate-900 bg-white dark:bg-black/20">
+           <p className="text-[8px] font-black uppercase tracking-[0.5em] text-slate-400">SMO Unified Flow Monitoring - WFS Terminal</p>
+        </div>
+      )}
     </div>
   );
 };

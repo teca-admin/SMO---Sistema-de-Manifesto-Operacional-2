@@ -15,6 +15,7 @@ function App() {
   const [manifestos, setManifestos] = useState<Manifesto[]>([]);
   const [nextId, setNextId] = useState<string>('Automático');
   const [isMobile, setIsMobile] = useState(false);
+  const [isExternalView, setIsExternalView] = useState(false);
   
   const [darkMode, setDarkMode] = useState(() => {
     return localStorage.getItem('smo_theme') === 'dark';
@@ -35,6 +36,15 @@ function App() {
       return parsed ? parsed.Nome_Completo : null;
     } catch { return null; }
   });
+
+  // Check for external view parameter on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('view') === 'fluxo') {
+      setIsExternalView(true);
+      setActiveTab('fluxo');
+    }
+  }, []);
 
   useEffect(() => {
     if (darkMode) {
@@ -244,6 +254,18 @@ function App() {
     localStorage.removeItem('smo_active_profile');
     window.location.reload();
   };
+
+  // ------------------------------------------------------------------
+  // RENDER EXCLUSIVE EXTERNAL VIEW (FLUXO ONLY)
+  // ------------------------------------------------------------------
+  if (isExternalView) {
+    return (
+      <div className="min-h-screen flex flex-col bg-[#f8fafc] dark:bg-[#0f172a] p-4 transition-colors duration-300">
+        <KanbanBoard manifestos={manifestos} isExternalView={true} />
+        {alert && <AlertToast type={alert.type} msg={alert.msg} />}
+      </div>
+    );
+  }
 
   if (isMobile) {
     return (
