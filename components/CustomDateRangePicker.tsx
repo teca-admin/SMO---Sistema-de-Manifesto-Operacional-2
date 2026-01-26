@@ -153,21 +153,44 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({ st
     const clickedDate = new Date(viewDate.getFullYear(), viewDate.getMonth(), day);
     if (isFutureDate(clickedDate)) return;
     setActiveShortcut(null);
+
     if (selectionStep === 1) {
+      // Configura Início 00:00 e Fim 23:59 do mesmo dia selecionado
       const newStart = new Date(clickedDate);
-      newStart.setHours(startDate.getHours(), startDate.getMinutes());
+      newStart.setHours(0, 0, 0, 0);
+      
+      const newEnd = new Date(clickedDate);
+      newEnd.setHours(23, 59, 59, 999);
+      
       setStartDate(newStart);
-      setEndDate(newStart); 
+      setEndDate(newEnd);
+      setTimeInputs({
+        start: "00:00",
+        end: "23:59"
+      });
       setSelectionStep(2);
     } else {
+      // Mantém Início (já selecionado) e define o novo Fim como 23:59 do dia clicado
       const newEnd = new Date(clickedDate);
-      newEnd.setHours(endDate.getHours(), endDate.getMinutes());
+      newEnd.setHours(23, 59, 59, 999);
+      
       if (newEnd < startDate) {
-        const temp = new Date(startDate);
-        setStartDate(newEnd);
-        setEndDate(temp);
+        // Se inverterem a ordem, ajustamos: novo Início (00:00) e novo Fim (23:59)
+        const swappedStart = new Date(newEnd);
+        swappedStart.setHours(0, 0, 0, 0);
+        
+        const swappedEnd = new Date(startDate);
+        swappedEnd.setHours(23, 59, 59, 999);
+        
+        setStartDate(swappedStart);
+        setEndDate(swappedEnd);
+        setTimeInputs({
+          start: "00:00",
+          end: "23:59"
+        });
       } else {
         setEndDate(newEnd);
+        setTimeInputs(prev => ({ ...prev, end: "23:59" }));
       }
       setSelectionStep(1);
     }
