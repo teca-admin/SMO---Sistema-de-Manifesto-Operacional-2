@@ -37,6 +37,9 @@ function App() {
     } catch { return null; }
   });
 
+  // Identificação do Administrador Rafael
+  const isAdmin = activeOperatorName === "RAFAEL ABRAÃO DE SOUZA RODRIGUES";
+
   // Check for external view parameter on mount
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -261,7 +264,7 @@ function App() {
   if (isExternalView) {
     return (
       <div className="min-h-screen flex flex-col bg-[#f8fafc] dark:bg-[#0f172a] p-4 transition-colors duration-300">
-        <KanbanBoard manifestos={manifestos} isExternalView={true} />
+        <KanbanBoard manifestos={manifestos} isExternalView={true} isAdmin={false} />
         {alert && <AlertToast type={alert.type} msg={alert.msg} />}
       </div>
     );
@@ -451,7 +454,7 @@ function App() {
               onOpenAssign={setAssignId => setAssigningId(setAssignId)}
             />
           ) : activeTab === 'fluxo' ? (
-            <KanbanBoard manifestos={manifestos} />
+            <KanbanBoard manifestos={manifestos} isAdmin={isAdmin} />
           ) : (
             <EfficiencyDashboard manifestos={manifestos} openHistory={setViewingHistoryId} />
           )}

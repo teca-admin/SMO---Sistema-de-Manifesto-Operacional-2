@@ -6,9 +6,10 @@ import { Box, Play, CheckCircle2, UserCheck, Clock, Activity, Timer, AlertTriang
 interface KanbanBoardProps {
   manifestos: Manifesto[];
   isExternalView?: boolean;
+  isAdmin?: boolean;
 }
 
-export const KanbanBoard: React.FC<KanbanBoardProps> = ({ manifestos, isExternalView = false }) => {
+export const KanbanBoard: React.FC<KanbanBoardProps> = ({ manifestos, isExternalView = false, isAdmin = false }) => {
   const [, setTick] = useState(0);
   const [copied, setCopied] = useState(false);
 
@@ -137,7 +138,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ manifestos, isExternal
           </div>
         </div>
         <div className="flex items-center gap-4">
-           {!isExternalView && (
+           {isAdmin && !isExternalView && (
              <button 
                 onClick={handleCopyLink}
                 className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black uppercase tracking-widest transition-all rounded"
