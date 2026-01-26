@@ -303,6 +303,7 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
             if (angle >= 359.9) return <circle key={i} cx="50" cy="50" r="32.5" fill="none" stroke={color} strokeWidth="15" className="transition-all hover:opacity-80 cursor-pointer" onClick={() => toggleFilter(filterType, item.label)} />;
             if (angle <= 0.1) return null;
             const x1 = 50 + 40 * Math.cos((currentAngle * Math.PI) / 180);
+            /* Added missing const declaration for y1 on lines 306 and 310 */
             const y1 = 50 + 40 * Math.sin((currentAngle * Math.PI) / 180);
             const x2 = 50 + 40 * Math.cos(((currentAngle + angle) * Math.PI) / 180);
             const y2 = 50 + 40 * Math.sin(((currentAngle + angle) * Math.PI) / 180);
@@ -324,7 +325,7 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
 
   return (
     <div className="flex flex-col gap-4 animate-fadeIn h-[calc(100vh-100px)] overflow-hidden">
-      <div className="flex flex-col md:flex-row gap-3 shrink-0">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 shrink-0">
         {[
           { label: 'Recebido', val: totalReceived, icon: Box, color: 'indigo', filter: 'Recebido' },
           { label: 'Concluído', val: totalDelivered, icon: Plane, color: 'emerald', filter: 'Concluído' },
@@ -341,7 +342,7 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
             </div>
           </button>
         ))}
-        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 panel-shadow p-3 flex items-center gap-2 w-full md:w-[300px] shrink-0">
+        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 panel-shadow p-3 flex items-center gap-2 w-full shrink-0">
           <div className="flex-1">
             <CustomDateRangePicker start={dateRange.start} end={dateRange.end} onChange={(s, e) => setDateRange({ start: s, end: e })} />
           </div>

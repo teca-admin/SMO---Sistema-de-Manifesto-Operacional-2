@@ -352,7 +352,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <h2 className="text-sm font-black text-white uppercase tracking-tight">{activeProfile.Nome_Completo}</h2>
            </div>
         </div>
-        <button handleLogout={handleLogout} className="h-8 px-4 bg-red-600/10 hover:bg-red-600 border border-red-600/30 hover:border-red-600 text-red-500 hover:text-white text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2">
+        <button onClick={handleLogout} className="h-8 px-4 bg-red-600/10 hover:bg-red-600 border border-red-600/30 hover:border-red-600 text-red-500 hover:text-white text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2">
           <LogOut size={12} /> Sair do Terminal
         </button>
       </div>
