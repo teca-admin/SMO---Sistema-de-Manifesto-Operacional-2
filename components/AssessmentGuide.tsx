@@ -73,15 +73,25 @@ const QUESTIONS: Question[] = [
   },
   {
     id: 8,
-    text: "Qual a cor do status de SLA Crítico (Vencido) no Kanban de Fluxo?",
-    options: ["Amarelo", "Azul", "Verde", "Vermelho"],
-    correct: 3
+    text: "Qual informação deve ser inserida no campo 'Manifesto Puxado' no momento do cadastro?",
+    options: [
+      "Data e Hora atual do registro no sistema",
+      "Data e Hora da folha do manifesto puxado impresso",
+      "Horário estimado de chegada no terminal",
+      "Apenas o número do voo sem data"
+    ],
+    correct: 1
   },
   {
     id: 9,
-    text: "Onde é possível consultar a rastreabilidade completa e logs de auditoria de um manifesto?",
-    options: ["Painel Principal", "Dossiê/Detalhes do Log", "Aba Eficiência", "Não é possível consultar"],
-    correct: 1
+    text: "Qual informação deve ser inserida no campo 'Manifesto Recebido'?",
+    options: [
+      "Horário de abertura do portão de carga",
+      "Data e Hora atual que está realizando o cadastro",
+      "Atribuir Data e Hora que o representante da CIA entregou o manifesto (Constado no carimbo da presença)",
+      "Horário que a carga foi alocada no armazém"
+    ],
+    correct: 2
   },
   {
     id: 10,
