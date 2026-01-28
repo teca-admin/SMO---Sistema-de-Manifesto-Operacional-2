@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState, useEffect } from 'react';
 import { Manifesto, CIAS } from '../types';
 import { 
@@ -33,7 +32,7 @@ interface ActiveFilters {
   usuarioCadastro: string | null;
   status: string | null;
   manifestoId: string | null;
-  hora: number[]; // Alterado para array para suportar seleção múltipla
+  hora: number[]; 
   onlyViolations: boolean;
 }
 
@@ -56,7 +55,6 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
 
   const [isCtrlPressed, setIsCtrlPressed] = useState(false);
 
-  // Monitora a tecla CTRL para habilitar seleção múltipla
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Control' || e.key === 'Meta') setIsCtrlPressed(true);
@@ -131,7 +129,6 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
       setActiveFilters(prev => {
         const isAlreadySelected = prev.hora.includes(value);
         if (isCtrlPressed) {
-          // Modo seleção múltipla
           return {
             ...prev,
             hora: isAlreadySelected 
@@ -139,7 +136,6 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
               : [...prev.hora, value].sort((a, b) => a - b)
           };
         } else {
-          // Modo seleção única
           return {
             ...prev,
             hora: isAlreadySelected && prev.hora.length === 1 ? [] : [value]
@@ -286,20 +282,28 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
       const com = parseAnyDate(m.dataHoraCompleto);
       const ass = parseAnyDate(m.dataHoraRepresentanteCIA);
       
+      // SLA Apresentação (Puxado -> Recebido)
       if (pux && rec) { 
-        const diff = (rec.getTime() - pux.getTime()) / 60000;
+        let diff = (rec.getTime() - pux.getTime()) / 60000;
+        if (diff < 0) diff = 0; // Corrige inconsistência (Recebido antes de Puxado)
         tE += diff; cE++;
         if (diff > maxE) maxE = diff;
         if (diff <= 10) withinE++;
       }
+      
+      // SLA Disponibilidade (Iniciado -> Completo)
       if (ini && com) { 
-        const diff = (com.getTime() - ini.getTime()) / 60000;
+        let diff = (com.getTime() - ini.getTime()) / 60000;
+        if (diff < 0) diff = 0;
         tP += diff; cP++;
         if (diff > maxP) maxP = diff;
         if (diff <= 120) withinP++; 
       }
+      
+      // SLA Comparecimento (Completo -> Assinatura)
       if (com && ass) { 
-        const diff = (ass.getTime() - com.getTime()) / 60000;
+        let diff = (ass.getTime() - com.getTime()) / 60000;
+        if (diff < 0) diff = 0;
         tA += diff; cA++;
         if (diff > maxA) maxA = diff;
         if (diff <= 15) withinA++; 
@@ -335,11 +339,13 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
   const maxHourlyCount = Math.max(flowStats.max, 10) + 2;
 
   const formatMinutes = (min: number) => {
-    if (min <= 0) return "0m";
+    if (min < 0) return "0m";
+    if (min === 0) return "0m";
+    if (min < 1) return "< 1m";
     if (min < 60) return `${Math.round(min)}m`;
     const h = Math.floor(min / 60);
     const m = Math.round(min % 60);
-    return `${h}h ${m}m`;
+    return m > 0 ? `${h}h ${m}m` : `${h}h`;
   };
 
   const DonutChart = ({ data, colorMapper, filterType, total }: { 
