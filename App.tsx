@@ -4,14 +4,15 @@ import { Dashboard } from './components/Dashboard';
 import { OperationalDashboard } from './components/OperationalDashboard';
 import { KanbanBoard } from './components/KanbanBoard';
 import { EfficiencyDashboard } from './components/EfficiencyDashboard';
+import { AssessmentGuide } from './components/AssessmentGuide';
 import { MobileView } from './components/MobileView';
 import { EditModal, LoadingOverlay, HistoryModal, AlertToast, CancellationModal, AssignResponsibilityModal, ReprFillModal } from './components/Modals';
 import { Manifesto, User, SMO_Sistema_DB } from './types';
 import { supabase } from './supabaseClient';
-import { LayoutGrid, Plane, LogOut, Terminal, Activity, Columns, BarChart3, Sun, Moon } from 'lucide-react';
+import { LayoutGrid, Plane, LogOut, Terminal, Activity, Columns, BarChart3, Sun, Moon, GraduationCap } from 'lucide-react';
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'sistema' | 'operacional' | 'fluxo' | 'eficiencia'>('sistema');
+  const [activeTab, setActiveTab] = useState<'sistema' | 'operacional' | 'fluxo' | 'eficiencia' | 'avaliacao'>('sistema');
   const [manifestos, setManifestos] = useState<Manifesto[]>([]);
   const [nextId, setNextId] = useState<string>('Automático');
   const [isMobile, setIsMobile] = useState(false);
@@ -37,10 +38,8 @@ function App() {
     } catch { return null; }
   });
 
-  // Identificação do Administrador Rafael
   const isAdmin = activeOperatorName === "RAFAEL ABRAÃO DE SOUZA RODRIGUES";
 
-  // Check for external view parameter on mount
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('view') === 'fluxo') {
@@ -258,9 +257,6 @@ function App() {
     window.location.reload();
   };
 
-  // ------------------------------------------------------------------
-  // RENDER EXCLUSIVE EXTERNAL VIEW (FLUXO ONLY)
-  // ------------------------------------------------------------------
   if (isExternalView) {
     return (
       <div className="min-h-screen flex flex-col bg-[#f8fafc] dark:bg-[#0f172a] p-4 transition-colors duration-300">
@@ -274,8 +270,8 @@ function App() {
     return (
       <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950">
         <MobileView 
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
+          activeTab={activeTab === 'avaliacao' ? 'sistema' : activeTab}
+          setActiveTab={setActiveTab as any}
           manifestos={manifestos}
           darkMode={darkMode}
           setDarkMode={setDarkMode}
@@ -378,6 +374,13 @@ function App() {
                 <BarChart3 size={13} className={activeTab === 'eficiencia' ? 'text-indigo-300' : 'text-slate-50'} />
                 EFICIÊNCIA
               </button>
+              <button 
+                onClick={() => setActiveTab('avaliacao')} 
+                className={`group flex items-center gap-2 px-5 h-16 text-[9px] font-black uppercase tracking-widest transition-all border-b-4 ${activeTab === 'avaliacao' ? 'border-yellow-500 bg-slate-800/50' : 'border-transparent text-slate-400 hover:text-white hover:bg-slate-800/30'}`}
+              >
+                <GraduationCap size={13} className={activeTab === 'avaliacao' ? 'text-yellow-400' : 'text-slate-50'} />
+                AVALIAÇÃO
+              </button>
             </nav>
           </div>
           
@@ -455,8 +458,10 @@ function App() {
             />
           ) : activeTab === 'fluxo' ? (
             <KanbanBoard manifestos={manifestos} isAdmin={isAdmin} />
-          ) : (
+          ) : activeTab === 'eficiencia' ? (
             <EfficiencyDashboard manifestos={manifestos} openHistory={setViewingHistoryId} />
+          ) : (
+            <AssessmentGuide onShowAlert={showAlert} />
           )}
         </div>
       </main>
