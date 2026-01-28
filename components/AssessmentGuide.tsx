@@ -95,8 +95,13 @@ const QUESTIONS: Question[] = [
   },
   {
     id: 10,
-    text: "Qual o prefixo padrão dos IDs de manifesto no ano de 2026?",
-    options: ["WFS-26", "SMO-26", "MAO-26", "CIA-26"],
+    text: "O que ocorre no sistema v2.5 quando um Auxiliar Operacional clica no botão 'Puxar' dentro do Pool de Cargas?",
+    options: [
+      "O manifesto é cancelado imediatamente",
+      "O ID do manifesto muda para 'URGENTE'",
+      "O operador é registrado como 'Responsável' e o item passa para o seu 'Terminal Ativo'",
+      "A CIA aérea é notificada para retirar a carga"
+    ],
     correct: 2
   }
 ];
