@@ -14,7 +14,8 @@ import {
   Trophy,
   Loader2,
   X,
-  User as UserIcon
+  User as UserIcon,
+  ChevronRight
 } from 'lucide-react';
 
 interface AssessmentGuideProps {
@@ -37,7 +38,7 @@ const QUESTIONS: Question[] = [
   },
   {
     id: 2,
-    text: "Qual o tempo máximo recomendado pela WFS para finalizar o processamento total de um manifesto?",
+    text: "Qual o tempo máximo que a WFS tem para disponibilizar o manifesto?",
     options: ["1 Hora", "2 Horas", "3 Horas", "4 Horas"],
     correct: 1
   },
@@ -99,6 +100,7 @@ export const AssessmentGuide: React.FC<AssessmentGuideProps> = ({ onShowAlert })
   const [loading, setLoading] = useState(false);
   const [quizStarted, setQuizStarted] = useState(false);
   const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [answers, setAnswers] = useState<number[]>([]);
   const [quizFinished, setQuizFinished] = useState(false);
   const [userResult, setUserResult] = useState<any>(null);
@@ -106,7 +108,6 @@ export const AssessmentGuide: React.FC<AssessmentGuideProps> = ({ onShowAlert })
   
   const searchRef = useRef<HTMLDivElement>(null);
 
-  // Fechar sugestões ao clicar fora
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
@@ -117,7 +118,6 @@ export const AssessmentGuide: React.FC<AssessmentGuideProps> = ({ onShowAlert })
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Carregar dados de relatório
   useEffect(() => {
     if (activeSubTab === 'relatorio') {
       fetchReport();
@@ -174,21 +174,26 @@ export const AssessmentGuide: React.FC<AssessmentGuideProps> = ({ onShowAlert })
       setQuizStarted(true);
       setAnswers([]);
       setCurrentQuestion(0);
+      setSelectedOption(null);
       setQuizFinished(false);
     } catch (e) {
       setUserResult({ Nome_Funcionario: operator.Nome, Cargo: operator.Cargo || 'OPERADOR' });
       setQuizStarted(true);
       setAnswers([]);
       setCurrentQuestion(0);
+      setSelectedOption(null);
       setQuizFinished(false);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAnswer = (optionIdx: number) => {
-    const newAnswers = [...answers, optionIdx];
+  const handleNext = () => {
+    if (selectedOption === null) return;
+    
+    const newAnswers = [...answers, selectedOption];
     setAnswers(newAnswers);
+    setSelectedOption(null);
     
     if (currentQuestion < QUESTIONS.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
@@ -377,17 +382,30 @@ export const AssessmentGuide: React.FC<AssessmentGuideProps> = ({ onShowAlert })
                   {QUESTIONS[currentQuestion].text}
                 </h4>
 
-                <div className="grid grid-cols-1 gap-3">
+                <div className="grid grid-cols-1 gap-3 mb-10">
                    {QUESTIONS[currentQuestion].options.map((opt, idx) => (
                      <button 
                       key={idx} 
-                      onClick={() => handleAnswer(idx)}
-                      className="w-full p-5 text-left border-2 border-slate-100 dark:border-slate-700 hover:border-indigo-600 dark:hover:border-indigo-500 bg-white dark:bg-slate-900 group transition-all flex items-center justify-between"
+                      onClick={() => setSelectedOption(idx)}
+                      className={`w-full p-5 text-left border-2 transition-all flex items-center justify-between group ${selectedOption === idx ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20' : 'border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-slate-300'}`}
                      >
-                        <span className="text-sm font-bold text-slate-700 dark:text-slate-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400">{opt}</span>
-                        <div className="w-6 h-6 rounded-full border-2 border-slate-200 dark:border-slate-700 group-hover:border-indigo-600 transition-all"></div>
+                        <span className={`text-sm font-bold ${selectedOption === idx ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-700 dark:text-slate-300'}`}>{opt}</span>
+                        <div className={`w-6 h-6 rounded-full border-2 transition-all flex items-center justify-center ${selectedOption === idx ? 'border-indigo-600 bg-indigo-600' : 'border-slate-200 dark:border-slate-700'}`}>
+                           {selectedOption === idx && <div className="w-2 h-2 bg-white rounded-full"></div>}
+                        </div>
                      </button>
                    ))}
+                </div>
+
+                <div className="flex justify-end pt-6 border-t border-slate-100 dark:border-slate-700">
+                   <button 
+                    disabled={selectedOption === null}
+                    onClick={handleNext}
+                    className={`h-14 px-10 flex items-center gap-3 text-[11px] font-black uppercase tracking-widest transition-all shadow-xl ${selectedOption !== null ? 'bg-indigo-600 text-white hover:bg-slate-900' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}
+                   >
+                     {currentQuestion < QUESTIONS.length - 1 ? 'Confirmar e Avançar' : 'Finalizar Avaliação'}
+                     <ChevronRight size={18} />
+                   </button>
                 </div>
               </div>
             )}
