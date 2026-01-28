@@ -1,9 +1,8 @@
-
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { Manifesto, Funcionario, OperationalLog } from '../types';
 import { CustomDateTimePicker } from './CustomDateTimePicker';
 import { CustomSelect } from './CustomSelect';
-import { UserPlus, Search, UserCheck, Loader2, X, Clock, ClipboardEdit, CheckCircle2, User as UserIcon, MapPin, Activity, Plane, History, MessageSquareQuote, FileText, UserCircle, ShieldAlert } from 'lucide-react';
+import { UserPlus, Search, UserCheck, Loader2, X, Clock, ClipboardEdit, CheckCircle2, User as UserIcon, MapPin, Activity, Plane, History, MessageSquareQuote, FileText, UserCircle, ShieldAlert, AlertOctagon } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
 interface EditModalProps {
@@ -40,7 +39,20 @@ export const EditModal: React.FC<EditModalProps> = ({ data, onClose, onSave }) =
   const [justificativa, setJustificativa] = React.useState('');
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
 
+  const dateInconsistency = useMemo(() => {
+    if (formData.dataHoraPuxado && formData.dataHoraRecebido) {
+      const pux = new Date(formData.dataHoraPuxado);
+      const rec = new Date(formData.dataHoraRecebido);
+      return rec < pux;
+    }
+    return false;
+  }, [formData.dataHoraPuxado, formData.dataHoraRecebido]);
+
   const handleSave = () => {
+    if (dateInconsistency) {
+      setErrorMsg("INCONSISTÊNCIA: Recebimento não pode ser anterior ao Puxe.");
+      return;
+    }
     if (justificativa.trim().length < 5) { 
       setErrorMsg("Justificativa obrigatória para auditoria (mín. 5 caracteres)."); 
       return; 
@@ -85,13 +97,27 @@ export const EditModal: React.FC<EditModalProps> = ({ data, onClose, onSave }) =
           <div className="grid grid-cols-2 gap-4 border-t border-slate-100 dark:border-slate-700 pt-6">
             <div className="space-y-1.5">
               <label className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-tighter">Manifesto Puxado</label>
-              <CustomDateTimePicker value={formData.dataHoraPuxado || ''} onChange={v => setFormData({...formData, dataHoraPuxado: v})} />
+              <div className={dateInconsistency ? "ring-2 ring-red-500 animate-pulse" : ""}>
+                <CustomDateTimePicker value={formData.dataHoraPuxado || ''} onChange={v => setFormData({...formData, dataHoraPuxado: v})} />
+              </div>
             </div>
             <div className="space-y-1.5">
               <label className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-tighter">Manifesto Recebido</label>
-              <CustomDateTimePicker value={formData.dataHoraRecebido || ''} onChange={v => setFormData({...formData, dataHoraRecebido: v})} />
+              <div className={dateInconsistency ? "ring-2 ring-red-500 animate-pulse" : ""}>
+                <CustomDateTimePicker value={formData.dataHoraRecebido || ''} onChange={v => setFormData({...formData, dataHoraRecebido: v})} />
+              </div>
             </div>
           </div>
+
+          {dateInconsistency && (
+            <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 p-4 flex items-center gap-3 animate-fadeIn">
+               <AlertOctagon size={20} className="text-red-600 shrink-0" />
+               <div className="flex flex-col">
+                  <span className="text-[10px] font-black text-red-700 dark:text-red-400 uppercase tracking-widest">Inconsistência Cronológica</span>
+                  <span className="text-[9px] font-bold text-red-600 dark:text-red-500 uppercase leading-tight">O horário de recebimento não pode ser anterior ao horário de puxe.</span>
+               </div>
+            </div>
+          )}
 
           <div className="space-y-1.5 border-t border-slate-100 dark:border-slate-700 pt-6">
             <label className="text-[9px] font-black text-slate-900 dark:text-slate-200 uppercase tracking-[0.2em] flex items-center gap-2">
@@ -112,7 +138,13 @@ export const EditModal: React.FC<EditModalProps> = ({ data, onClose, onSave }) =
 
         <div className="p-5 bg-slate-50 dark:bg-slate-900 border-t-2 border-slate-100 dark:border-slate-700 flex gap-4">
           <button onClick={onClose} className="flex-1 h-12 border-2 border-slate-300 dark:border-slate-700 text-[11px] font-black uppercase tracking-widest hover:bg-white dark:hover:bg-slate-800 transition-all text-slate-500 dark:text-slate-400">Cancelar</button>
-          <button onClick={handleSave} className="flex-1 h-12 bg-slate-900 dark:bg-indigo-600 text-white text-[11px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-lg">Salvar</button>
+          <button 
+            disabled={dateInconsistency}
+            onClick={handleSave} 
+            className={`flex-1 h-12 text-white text-[11px] font-black uppercase tracking-widest transition-all shadow-lg ${dateInconsistency ? 'bg-slate-300 dark:bg-slate-700 cursor-not-allowed opacity-50' : 'bg-slate-900 dark:bg-indigo-600 hover:bg-indigo-600'}`}
+          >
+            Salvar
+          </button>
         </div>
       </div>
     </div>

@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Manifesto, User as UserType } from '../types';
 import { CustomDateTimePicker } from './CustomDateTimePicker';
@@ -7,7 +6,7 @@ import { CustomSelect } from './CustomSelect';
 import { 
   Search, History, Edit3, XCircle, CheckSquare, Plus, Database, Filter, Edit, 
   ChevronDown, ChevronUp, Archive, User as UserIcon, LogOut, Loader2, Lock, 
-  KeyRound, Eye, EyeOff 
+  KeyRound, Eye, EyeOff, AlertOctagon
 } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
@@ -49,6 +48,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0, openUpward: false });
   const [showHistory, setShowHistory] = useState(false);
   const [historyFilter, setHistoryFilter] = useState('');
+
+  // Validação de cronologia em tempo real
+  const dateInconsistency = useMemo(() => {
+    if (formData.dataHoraPuxado && formData.dataHoraRecebido) {
+      const pux = new Date(formData.dataHoraPuxado);
+      const rec = new Date(formData.dataHoraRecebido);
+      return rec < pux;
+    }
+    return false;
+  }, [formData.dataHoraPuxado, formData.dataHoraRecebido]);
 
   useEffect(() => {
     if (onOperatorChange) {
@@ -374,14 +383,35 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
             <div className="space-y-1.5">
               <label className="text-[12px] font-black text-slate-950 dark:text-slate-300 uppercase tracking-tighter">Manifesto Puxado</label>
-              <CustomDateTimePicker value={formData.dataHoraPuxado} onChange={v => setFormData({...formData, dataHoraPuxado: v})} />
+              <div className={dateInconsistency ? "ring-2 ring-red-500 animate-pulse" : ""}>
+                <CustomDateTimePicker value={formData.dataHoraPuxado} onChange={v => setFormData({...formData, dataHoraPuxado: v})} />
+              </div>
             </div>
             <div className="space-y-1.5">
               <label className="text-[12px] font-black text-slate-950 dark:text-slate-300 uppercase tracking-tighter">Manifesto Recebido</label>
-              <CustomDateTimePicker value={formData.dataHoraRecebido} onChange={v => setFormData({...formData, dataHoraRecebido: v})} />
+              <div className={dateInconsistency ? "ring-2 ring-red-500 animate-pulse" : ""}>
+                <CustomDateTimePicker value={formData.dataHoraRecebido} onChange={v => setFormData({...formData, dataHoraRecebido: v})} />
+              </div>
             </div>
-            <div>
-              <button onClick={() => { if (!formData.cia || !formData.dataHoraPuxado) return onShowAlert('error', 'Campos Obrigatórios Pendentes'); onSave(formData, activeProfile.Nome_Completo); setFormData({ cia: '', dataHoraPuxado: '', dataHoraRecebido: '' }); }} className="w-full h-10 bg-[#0f172a] dark:bg-indigo-600 hover:bg-indigo-700 text-white font-black text-[10px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 group shadow-lg">Confirmar Registro</button>
+            <div className="flex flex-col gap-2">
+              {dateInconsistency && (
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-2 flex items-center gap-2 animate-fadeIn">
+                   <AlertOctagon size={14} className="text-red-600 shrink-0" />
+                   <span className="text-[8px] font-black text-red-700 dark:text-red-400 uppercase leading-tight">BLOQUEIO: Recebimento anterior ao Puxe.</span>
+                </div>
+              )}
+              <button 
+                disabled={dateInconsistency}
+                onClick={() => { 
+                  if (!formData.cia || !formData.dataHoraPuxado) return onShowAlert('error', 'Campos Obrigatórios Pendentes'); 
+                  if (dateInconsistency) return onShowAlert('error', 'Inconsistência cronológica detectada.');
+                  onSave(formData, activeProfile.Nome_Completo); 
+                  setFormData({ cia: '', dataHoraPuxado: '', dataHoraRecebido: '' }); 
+                }} 
+                className={`w-full h-10 font-black text-[10px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 group shadow-lg ${dateInconsistency ? 'bg-slate-300 dark:bg-slate-700 text-slate-500 cursor-not-allowed opacity-50' : 'bg-[#0f172a] dark:bg-indigo-600 hover:bg-indigo-700 text-white'}`}
+              >
+                Confirmar Registro
+              </button>
             </div>
           </div>
         </div>
