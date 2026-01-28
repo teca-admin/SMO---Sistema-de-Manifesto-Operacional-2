@@ -95,12 +95,12 @@ const QUESTIONS: Question[] = [
   },
   {
     id: 10,
-    text: "O que ocorre no sistema v2.5 quando um Auxiliar Operacional clica no botão 'Puxar' dentro do Pool de Cargas?",
+    text: "No setor de entrega existem duas estações, qual é o fluxo correto para usar as duas estações?",
     options: [
-      "O manifesto é cancelado imediatamente",
-      "O ID do manifesto muda para 'URGENTE'",
-      "O operador é registrado como 'Responsável' e o item passa para o seu 'Terminal Ativo'",
-      "A CIA aérea é notificada para retirar a carga"
+      "Ambas as estações realizam as mesmas funções de Cadastro e Puxe de forma alternada",
+      "A Estação 01 é para uso da CIA aérea e a Estação 02 para uso exclusivo da WFS",
+      "Estação 01 (Guia 'Cadastro') é somente para o sistema, enquanto a Estação 02 é para operação (Guia 'Puxe')",
+      "A Estação 01 é para conferência física de volumes e a Estação 02 para emissão de etiquetas"
     ],
     correct: 2
   }
