@@ -20,7 +20,7 @@ interface DashboardProps {
   onOpenReprFill: (id: string) => void;
   onShowAlert: (type: 'success' | 'error', msg: string) => void;
   nextId: string;
-  onOperatorChange?: (name: string | null) => void;
+  onOperatorChange?: (profile: UserType | null) => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ 
@@ -52,7 +52,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   useEffect(() => {
     if (onOperatorChange) {
-      onOperatorChange(activeProfile ? activeProfile.Nome_Completo : null);
+      onOperatorChange(activeProfile);
     }
     if (activeProfile) {
       localStorage.setItem('smo_active_profile', JSON.stringify(activeProfile));

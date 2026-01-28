@@ -30,15 +30,16 @@ function App() {
   const [loadingMsg, setLoadingMsg] = useState<string | null>(null);
   const [alert, setAlert] = useState<{type: 'success' | 'error', msg: string} | null>(null);
   
-  const [activeOperatorName, setActiveOperatorName] = useState<string | null>(() => {
+  const [activeUser, setActiveUser] = useState<User | null>(() => {
     const saved = localStorage.getItem('smo_active_profile');
     try {
-      const parsed = saved ? JSON.parse(saved) : null;
-      return parsed ? parsed.Nome_Completo : null;
+      return saved ? JSON.parse(saved) : null;
     } catch { return null; }
   });
 
-  const isAdmin = activeOperatorName === "RAFAEL ABRAÃO DE SOUZA RODRIGUES";
+  const activeOperatorName = activeUser?.Nome_Completo || null;
+  const isAdmin = activeUser?.Usuario?.toLowerCase() === "rafael";
+  const canSeeAvaliacao = isAdmin;
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -252,7 +253,7 @@ function App() {
   };
 
   const handleLogout = () => {
-    setActiveOperatorName(null);
+    setActiveUser(null);
     localStorage.removeItem('smo_active_profile');
     window.location.reload();
   };
@@ -270,7 +271,7 @@ function App() {
     return (
       <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950">
         <MobileView 
-          activeTab={activeTab === 'avaliacao' ? 'sistema' : activeTab}
+          activeTab={(activeTab === 'avaliacao' && !canSeeAvaliacao) ? 'sistema' : activeTab}
           setActiveTab={setActiveTab as any}
           manifestos={manifestos}
           darkMode={darkMode}
@@ -306,8 +307,8 @@ function App() {
           openEdit={setEditingId}
           onOpenReprFill={setFillingReprId}
           showAlert={showAlert}
-          activeOperatorName={activeOperatorName}
-          setActiveOperatorName={setActiveOperatorName}
+          activeUser={activeUser}
+          setActiveUser={setActiveUser}
           onLogout={handleLogout}
         />
         {editingId && (
@@ -374,13 +375,15 @@ function App() {
                 <BarChart3 size={13} className={activeTab === 'eficiencia' ? 'text-indigo-300' : 'text-slate-50'} />
                 EFICIÊNCIA
               </button>
-              <button 
-                onClick={() => setActiveTab('avaliacao')} 
-                className={`group flex items-center gap-2 px-5 h-16 text-[9px] font-black uppercase tracking-widest transition-all border-b-4 ${activeTab === 'avaliacao' ? 'border-yellow-500 bg-slate-800/50' : 'border-transparent text-slate-400 hover:text-white hover:bg-slate-800/30'}`}
-              >
-                <GraduationCap size={13} className={activeTab === 'avaliacao' ? 'text-yellow-400' : 'text-slate-50'} />
-                AVALIAÇÃO
-              </button>
+              {canSeeAvaliacao && (
+                <button 
+                  onClick={() => setActiveTab('avaliacao')} 
+                  className={`group flex items-center gap-2 px-5 h-16 text-[9px] font-black uppercase tracking-widest transition-all border-b-4 ${activeTab === 'avaliacao' ? 'border-yellow-500 bg-slate-800/50' : 'border-transparent text-slate-400 hover:text-white hover:bg-slate-800/30'}`}
+                >
+                  <GraduationCap size={13} className={activeTab === 'avaliacao' ? 'text-yellow-400' : 'text-slate-50'} />
+                  AVALIAÇÃO
+                </button>
+              )}
             </nav>
           </div>
           
@@ -446,7 +449,7 @@ function App() {
               onOpenReprFill={setFillingReprId}
               onShowAlert={showAlert}
               nextId={nextId}
-              onOperatorChange={setActiveOperatorName}
+              onOperatorChange={(profile) => setActiveUser(profile)}
             />
           ) : activeTab === 'operacional' ? (
             <OperationalDashboard 
@@ -461,7 +464,7 @@ function App() {
           ) : activeTab === 'eficiencia' ? (
             <EfficiencyDashboard manifestos={manifestos} openHistory={setViewingHistoryId} />
           ) : (
-            <AssessmentGuide onShowAlert={showAlert} />
+            canSeeAvaliacao && <AssessmentGuide onShowAlert={showAlert} />
           )}
         </div>
       </main>

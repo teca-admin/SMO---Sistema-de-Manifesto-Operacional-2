@@ -1,18 +1,20 @@
 
 import React, { useState } from 'react';
-import { Manifesto, CIAS } from '../types';
+import { Manifesto, CIAS, User as UserType } from '../types';
 import { 
   LayoutGrid, Columns, BarChart3, Sun, Moon, 
   Terminal, Activity, Plus, Database, History, 
   CheckCircle2, Box, Timer, ShieldAlert,
   ChevronRight, ArrowRight, User as UserIcon,
-  KeyRound, Eye, EyeOff, Loader2
+  KeyRound, Eye, EyeOff, Loader2, GraduationCap
 } from 'lucide-react';
 import { supabase } from '../supabaseClient';
+// Fix: Import AssessmentGuide component to resolve the 'Cannot find name' error
+import { AssessmentGuide } from './AssessmentGuide';
 
 interface MobileViewProps {
-  activeTab: 'sistema' | 'operacional' | 'fluxo' | 'eficiencia';
-  setActiveTab: (tab: 'sistema' | 'operacional' | 'fluxo' | 'eficiencia') => void;
+  activeTab: 'sistema' | 'operacional' | 'fluxo' | 'eficiencia' | 'avaliacao';
+  setActiveTab: (tab: 'sistema' | 'operacional' | 'fluxo' | 'eficiencia' | 'avaliacao') => void;
   manifestos: Manifesto[];
   darkMode: boolean;
   setDarkMode: (val: boolean) => void;
@@ -22,15 +24,15 @@ interface MobileViewProps {
   openEdit: (id: string) => void;
   onOpenReprFill: (id: string) => void;
   showAlert: (type: 'success' | 'error', msg: string) => void;
-  activeOperatorName: string | null;
-  setActiveOperatorName: (name: string | null) => void;
+  activeUser: UserType | null;
+  setActiveUser: (user: UserType | null) => void;
   onLogout: () => void;
 }
 
 export const MobileView: React.FC<MobileViewProps> = ({
   activeTab, setActiveTab, manifestos, darkMode, setDarkMode,
   onSave, onAction, openHistory, openEdit, onOpenReprFill,
-  showAlert, activeOperatorName, setActiveOperatorName, onLogout
+  showAlert, activeUser, setActiveUser, onLogout
 }) => {
 
   const [form, setForm] = useState({ cia: '', puxado: '', recebido: '' });
@@ -39,12 +41,17 @@ export const MobileView: React.FC<MobileViewProps> = ({
   const [showPass, setShowPass] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
+  const canSeeAvaliacao = activeUser?.Usuario?.toLowerCase() === "rafael";
+
   // Redireciona se estiver na aba oculta 'operacional'
   React.useEffect(() => {
     if (activeTab === 'operacional') {
       setActiveTab('sistema');
     }
-  }, [activeTab, setActiveTab]);
+    if (activeTab === 'avaliacao' && !canSeeAvaliacao) {
+      setActiveTab('sistema');
+    }
+  }, [activeTab, setActiveTab, canSeeAvaliacao]);
 
   const handleLogin = async () => {
     if (!loginId.trim() || !loginPass.trim()) {
@@ -63,7 +70,7 @@ export const MobileView: React.FC<MobileViewProps> = ({
       if (error) {
         showAlert('error', 'Credenciais Inválidas');
       } else {
-        setActiveOperatorName(data.Nome_Completo);
+        setActiveUser(data);
         localStorage.setItem('smo_active_profile', JSON.stringify(data));
         showAlert('success', `Bem-vindo, ${data.Nome_Completo}`);
       }
@@ -77,8 +84,8 @@ export const MobileView: React.FC<MobileViewProps> = ({
   const getStatusClass = (status: string) => {
     switch (status) {
       case 'Manifesto Recebido': return 'bg-blue-600 text-white';
-      case 'Manifesto Iniciado': return 'bg-amber-500 text-white';
-      case 'Manifesto Finalizado': return 'bg-emerald-500 text-white';
+      case 'Manifesto Iniciado': return 'bg-amber-50 text-white';
+      case 'Manifesto Finalizado': return 'bg-emerald-50 text-white';
       case 'Manifesto Entregue': return 'bg-emerald-700 text-white';
       case 'Manifesto Cancelado': return 'bg-red-600 text-white';
       default: return 'bg-slate-600 text-white';
@@ -94,7 +101,7 @@ export const MobileView: React.FC<MobileViewProps> = ({
   };
 
   // TELA DE LOGIN MOBILE
-  if (!activeOperatorName) {
+  if (!activeUser) {
     return (
       <div className="flex flex-col h-screen bg-slate-50 dark:bg-slate-950 items-center justify-center p-6 font-sans">
         <div className="w-full max-w-sm bg-white dark:bg-slate-900 border-2 border-slate-900 dark:border-slate-800 p-8 shadow-2xl relative">
@@ -149,6 +156,16 @@ export const MobileView: React.FC<MobileViewProps> = ({
     );
   }
 
+  const navItems = [
+    { id: 'sistema', icon: LayoutGrid, label: 'Cadastro' },
+    { id: 'fluxo', icon: Columns, label: 'Fluxo' },
+    { id: 'eficiencia', icon: BarChart3, label: 'Dashboard' }
+  ];
+
+  if (canSeeAvaliacao) {
+    navItems.push({ id: 'avaliacao', icon: GraduationCap, label: 'Avaliação' });
+  }
+
   return (
     <div className="flex flex-col h-screen bg-slate-50 dark:bg-slate-950 overflow-hidden font-sans">
       {/* Top Header Mobile */}
@@ -171,7 +188,7 @@ export const MobileView: React.FC<MobileViewProps> = ({
             onClick={onLogout}
             className="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center font-black text-sm"
           >
-            {activeOperatorName?.charAt(0) || 'U'}
+            {activeUser.Nome_Completo?.charAt(0) || 'U'}
           </button>
         </div>
       </header>
@@ -181,6 +198,7 @@ export const MobileView: React.FC<MobileViewProps> = ({
         
         {activeTab === 'sistema' && (
           <div className="space-y-6 animate-fadeIn">
+            {/* ... (rest of the sistema tab content remains unchanged) */}
             <div className="bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm">
               <div className="bg-slate-100 dark:bg-slate-800 p-4 border-b border-slate-200 dark:border-slate-700">
                 <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-slate-800 dark:text-white">
@@ -213,7 +231,7 @@ export const MobileView: React.FC<MobileViewProps> = ({
                   </div>
                 </div>
                 <button 
-                  onClick={() => onSave({ cia: form.cia, dataHoraPuxado: form.puxado, dataHoraRecebido: form.puxado }, activeOperatorName || 'User')}
+                  onClick={() => onSave({ cia: form.cia, dataHoraPuxado: form.puxado, dataHoraRecebido: form.puxado }, activeUser.Nome_Completo || 'User')}
                   className="w-full h-14 bg-indigo-600 text-white font-black uppercase text-xs tracking-widest rounded-lg shadow-lg active:scale-95 transition-transform"
                 >
                   Registrar Manifesto
@@ -263,6 +281,7 @@ export const MobileView: React.FC<MobileViewProps> = ({
 
         {activeTab === 'fluxo' && (
           <div className="space-y-4 animate-fadeIn">
+            {/* ... (fluxo content) */}
             <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 text-center py-2">Monitor de Fluxo (Mobile)</h3>
             {['Manifesto Recebido', 'Manifesto Iniciado', 'Manifesto Finalizado'].map(status => {
               const filtered = manifestos.filter(m => m.status === status);
@@ -292,6 +311,7 @@ export const MobileView: React.FC<MobileViewProps> = ({
 
         {activeTab === 'eficiencia' && (
           <div className="space-y-4 animate-fadeIn">
+            {/* ... (eficiencia content) */}
             <div className="grid grid-cols-2 gap-3">
               {[
                 { label: 'Total', val: manifestos.length, color: 'indigo' },
@@ -305,27 +325,13 @@ export const MobileView: React.FC<MobileViewProps> = ({
                 </div>
               ))}
             </div>
-            
-            <div className="bg-white dark:bg-slate-900 p-6 border border-slate-200 dark:border-slate-800 rounded-2xl">
-               <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-6 flex items-center gap-2">
-                 <ShieldAlert size={16} className="text-red-500" /> Alertas Críticos (SLA)
-               </h4>
-               <div className="space-y-4">
-                  {manifestos.filter(m => m.status === 'Manifesto Iniciado').slice(0,3).map(m => (
-                    <div key={m.id} className="flex items-center justify-between border-b border-slate-50 dark:border-slate-800 pb-3 last:border-0">
-                       <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg flex items-center justify-center">
-                             <Timer size={20} />
-                          </div>
-                          <div>
-                             <p className="text-[11px] font-black text-slate-900 dark:text-white">{m.id}</p>
-                             <p className="text-[9px] font-bold text-slate-400 uppercase">{m.cia} • OPERANDO</p>
-                          </div>
-                       </div>
-                       <ChevronRight size={16} className="text-slate-300" />
-                    </div>
-                  ))}
-               </div>
+          </div>
+        )}
+
+        {activeTab === 'avaliacao' && canSeeAvaliacao && (
+          <div className="flex-1 animate-fadeIn overflow-hidden">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden h-full">
+              <AssessmentGuide onShowAlert={showAlert} />
             </div>
           </div>
         )}
@@ -333,15 +339,11 @@ export const MobileView: React.FC<MobileViewProps> = ({
 
       {/* Bottom Navigation Mobile */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-black border-t border-slate-200 dark:border-slate-800 h-20 flex items-center justify-around px-2 z-[9999] shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
-        {[
-          { id: 'sistema', icon: LayoutGrid, label: 'Cadastro' },
-          { id: 'fluxo', icon: Columns, label: 'Fluxo' },
-          { id: 'eficiencia', icon: BarChart3, label: 'Dashboard' }
-        ].map((item) => (
+        {navItems.map((item) => (
           <button
             key={item.id}
             onClick={() => setActiveTab(item.id as any)}
-            className={`flex flex-col items-center justify-center w-1/3 h-full gap-1 transition-all ${activeTab === item.id ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-600'}`}
+            className={`flex flex-col items-center justify-center w-full h-full gap-1 transition-all ${activeTab === item.id ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-600'}`}
           >
             <div className={`p-1 rounded-lg transition-colors ${activeTab === item.id ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''}`}>
               <item.icon size={22} className={activeTab === item.id ? 'stroke-[2.5px]' : 'stroke-[1.5px]'} />

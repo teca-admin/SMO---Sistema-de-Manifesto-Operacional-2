@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabaseClient';
 import { Funcionario } from '../types';
@@ -57,14 +56,14 @@ const QUESTIONS: Question[] = [
   {
     id: 5,
     text: "O que significa o status 'Manifesto Iniciado' no sistema?",
-    options: ["Carga recebida no pátio", "Operador iniciou o processo de puxe/conferência", "Manifesto impresso", "Carga entregue ao cliente"],
+    options: ["Carga recebida no pátio", "Auxiliar iniciou o manifesto", "Manifesto impresso", "Carga entregue ao cliente"],
     correct: 1
   },
   {
     id: 6,
-    text: "Em qual guia o administrador gera o link externo de monitoramento para monitores/TVs?",
+    text: "Em qual aba o Auxiliar Operacional deve acessar para visualizar e assumir novas cargas (Pool)?",
     options: ["Cadastro", "Puxe", "Fluxo", "Eficiência"],
-    correct: 2
+    correct: 1
   },
   {
     id: 7,
