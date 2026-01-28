@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Manifesto, User, Funcionario } from '../types';
-import { Play, CheckCircle2, Clock, Plane, ShieldAlert, UserCheck, UserPlus, UserMinus, Search, Loader2, LogOut, ArrowRight, User as UserIcon, Box, ListFilter } from 'lucide-react';
+import { Play, CheckCircle2, Clock, Plane, ShieldAlert, UserCheck, UserPlus, UserMinus, Search, Loader2, LogOut, ArrowRight, User as UserIcon, Box, ListFilter, AlertOctagon } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
 interface OperationalDashboardProps {
@@ -15,6 +15,7 @@ export const OperationalDashboard: React.FC<OperationalDashboardProps> = ({ mani
   const [searchTerm, setSearchTerm] = useState('');
   const [suggestions, setSuggestions] = useState<Funcionario[]>([]);
   const [loading, setLoading] = useState(false);
+  const [localError, setLocalError] = useState<{id: string, msg: string} | null>(null);
 
   const availablePool = manifestos.filter(m => m.status === 'Manifesto Recebido' && !m.usuarioResponsavel);
   const myActiveLoads = manifestos.filter(m => 
@@ -25,8 +26,40 @@ export const OperationalDashboard: React.FC<OperationalDashboardProps> = ({ mani
   const getNowBR = () => {
     const d = new Date();
     const date = d.toLocaleDateString('pt-BR');
-    const time = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const time = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     return `${date} ${time}`;
+  };
+
+  const parseBRDate = (brStr: string | undefined): Date | null => {
+    if (!brStr || brStr === '---' || brStr === '') return null;
+    try {
+      const parts = brStr.split(/[\/\s,:]+/);
+      if (parts.length < 5) return null;
+      const day = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const year = parseInt(parts[2], 10);
+      const hour = parseInt(parts[3], 10);
+      const minute = parseInt(parts[4], 10);
+      const second = parts[5] ? parseInt(parts[5], 10) : 0;
+      return new Date(year, month, day, hour, minute, second);
+    } catch { return null; }
+  };
+
+  const handleFinalize = (m: Manifesto) => {
+    const now = new Date();
+    const startTime = parseBRDate(m.dataHoraIniciado);
+    
+    if (startTime) {
+      const diffSeconds = (now.getTime() - startTime.getTime()) / 1000;
+      if (diffSeconds < 60) {
+        setLocalError({ id: m.id, msg: "DURAÇÃO INVÁLIDA: O manifesto deve durar no mínimo 1 minuto." });
+        setTimeout(() => setLocalError(null), 5000);
+        return;
+      }
+    }
+    
+    setLocalError(null);
+    onAction(m.id, 'Manifesto Finalizado', { Manifesto_Completo: getNowBR() }, activeOperator?.Nome || '');
   };
 
   useEffect(() => {
@@ -64,35 +97,19 @@ export const OperationalDashboard: React.FC<OperationalDashboardProps> = ({ mani
       <div className="max-w-xl mx-auto mt-20 animate-fadeIn">
         <div className="bg-white dark:bg-slate-900 border-2 border-slate-900 dark:border-slate-700 shadow-[0_30px_60px_-12px_rgba(0,0,0,0.25)] p-10 flex flex-col items-center text-center relative transition-colors duration-300">
           <div className="absolute top-0 left-0 w-full h-1 bg-indigo-600"></div>
-          
           <div className="p-5 bg-slate-900 dark:bg-slate-800 mb-8 rounded-full border-4 border-slate-100 dark:border-slate-700">
             <UserIcon size={36} className="text-white" />
           </div>
-          
           <h2 className="text-xl font-black uppercase tracking-[0.2em] text-slate-900 dark:text-white mb-2">Terminal Operacional</h2>
           <p className="text-[10px] font-bold text-slate-400 uppercase mb-10 tracking-widest">Identifique-se para gerenciar cargas e manifestos</p>
-          
           <div className="w-full relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-            <input 
-              autoFocus
-              type="text" 
-              placeholder="DIGITE SEU NOME PARA ACESSAR..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full h-16 pl-14 pr-4 bg-slate-50 dark:bg-slate-800/50 border-2 border-slate-200 dark:border-slate-700 text-xs font-black uppercase tracking-[0.1em] outline-none focus:border-indigo-600 dark:focus:border-indigo-500 dark:text-white focus:bg-white dark:focus:bg-slate-900 transition-all shadow-inner"
-            />
-            
+            <input autoFocus type="text" placeholder="DIGITE SEU NOME PARA ACESSAR..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full h-16 pl-14 pr-4 bg-slate-50 dark:bg-slate-800/50 border-2 border-slate-200 dark:border-slate-700 text-xs font-black uppercase tracking-[0.1em] outline-none focus:border-indigo-600 dark:focus:border-indigo-500 dark:text-white focus:bg-white dark:focus:bg-slate-900 transition-all shadow-inner" />
             {loading && <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 animate-spin text-indigo-600" size={18} />}
-
             {suggestions.length > 0 && (
               <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 border-2 border-slate-900 dark:border-slate-700 shadow-2xl z-[100] animate-fadeIn">
                 {suggestions.map(s => (
-                  <button 
-                    key={s.id} 
-                    onClick={() => { setActiveOperator(s); setSearchTerm(''); }}
-                    className="w-full p-5 text-left hover:bg-indigo-50 dark:hover:bg-indigo-900/30 flex items-center justify-between border-b border-slate-100 dark:border-slate-700 last:border-0 group transition-colors"
-                  >
+                  <button key={s.id} onClick={() => { setActiveOperator(s); setSearchTerm(''); }} className="w-full p-5 text-left hover:bg-indigo-50 dark:hover:bg-indigo-900/30 flex items-center justify-between border-b border-slate-100 dark:border-slate-700 last:border-0 group transition-colors">
                     <div>
                       <p className="text-[12px] font-black uppercase text-slate-800 dark:text-slate-200 group-hover:text-indigo-700 dark:group-hover:text-indigo-400">{s.Nome}</p>
                       <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">{s.Cargo || 'OPERADOR LOGÍSTICO'}</p>
@@ -105,7 +122,6 @@ export const OperationalDashboard: React.FC<OperationalDashboardProps> = ({ mani
               </div>
             )}
           </div>
-
           <div className="mt-12 flex items-center gap-2 text-slate-300 dark:text-slate-700">
              <div className="h-px w-8 bg-slate-200 dark:bg-slate-800"></div>
              <span className="text-[8px] font-black uppercase tracking-widest">WFS Ground Handling Services</span>
@@ -132,16 +148,12 @@ export const OperationalDashboard: React.FC<OperationalDashboardProps> = ({ mani
               <p className="text-[9px] font-bold text-slate-500 uppercase mt-1">Status: Conectado e Operacional</p>
            </div>
         </div>
-
         <div className="flex items-center gap-4 mt-4 md:mt-0">
           <div className="h-10 px-4 bg-slate-800 dark:bg-slate-900 border border-slate-700 flex items-center gap-3">
              <Box size={14} className="text-slate-400" />
              <span className="text-[10px] font-black text-slate-200 uppercase tracking-widest">Atribuições: {myActiveLoads.length}</span>
           </div>
-          <button 
-            onClick={() => setActiveOperator(null)} 
-            className="h-10 px-6 bg-red-600/10 hover:bg-red-600 border border-red-600/30 hover:border-red-600 text-red-500 hover:text-white text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2"
-          >
+          <button onClick={() => setActiveOperator(null)} className="h-10 px-6 bg-red-600/10 hover:bg-red-600 border border-red-600/30 hover:border-red-600 text-red-500 hover:text-white text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2">
             <LogOut size={14} /> Sair do Terminal
           </button>
         </div>
@@ -155,7 +167,6 @@ export const OperationalDashboard: React.FC<OperationalDashboardProps> = ({ mani
             </h3>
             <span className="text-[9px] font-black bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 px-2 py-0.5 rounded-full">{availablePool.length} Disponíveis</span>
           </div>
-
           <div className="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 panel-shadow overflow-hidden">
             {availablePool.length === 0 ? (
               <div className="p-12 text-center flex flex-col items-center">
@@ -170,11 +181,7 @@ export const OperationalDashboard: React.FC<OperationalDashboardProps> = ({ mani
                       <p className="text-sm font-black text-slate-900 dark:text-white font-mono-tech leading-none mb-1 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{m.id}</p>
                       <p className="text-[9px] font-bold text-slate-400 uppercase">{m.cia} • Recebido</p>
                     </div>
-                    <button 
-                      onClick={() => onAction(m.id, 'Manifesto Recebido', { "Usuario_Operação": activeOperator.Nome }, activeOperator.Nome)}
-                      className="p-2 bg-slate-900 dark:bg-indigo-600 text-white hover:bg-indigo-600 dark:hover:bg-indigo-500 transition-all shadow-md group-hover:scale-110"
-                      title="Puxar para meu terminal"
-                    >
+                    <button onClick={() => onAction(m.id, 'Manifesto Recebido', { "Usuario_Operação": activeOperator.Nome }, activeOperator.Nome)} className="p-2 bg-slate-900 dark:bg-indigo-600 text-white hover:bg-indigo-600 dark:hover:bg-indigo-500 transition-all shadow-md group-hover:scale-110" title="Puxar para meu terminal">
                       <UserPlus size={16} />
                     </button>
                   </div>
@@ -203,7 +210,6 @@ export const OperationalDashboard: React.FC<OperationalDashboardProps> = ({ mani
               {myActiveLoads.map(m => (
                 <div key={m.id} className={`bg-white dark:bg-slate-800 border-2 p-6 flex flex-col md:flex-row items-center justify-between gap-8 transition-all relative overflow-hidden ${m.status === 'Manifesto Iniciado' ? 'border-amber-400 shadow-xl' : 'border-slate-200 dark:border-slate-700 shadow-sm'}`}>
                    <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${m.status === 'Manifesto Iniciado' ? 'bg-amber-400' : (m.status === 'Manifesto Finalizado' || m.status === 'Manifesto Entregue') ? 'bg-emerald-500' : 'bg-blue-500'}`}></div>
-
                    <div className="flex flex-wrap items-center gap-8 flex-1">
                       <div className="min-w-[140px]">
                          <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Carga ID</p>
@@ -223,39 +229,35 @@ export const OperationalDashboard: React.FC<OperationalDashboardProps> = ({ mani
                       </div>
                    </div>
 
-                   <div className="flex gap-3 w-full md:w-auto">
-                      {m.status === 'Manifesto Recebido' && (
-                        <>
-                          <button 
-                            onClick={() => onAction(m.id, 'Manifesto Recebido', { "Usuario_Operação": null }, activeOperator.Nome)}
-                            className="h-14 px-4 bg-slate-100 dark:bg-slate-900 hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-600 border-2 border-slate-200 dark:border-slate-700 hover:border-red-200 transition-all flex items-center justify-center gap-2 group"
-                            title="Remover Atribuição"
-                          >
-                            <UserMinus size={18} />
-                          </button>
-                          <button 
-                            onClick={() => onAction(m.id, 'Manifesto Iniciado', { Manifesto_Iniciado: getNowBR() }, activeOperator.Nome)}
-                            className="flex-1 md:flex-none h-14 px-8 bg-red-600 text-white text-[11px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-slate-900 dark:hover:bg-indigo-600 transition-all shadow-lg shadow-red-100"
-                          >
-                            <Play size={18} className="fill-current" /> Iniciar
-                          </button>
-                        </>
-                      )}
-
-                      {m.status === 'Manifesto Iniciado' && (
-                        <button 
-                          onClick={() => onAction(m.id, 'Manifesto Finalizado', { Manifesto_Completo: getNowBR() }, activeOperator.Nome)}
-                          className="flex-1 md:flex-none h-14 px-8 bg-emerald-600 text-white text-[11px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-slate-900 dark:hover:bg-indigo-600 transition-all shadow-lg shadow-emerald-100"
-                        >
-                          <CheckCircle2 size={18} /> Finalizar
-                        </button>
-                      )}
-
-                      {(m.status === 'Manifesto Finalizado' || m.status === 'Manifesto Entregue') && (
-                        <div className="flex-1 md:flex-none h-14 px-8 bg-slate-100 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 text-[10px] font-black uppercase tracking-[0.1em] flex items-center justify-center gap-3">
-                          <Clock size={18} /> {m.status === 'Manifesto Entregue' ? 'CONCLUÍDO' : 'PENDENTE CIA'}
+                   <div className="flex flex-col items-end gap-3 w-full md:w-auto">
+                      {localError?.id === m.id && (
+                        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-2 flex items-center gap-2 animate-fadeIn mb-2 max-w-xs">
+                           <AlertOctagon size={14} className="text-red-600 shrink-0" />
+                           <span className="text-[8px] font-black text-red-700 dark:text-red-400 uppercase leading-tight">{localError.msg}</span>
                         </div>
                       )}
+                      <div className="flex gap-3 w-full">
+                        {m.status === 'Manifesto Recebido' && (
+                          <>
+                            <button onClick={() => onAction(m.id, 'Manifesto Recebido', { "Usuario_Operação": null }, activeOperator.Nome)} className="h-14 px-4 bg-slate-100 dark:bg-slate-900 hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-600 border-2 border-slate-200 dark:border-slate-700 hover:border-red-200 transition-all flex items-center justify-center gap-2 group" title="Remover Atribuição">
+                              <UserMinus size={18} />
+                            </button>
+                            <button onClick={() => onAction(m.id, 'Manifesto Iniciado', { Manifesto_Iniciado: getNowBR() }, activeOperator.Nome)} className="flex-1 md:flex-none h-14 px-8 bg-red-600 text-white text-[11px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-slate-900 dark:hover:bg-indigo-600 transition-all shadow-lg shadow-red-100">
+                              <Play size={18} className="fill-current" /> Iniciar
+                            </button>
+                          </>
+                        )}
+                        {m.status === 'Manifesto Iniciado' && (
+                          <button onClick={() => handleFinalize(m)} className="flex-1 md:flex-none h-14 px-8 bg-emerald-600 text-white text-[11px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-slate-900 dark:hover:bg-indigo-600 transition-all shadow-lg shadow-emerald-100">
+                            <CheckCircle2 size={18} /> Finalizar
+                          </button>
+                        )}
+                        {(m.status === 'Manifesto Finalizado' || m.status === 'Manifesto Entregue') && (
+                          <div className="flex-1 md:flex-none h-14 px-8 bg-slate-100 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 text-[10px] font-black uppercase tracking-[0.1em] flex items-center justify-center gap-3">
+                            <Clock size={18} /> {m.status === 'Manifesto Entregue' ? 'CONCLUÍDO' : 'PENDENTE CIA'}
+                          </div>
+                        )}
+                      </div>
                    </div>
                 </div>
               ))}

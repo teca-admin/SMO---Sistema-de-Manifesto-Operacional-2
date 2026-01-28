@@ -1,8 +1,9 @@
+
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { Manifesto, Funcionario, OperationalLog } from '../types';
 import { CustomDateTimePicker } from './CustomDateTimePicker';
 import { CustomSelect } from './CustomSelect';
-import { UserPlus, Search, UserCheck, Loader2, X, Clock, ClipboardEdit, CheckCircle2, User as UserIcon, MapPin, Activity, Plane, History, MessageSquareQuote, FileText, UserCircle, ShieldAlert, AlertOctagon } from 'lucide-react';
+import { UserPlus, Search, UserCheck, Loader2, X, Clock, ClipboardEdit, CheckCircle2, User as UserIcon, MapPin, Activity, Plane, History, MessageSquareQuote, FileText, UserCircle, ShieldAlert, AlertOctagon, Timer } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
 interface EditModalProps {
@@ -11,12 +12,11 @@ interface EditModalProps {
   onSave: (data: Partial<Manifesto> & { id: string, usuario: string, justificativa: string }) => void;
 }
 
-// Utility to format ISO strings to DD/MM/YYYY HH:MM
 const formatDisplayDate = (isoStr: string | undefined) => {
   if (!isoStr || isoStr === '---' || isoStr === '') return '---';
   try {
     const parts = isoStr.split(':');
-    const cleanStr = parts.length === 3 ? isoStr.substring(0, isoStr.lastIndexOf(':')) : isoStr;
+    const cleanStr = parts.length >= 2 ? isoStr : isoStr; 
 
     const d = new Date(isoStr);
     if (isNaN(d.getTime())) return cleanStr.replace(',', '');
@@ -25,15 +25,28 @@ const formatDisplayDate = (isoStr: string | undefined) => {
     const year = d.getFullYear();
     const hours = String(d.getHours()).padStart(2, '0');
     const minutes = String(d.getMinutes()).padStart(2, '0');
-    return `${day}/${month}/${year} ${hours}:${minutes}`;
+    const seconds = String(d.getSeconds()).padStart(2, '0');
+    return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
   } catch (e) {
-    const parts = isoStr.split(':');
-    const cleanStr = parts.length === 3 ? isoStr.substring(0, isoStr.lastIndexOf(':')) : isoStr;
-    return cleanStr.replace(',', '');
+    return isoStr.replace(',', '');
   }
 };
 
-// Fix: EditModal implementation
+const parseBRDate = (brStr: string | undefined): Date | null => {
+    if (!brStr || brStr === '---' || brStr === '') return null;
+    try {
+      const parts = brStr.split(/[\/\s,:]+/);
+      if (parts.length < 5) return null;
+      const day = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const year = parseInt(parts[2], 10);
+      const hour = parseInt(parts[3], 10);
+      const minute = parseInt(parts[4], 10);
+      const second = parts[5] ? parseInt(parts[5], 10) : 0;
+      return new Date(year, month, day, hour, minute, second);
+    } catch { return null; }
+};
+
 export const EditModal: React.FC<EditModalProps> = ({ data, onClose, onSave }) => {
   const [formData, setFormData] = React.useState({ ...data });
   const [justificativa, setJustificativa] = React.useState('');
@@ -41,16 +54,26 @@ export const EditModal: React.FC<EditModalProps> = ({ data, onClose, onSave }) =
 
   const dateInconsistency = useMemo(() => {
     if (formData.dataHoraPuxado && formData.dataHoraRecebido) {
-      const pux = new Date(formData.dataHoraPuxado);
-      const rec = new Date(formData.dataHoraRecebido);
-      return rec < pux;
+      const pux = parseBRDate(formData.dataHoraPuxado);
+      const rec = parseBRDate(formData.dataHoraRecebido);
+      if (pux && rec && rec < pux) return "RECEBIMENTO_ANTERIOR";
     }
-    return false;
-  }, [formData.dataHoraPuxado, formData.dataHoraRecebido]);
+    
+    if (formData.dataHoraIniciado && formData.dataHoraCompleto) {
+      const ini = parseBRDate(formData.dataHoraIniciado);
+      const com = parseBRDate(formData.dataHoraCompleto);
+      if (ini && com) {
+         if (com < ini) return "FINALIZACAO_ANTERIOR";
+         const diffSec = (com.getTime() - ini.getTime()) / 1000;
+         if (diffSec < 60) return "DURACAO_CURTA";
+      }
+    }
+    return null;
+  }, [formData.dataHoraPuxado, formData.dataHoraRecebido, formData.dataHoraIniciado, formData.dataHoraCompleto]);
 
   const handleSave = () => {
     if (dateInconsistency) {
-      setErrorMsg("INCONSISTÊNCIA: Recebimento não pode ser anterior ao Puxe.");
+      setErrorMsg("ERRO DE INTEGRIDADE: Corrija os conflitos de horários.");
       return;
     }
     if (justificativa.trim().length < 5) { 
@@ -65,22 +88,24 @@ export const EditModal: React.FC<EditModalProps> = ({ data, onClose, onSave }) =
       dataHoraRepresentanteCIA: formData.dataHoraRepresentanteCIA,
       dataHoraEntregue: formData.dataHoraEntregue,
       dataHoraPuxado: formData.dataHoraPuxado,
-      dataHoraRecebido: formData.dataHoraRecebido
+      dataHoraRecebido: formData.dataHoraRecebido,
+      dataHoraIniciado: formData.dataHoraIniciado,
+      dataHoraCompleto: formData.dataHoraCompleto
     });
   };
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 dark:bg-black/80 z-[10000] flex items-start justify-center p-4 pt-[5vh] animate-fadeIn backdrop-blur-sm overflow-y-auto">
-      <div className="bg-white dark:bg-slate-800 w-full max-w-xl border-2 border-slate-900 dark:border-slate-700 shadow-2xl flex flex-col mb-10">
+      <div className="bg-white dark:bg-slate-800 w-full max-w-2xl border-2 border-slate-900 dark:border-slate-700 shadow-2xl flex flex-col mb-10">
         <div className="bg-slate-900 dark:bg-slate-950 text-white p-4 text-[11px] font-black uppercase tracking-widest flex justify-between items-center shrink-0">
           <div className="flex items-center gap-3">
              <ClipboardEdit size={16} className="text-indigo-400" />
-             <span>EDITAR MONITORAMENTO: {data.id}</span>
+             <span>AJUSTE TÉCNICO DE MONITORAMENTO: {data.id}</span>
           </div>
           <button onClick={onClose} className="p-1 hover:bg-slate-800 transition-colors"><X size={18} /></button>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="p-6 space-y-8">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-tighter">Companhia</label>
@@ -94,17 +119,42 @@ export const EditModal: React.FC<EditModalProps> = ({ data, onClose, onSave }) =
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 border-t border-slate-100 dark:border-slate-700 pt-6">
-            <div className="space-y-1.5">
-              <label className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-tighter">Manifesto Puxado</label>
-              <div className={dateInconsistency ? "ring-2 ring-red-500 animate-pulse" : ""}>
-                <CustomDateTimePicker value={formData.dataHoraPuxado || ''} onChange={v => setFormData({...formData, dataHoraPuxado: v})} />
+          <div className="space-y-4">
+            <h4 className="text-[10px] font-black text-slate-900 dark:text-slate-100 uppercase tracking-widest flex items-center gap-2 border-b border-slate-100 dark:border-slate-700 pb-2">
+               <MapPin size={14} className="text-indigo-600" /> Registro de Recebimento (Cadastro)
+            </h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-tighter">Manifesto Puxado</label>
+                <div className={dateInconsistency === "RECEBIMENTO_ANTERIOR" ? "ring-2 ring-red-500 animate-pulse" : ""}>
+                  <CustomDateTimePicker value={formData.dataHoraPuxado || ''} onChange={v => setFormData({...formData, dataHoraPuxado: v})} />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-tighter">Manifesto Recebido</label>
+                <div className={dateInconsistency === "RECEBIMENTO_ANTERIOR" ? "ring-2 ring-red-500 animate-pulse" : ""}>
+                  <CustomDateTimePicker value={formData.dataHoraRecebido || ''} onChange={v => setFormData({...formData, dataHoraRecebido: v})} />
+                </div>
               </div>
             </div>
-            <div className="space-y-1.5">
-              <label className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-tighter">Manifesto Recebido</label>
-              <div className={dateInconsistency ? "ring-2 ring-red-500 animate-pulse" : ""}>
-                <CustomDateTimePicker value={formData.dataHoraRecebido || ''} onChange={v => setFormData({...formData, dataHoraRecebido: v})} />
+          </div>
+
+          <div className="space-y-4">
+            <h4 className="text-[10px] font-black text-slate-900 dark:text-slate-100 uppercase tracking-widest flex items-center gap-2 border-b border-slate-100 dark:border-slate-700 pb-2">
+               <Activity size={14} className="text-red-600" /> Registro de Operação (Puxe)
+            </h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-tighter">Início da Operação</label>
+                <div className={dateInconsistency === "FINALIZACAO_ANTERIOR" || dateInconsistency === "DURACAO_CURTA" ? "ring-2 ring-red-500 animate-pulse" : ""}>
+                  <CustomDateTimePicker value={formData.dataHoraIniciado || ''} onChange={v => setFormData({...formData, dataHoraIniciado: v})} />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-tighter">Operação Finalizada</label>
+                <div className={dateInconsistency === "FINALIZACAO_ANTERIOR" || dateInconsistency === "DURACAO_CURTA" ? "ring-2 ring-red-500 animate-pulse" : ""}>
+                  <CustomDateTimePicker value={formData.dataHoraCompleto || ''} onChange={v => setFormData({...formData, dataHoraCompleto: v})} />
+                </div>
               </div>
             </div>
           </div>
@@ -113,8 +163,12 @@ export const EditModal: React.FC<EditModalProps> = ({ data, onClose, onSave }) =
             <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 p-4 flex items-center gap-3 animate-fadeIn">
                <AlertOctagon size={20} className="text-red-600 shrink-0" />
                <div className="flex flex-col">
-                  <span className="text-[10px] font-black text-red-700 dark:text-red-400 uppercase tracking-widest">Inconsistência Cronológica</span>
-                  <span className="text-[9px] font-bold text-red-600 dark:text-red-500 uppercase leading-tight">O horário de recebimento não pode ser anterior ao horário de puxe.</span>
+                  <span className="text-[10px] font-black text-red-700 dark:text-red-400 uppercase tracking-widest">Inconsistência Detectada</span>
+                  <span className="text-[9px] font-bold text-red-600 dark:text-red-500 uppercase leading-tight">
+                    {dateInconsistency === "RECEBIMENTO_ANTERIOR" && "O recebimento não pode ser anterior ao puxe do sistema."}
+                    {dateInconsistency === "FINALIZACAO_ANTERIOR" && "A finalização não pode ser anterior ao início da operação."}
+                    {dateInconsistency === "DURACAO_CURTA" && "DURAÇÃO INVÁLIDA: A operação deve ter no mínimo 1 minuto de duração."}
+                  </span>
                </div>
             </div>
           )}
@@ -129,7 +183,7 @@ export const EditModal: React.FC<EditModalProps> = ({ data, onClose, onSave }) =
                 setJustificativa(e.target.value);
                 if (errorMsg) setErrorMsg(null);
               }} 
-              placeholder="Descreva o motivo desta alteração manual..."
+              placeholder="Descreva detalhadamente o motivo desta retificação..."
               className={`w-full h-24 p-3 bg-slate-50 dark:bg-slate-900 border-2 text-xs font-bold dark:text-white outline-none transition-all resize-none ${errorMsg ? 'border-red-500 bg-red-50' : 'border-slate-200 dark:border-slate-700 focus:border-slate-900 dark:focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-900'}`} 
             />
             {errorMsg && <p className="text-[9px] font-black text-red-600 uppercase italic">{errorMsg}</p>}
@@ -138,20 +192,13 @@ export const EditModal: React.FC<EditModalProps> = ({ data, onClose, onSave }) =
 
         <div className="p-5 bg-slate-50 dark:bg-slate-900 border-t-2 border-slate-100 dark:border-slate-700 flex gap-4">
           <button onClick={onClose} className="flex-1 h-12 border-2 border-slate-300 dark:border-slate-700 text-[11px] font-black uppercase tracking-widest hover:bg-white dark:hover:bg-slate-800 transition-all text-slate-500 dark:text-slate-400">Cancelar</button>
-          <button 
-            disabled={dateInconsistency}
-            onClick={handleSave} 
-            className={`flex-1 h-12 text-white text-[11px] font-black uppercase tracking-widest transition-all shadow-lg ${dateInconsistency ? 'bg-slate-300 dark:bg-slate-700 cursor-not-allowed opacity-50' : 'bg-slate-900 dark:bg-indigo-600 hover:bg-indigo-600'}`}
-          >
-            Salvar
-          </button>
+          <button disabled={!!dateInconsistency} onClick={handleSave} className={`flex-1 h-12 text-white text-[11px] font-black uppercase tracking-widest transition-all shadow-lg ${dateInconsistency ? 'bg-slate-300 dark:bg-slate-700 cursor-not-allowed opacity-50' : 'bg-slate-900 dark:bg-indigo-600 hover:bg-indigo-700'}`}>Confirmar Alterações</button>
         </div>
       </div>
     </div>
   );
 };
 
-// Fix: ReprFillModal implementation
 export const ReprFillModal: React.FC<{
   manifesto: Manifesto,
   onClose: () => void,
@@ -200,27 +247,13 @@ export const CancellationModal: React.FC<{ onConfirm: (reason: string) => void, 
             <label className="text-[9px] font-black text-slate-900 dark:text-slate-200 uppercase tracking-widest flex items-center gap-2">
               <MessageSquareQuote size={14} className="text-red-600" /> Motivo do Cancelamento
             </label>
-            <textarea 
-              autoFocus
-              value={reason} 
-              onChange={e => setReason(e.target.value)} 
-              placeholder="Ex: Erro de digitação na CIA, manifesto duplicado, etc..."
-              className="w-full h-28 p-3 bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 text-xs font-bold dark:text-white outline-none focus:border-red-600 dark:focus:border-red-500 focus:bg-white transition-all resize-none shadow-inner" 
-            />
-            <p className={`text-[8px] font-black uppercase ${isValid ? 'text-emerald-600' : 'text-slate-400'}`}>
-              Mínimo: 5 caracteres ({reason.length}/5)
-            </p>
+            <textarea autoFocus value={reason} onChange={e => setReason(e.target.value)} placeholder="Ex: Erro de digitação na CIA, manifesto duplicado, etc..." className="w-full h-28 p-3 bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 text-xs font-bold dark:text-white outline-none focus:border-red-600 dark:focus:border-red-500 focus:bg-white transition-all resize-none shadow-inner" />
+            <p className={`text-[8px] font-black uppercase ${isValid ? 'text-emerald-600' : 'text-slate-400'}`}>Mínimo: 5 caracteres ({reason.length}/5)</p>
           </div>
 
           <div className="flex gap-3">
             <button onClick={onClose} className="flex-1 h-12 border-2 border-slate-200 dark:border-slate-700 text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all">Sair</button>
-            <button 
-              disabled={!isValid}
-              onClick={() => onConfirm(reason)} 
-              className={`flex-1 h-12 text-white text-[10px] font-black uppercase transition-all shadow-md flex items-center justify-center gap-2 ${isValid ? 'bg-red-600 hover:bg-slate-900 shadow-red-200' : 'bg-slate-200 dark:bg-slate-700 cursor-not-allowed text-slate-400'}`}
-            >
-              Confirmar Cancelamento
-            </button>
+            <button disabled={!isValid} onClick={() => onConfirm(reason)} className={`flex-1 h-12 text-white text-[10px] font-black uppercase transition-all shadow-md flex items-center justify-center gap-2 ${isValid ? 'bg-red-600 hover:bg-slate-900 shadow-red-200' : 'bg-slate-200 dark:bg-slate-700 cursor-not-allowed text-slate-400'}`}>Confirmar Cancelamento</button>
           </div>
         </div>
       </div>
@@ -228,7 +261,6 @@ export const CancellationModal: React.FC<{ onConfirm: (reason: string) => void, 
   );
 };
 
-// Fix: Added missing AssignResponsibilityModal
 export const AssignResponsibilityModal: React.FC<{ 
   manifestoId: string, 
   onConfirm: (name: string) => void, 
@@ -268,25 +300,13 @@ export const AssignResponsibilityModal: React.FC<{
         <div className="p-6 space-y-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-            <input 
-              autoFocus
-              type="text" 
-              placeholder="BUSCAR OPERADOR..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full h-12 pl-10 pr-4 bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 text-xs font-black uppercase tracking-[0.1em] outline-none focus:border-indigo-600 dark:focus:border-indigo-500 dark:text-white transition-all"
-            />
+            <input autoFocus type="text" placeholder="BUSCAR OPERADOR..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full h-12 pl-10 pr-4 bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 text-xs font-black uppercase tracking-[0.1em] outline-none focus:border-indigo-600 dark:focus:border-indigo-500 dark:text-white transition-all" />
             {loading && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-indigo-600" size={16} />}
           </div>
-
           <div className="space-y-2 max-h-[250px] overflow-y-auto custom-scrollbar">
             {suggestions.length > 0 ? (
               suggestions.map(s => (
-                <button 
-                  key={s.id} 
-                  onClick={() => onConfirm(s.Nome)}
-                  className="w-full p-3 text-left hover:bg-indigo-50 dark:hover:bg-indigo-900/30 flex items-center justify-between border border-slate-100 dark:border-slate-700 rounded transition-colors group"
-                >
+                <button key={s.id} onClick={() => onConfirm(s.Nome)} className="w-full p-3 text-left hover:bg-indigo-50 dark:hover:bg-indigo-900/30 flex items-center justify-between border border-slate-100 dark:border-slate-700 rounded transition-colors group">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-slate-100 dark:bg-slate-900 flex items-center justify-center rounded-full text-[10px] font-black text-slate-500 uppercase">{s.Nome.charAt(0)}</div>
                     <div>
@@ -312,7 +332,6 @@ export const AssignResponsibilityModal: React.FC<{
   );
 };
 
-// Fix: HistoryModal implementation
 export const HistoryModal: React.FC<{ data: Manifesto, onClose: () => void }> = ({ data, onClose }) => {
   const [logs, setLogs] = useState<OperationalLog[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
@@ -440,7 +459,6 @@ export const HistoryModal: React.FC<{ data: Manifesto, onClose: () => void }> = 
   );
 };
 
-// Fix: LoadingOverlay implementation
 export const LoadingOverlay: React.FC<{ msg: string }> = ({ msg }) => (
   <div className="fixed inset-0 bg-white/80 dark:bg-slate-900/80 z-[10002] flex flex-col items-center justify-center animate-fadeIn backdrop-blur-sm">
     <div className="w-8 h-8 border-4 border-zinc-200 dark:border-slate-700 border-t-zinc-900 dark:border-t-indigo-500 animate-spin mb-2"></div>
@@ -448,7 +466,6 @@ export const LoadingOverlay: React.FC<{ msg: string }> = ({ msg }) => (
   </div>
 );
 
-// Fix: AlertToast implementation
 export const AlertToast: React.FC<{ type: 'success' | 'error', msg: string }> = ({ type, msg }) => (
   <div className={`fixed bottom-4 right-4 text-white px-4 py-3 shadow-2xl font-bold text-[10px] uppercase tracking-widest z-[10001] animate-slideInUp ${type === 'success' ? 'bg-emerald-600' : 'bg-red-600'}`}>
     {msg}

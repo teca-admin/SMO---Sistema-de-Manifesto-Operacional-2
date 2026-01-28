@@ -69,7 +69,8 @@ function App() {
   const getCurrentTimestampBR = () => {
     const d = new Date();
     const date = d.toLocaleDateString('pt-BR');
-    const time = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    // Adicionado segundos para maior precisão na auditoria de processos rápidos
+    const time = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     return `${date} ${time}`;
   };
 
@@ -201,6 +202,8 @@ function App() {
         Manifesto_Recebido: data.dataHoraRecebido,
         Representante_CIA: data.dataHoraRepresentanteCIA,
         Manifesto_Entregue: data.dataHoraEntregue,
+        Manifesto_Iniciado: data.dataHoraIniciado,
+        Manifesto_Completo: data.dataHoraCompleto,
         "Carimbo_Data/HR": now,
         "Usuario_Ação": user
       }).eq('ID_Manifesto', data.id);
