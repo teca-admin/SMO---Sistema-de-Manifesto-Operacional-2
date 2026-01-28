@@ -228,30 +228,44 @@ export const AssessmentGuide: React.FC<AssessmentGuideProps> = ({ onShowAlert })
 
     setQuizFinished(true);
     const now = new Date().toLocaleString('pt-BR');
+    
+    // Clonamos o objeto para evitar mutação direta
     const updateData: any = { ...userResult };
 
+    // Lógica rigorosa de identificação da tentativa disponível
     if (updateData.Tentativa_1 === undefined || updateData.Tentativa_1 === null) {
       updateData.Tentativa_1 = score;
       updateData.Data_Tentativa_1 = now;
     } else if (updateData.Tentativa_2 === undefined || updateData.Tentativa_2 === null) {
       updateData.Tentativa_2 = score;
       updateData.Data_Tentativa_2 = now;
-    } else {
+    } else if (updateData.Tentativa_3 === undefined || updateData.Tentativa_3 === null) {
       updateData.Tentativa_3 = score;
       updateData.Data_Tentativa_3 = now;
     }
 
-    const bestScore = Math.max(updateData.Tentativa_1 || 0, updateData.Tentativa_2 || 0, updateData.Tentativa_3 || 0);
+    const bestScore = Math.max(
+      updateData.Tentativa_1 ?? 0, 
+      updateData.Tentativa_2 ?? 0, 
+      updateData.Tentativa_3 ?? 0
+    );
     updateData.Status = bestScore >= 7 ? 'APROVADO' : 'REPROVADO';
 
     try {
-      // Usamos upsert sem especificar onConflict explicitamente para que o Supabase utilize a Primary Key (id) ou a Unique Constraint no banco
-      const { error } = await supabase.from('SMO_Avaliacoes').upsert(updateData);
+      // CORREÇÃO CRÍTICA ERRO 428C9: 
+      // Removemos o 'id' e 'created_at' do objeto de atualização.
+      // Como Nome_Funcionario é UNIQUE, o Supabase usará ele para encontrar e atualizar o registro.
+      const { id, created_at, ...payload } = updateData;
+
+      const { error } = await supabase
+        .from('SMO_Avaliacoes')
+        .upsert(payload, { onConflict: 'Nome_Funcionario' });
+
       if (error) throw error;
       onShowAlert('success', `Avaliação Finalizada! Pontuação: ${score}/10`);
     } catch (e: any) {
-      console.error("Erro ao salvar:", e);
-      onShowAlert('error', `Falha ao salvar resultado: ${e.message || 'Erro desconhecido'}`);
+      console.error("Erro ao salvar resultado da prova:", e);
+      onShowAlert('error', `Erro ao registrar progresso: ${e.message}`);
     }
   };
 
@@ -472,9 +486,13 @@ export const AssessmentGuide: React.FC<AssessmentGuideProps> = ({ onShowAlert })
                       </thead>
                       <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
                          {reportData
-                           .sort((a,b) => Math.max(b.Tentativa_1||0, b.Tentativa_2||0, b.Tentativa_3||0) - Math.max(a.Tentativa_1||0, a.Tentativa_2||0, a.Tentativa_3||0))
+                           .sort((a,b) => {
+                             const bestA = Math.max(a.Tentativa_1 ?? 0, a.Tentativa_2 ?? 0, a.Tentativa_3 ?? 0);
+                             const bestB = Math.max(b.Tentativa_1 ?? 0, b.Tentativa_2 ?? 0, b.Tentativa_3 ?? 0);
+                             return bestB - bestA;
+                           })
                            .map((r, idx) => {
-                           const best = Math.max(r.Tentativa_1 || 0, r.Tentativa_2 || 0, r.Tentativa_3 || 0);
+                           const best = Math.max(r.Tentativa_1 ?? 0, r.Tentativa_2 ?? 0, r.Tentativa_3 ?? 0);
                            return (
                              <tr key={r.id || r.Nome_Funcionario} className="hover:bg-slate-50 dark:hover:bg-indigo-900/10 transition-colors group">
                                 <td className="p-4">
