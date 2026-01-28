@@ -1,9 +1,8 @@
-
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { Manifesto, Funcionario, OperationalLog } from '../types';
 import { CustomDateTimePicker } from './CustomDateTimePicker';
 import { CustomSelect } from './CustomSelect';
-import { UserPlus, Search, UserCheck, Loader2, X, Clock, ClipboardEdit, CheckCircle2, User as UserIcon, MapPin, Activity, Plane, History, MessageSquareQuote, FileText, UserCircle, ShieldAlert, AlertOctagon, Timer } from 'lucide-react';
+import { UserPlus, Search, UserCheck, Loader2, X, Clock, ClipboardEdit, CheckCircle2, User as UserIcon, MapPin, Activity, Plane, History, MessageSquareQuote, FileText, UserCircle, ShieldAlert, AlertOctagon, Timer, HelpCircle, CheckSquare } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
 interface EditModalProps {
@@ -51,21 +50,31 @@ export const EditModal: React.FC<EditModalProps> = ({ data, onClose, onSave }) =
   const [formData, setFormData] = React.useState({ ...data });
   const [justificativa, setJustificativa] = React.useState('');
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
+  const [showPuxadoInfo, setShowPuxadoInfo] = useState(false);
+  const [showRecebidoInfo, setShowRecebidoInfo] = useState(false);
 
   const dateInconsistency = useMemo(() => {
     if (formData.dataHoraPuxado && formData.dataHoraRecebido) {
-      const pux = parseBRDate(formData.dataHoraPuxado);
-      const rec = parseBRDate(formData.dataHoraRecebido);
-      if (pux && rec && rec < pux) return "RECEBIMENTO_ANTERIOR";
+      const pux = new Date(formData.dataHoraPuxado);
+      const rec = new Date(formData.dataHoraRecebido);
+      
+      pux.setSeconds(0, 0);
+      rec.setSeconds(0, 0);
+      
+      const diffMs = rec.getTime() - pux.getTime();
+      if (diffMs < 60000) return "RECEBIMENTO_INVALIDO";
     }
     
     if (formData.dataHoraIniciado && formData.dataHoraCompleto) {
       const ini = parseBRDate(formData.dataHoraIniciado);
       const com = parseBRDate(formData.dataHoraCompleto);
       if (ini && com) {
+         ini.setSeconds(0, 0);
+         com.setSeconds(0, 0);
+         
          if (com < ini) return "FINALIZACAO_ANTERIOR";
-         const diffSec = (com.getTime() - ini.getTime()) / 1000;
-         if (diffSec < 60) return "DURACAO_CURTA";
+         const diffMs = com.getTime() - ini.getTime();
+         if (diffMs < 60000) return "DURACAO_CURTA";
       }
     }
     return null;
@@ -124,15 +133,53 @@ export const EditModal: React.FC<EditModalProps> = ({ data, onClose, onSave }) =
                <MapPin size={14} className="text-indigo-600" /> Registro de Recebimento (Cadastro)
             </h4>
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-tighter">Manifesto Puxado</label>
-                <div className={dateInconsistency === "RECEBIMENTO_ANTERIOR" ? "ring-2 ring-red-500 animate-pulse" : ""}>
+              <div className="space-y-1.5 relative">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <label className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-tighter">Manifesto Puxado</label>
+                  <button 
+                    type="button"
+                    onClick={() => setShowPuxadoInfo(!showPuxadoInfo)}
+                    className="text-slate-400 hover:text-indigo-600 transition-colors"
+                  >
+                    <HelpCircle size={12} />
+                  </button>
+                </div>
+
+                {showPuxadoInfo && (
+                  <div className="absolute bottom-full left-0 mb-2 w-56 bg-slate-900 text-white p-2 rounded shadow-2xl z-[100] animate-fadeIn">
+                    <p className="text-[9px] font-bold leading-tight">
+                      Inserir a Data e Hora em que o manifesto foi impresso, essa informação você encontra na folha de Puxe no canto superior direito.
+                    </p>
+                    <div className="absolute top-full left-3 w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[5px] border-t-slate-900"></div>
+                  </div>
+                )}
+
+                <div className={dateInconsistency === "RECEBIMENTO_INVALIDO" ? "ring-2 ring-red-500 animate-pulse" : ""}>
                   <CustomDateTimePicker value={formData.dataHoraPuxado || ''} onChange={v => setFormData({...formData, dataHoraPuxado: v})} />
                 </div>
               </div>
-              <div className="space-y-1.5">
-                <label className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-tighter">Manifesto Recebido</label>
-                <div className={dateInconsistency === "RECEBIMENTO_ANTERIOR" ? "ring-2 ring-red-500 animate-pulse" : ""}>
+              <div className="space-y-1.5 relative">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <label className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-tighter">Manifesto Recebido</label>
+                  <button 
+                    type="button"
+                    onClick={() => setShowRecebidoInfo(!showRecebidoInfo)}
+                    className="text-slate-400 hover:text-indigo-600 transition-colors"
+                  >
+                    <HelpCircle size={12} />
+                  </button>
+                </div>
+
+                {showRecebidoInfo && (
+                  <div className="absolute bottom-full left-0 mb-2 w-56 bg-slate-900 text-white p-2 rounded shadow-2xl z-[100] animate-fadeIn">
+                    <p className="text-[9px] font-bold leading-tight">
+                      Inserir a Data e Hora em que o manifesto foi Recebido, essa é a mesma data que você protocolou com o carimbo na folha da presença.
+                    </p>
+                    <div className="absolute top-full left-3 w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[5px] border-t-slate-900"></div>
+                  </div>
+                )}
+
+                <div className={dateInconsistency === "RECEBIMENTO_INVALIDO" ? "ring-2 ring-red-500 animate-pulse" : ""}>
                   <CustomDateTimePicker value={formData.dataHoraRecebido || ''} onChange={v => setFormData({...formData, dataHoraRecebido: v})} />
                 </div>
               </div>
@@ -165,7 +212,7 @@ export const EditModal: React.FC<EditModalProps> = ({ data, onClose, onSave }) =
                <div className="flex flex-col">
                   <span className="text-[10px] font-black text-red-700 dark:text-red-400 uppercase tracking-widest">Inconsistência Detectada</span>
                   <span className="text-[9px] font-bold text-red-600 dark:text-red-500 uppercase leading-tight">
-                    {dateInconsistency === "RECEBIMENTO_ANTERIOR" && "O recebimento não pode ser anterior ao puxe do sistema."}
+                    {dateInconsistency === "RECEBIMENTO_INVALIDO" && "O horário de recebimento deve ser no mínimo 1 minuto após o puxe."}
                     {dateInconsistency === "FINALIZACAO_ANTERIOR" && "A finalização não pode ser anterior ao início da operação."}
                     {dateInconsistency === "DURACAO_CURTA" && "DURAÇÃO INVÁLIDA: A operação deve ter no mínimo 1 minuto de duração."}
                   </span>
@@ -204,22 +251,47 @@ export const ReprFillModal: React.FC<{
   onClose: () => void,
   onConfirm: (date: string) => void
 }> = ({ manifesto, onClose, onConfirm }) => {
-  const [date, setDate] = useState(manifesto.dataHoraRepresentanteCIA || '');
+  const handleConfirm = () => {
+    // Registra o carimbo automático da data e hora atual no formato ISO compatível
+    const now = new Date().toISOString();
+    onConfirm(now);
+  };
+
   return (
     <div className="fixed inset-0 bg-slate-900/60 dark:bg-black/80 z-[10000] flex items-start justify-center p-4 pt-[15vh] animate-fadeIn backdrop-blur-sm">
       <div className="bg-white dark:bg-slate-800 w-full max-w-sm border-2 border-slate-900 dark:border-slate-700 shadow-2xl flex flex-col">
         <div className="bg-[#0f172a] dark:bg-slate-950 text-white p-3 text-[10px] font-black uppercase tracking-widest flex justify-between items-center">
-          <span className="flex items-center gap-2"><Clock size={14} /> REPR. CIA - {manifesto.id}</span>
+          <span className="flex items-center gap-2"><UserCheck size={14} className="text-indigo-400" /> CONFIRMAÇÃO DE PRESENÇA CIA</span>
           <button onClick={onClose} className="p-1 hover:bg-slate-800 transition-colors"><X size={16} /></button>
         </div>
-        <div className="p-6 space-y-5">
-          <div className="space-y-2">
-            <label className="text-[9px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">Data e Hora da Assinatura</label>
-            <CustomDateTimePicker value={date} onChange={setDate} />
+        <div className="p-8 space-y-6 text-center">
+          <div className="w-16 h-16 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center mx-auto shadow-inner">
+             <UserCheck size={32} />
           </div>
-          <div className="flex gap-3">
-            <button onClick={onClose} className="flex-1 h-10 border-2 border-slate-200 dark:border-slate-700 text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all">Sair</button>
-            <button disabled={!date} onClick={() => onConfirm(date)} className={`flex-1 h-10 text-white text-[10px] font-black uppercase transition-all shadow-md flex items-center justify-center gap-2 ${date ? 'bg-indigo-600 hover:bg-slate-900 dark:hover:bg-indigo-500' : 'bg-slate-200 dark:bg-slate-700 cursor-not-allowed'}`}>Confirmar</button>
+          <div>
+            <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight mb-2">Representante CIA Presente?</h3>
+            <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase leading-relaxed">
+              Confirme se a CIA aérea {manifesto.cia.toUpperCase()} compareceu para validar o manifesto ID: <span className="text-indigo-600 dark:text-indigo-400">{manifesto.id}</span>.
+            </p>
+          </div>
+          <div className="bg-slate-50 dark:bg-slate-900/50 p-3 border border-dashed border-slate-200 dark:border-slate-700">
+             <p className="text-[9px] font-black text-slate-400 uppercase italic">
+               * O sistema registrará automaticamente o carimbo de data/hora atual para fins de conformidade SLA.
+             </p>
+          </div>
+          <div className="flex gap-3 pt-2">
+            <button 
+              onClick={onClose} 
+              className="flex-1 h-12 border-2 border-slate-200 dark:border-slate-700 text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
+            >
+              Não chegou
+            </button>
+            <button 
+              onClick={handleConfirm} 
+              className="flex-1 h-12 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black uppercase transition-all shadow-lg flex items-center justify-center gap-2"
+            >
+              <CheckSquare size={14} /> Confirmo Presença
+            </button>
           </div>
         </div>
       </div>

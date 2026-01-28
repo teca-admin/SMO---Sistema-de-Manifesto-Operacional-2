@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Manifesto, User, Funcionario } from '../types';
 import { Play, CheckCircle2, Clock, Plane, ShieldAlert, UserCheck, UserPlus, UserMinus, Search, Loader2, LogOut, ArrowRight, User as UserIcon, Box, ListFilter, AlertOctagon } from 'lucide-react';
@@ -50,8 +49,14 @@ export const OperationalDashboard: React.FC<OperationalDashboardProps> = ({ mani
     const startTime = parseBRDate(m.dataHoraIniciado);
     
     if (startTime) {
-      const diffSeconds = (now.getTime() - startTime.getTime()) / 1000;
-      if (diffSeconds < 60) {
+      // Zeramos segundos para a validação de minuto inteiro conforme solicitado
+      const compareNow = new Date(now);
+      const compareStart = new Date(startTime);
+      compareNow.setSeconds(0, 0);
+      compareStart.setSeconds(0, 0);
+
+      const diffMs = compareNow.getTime() - compareStart.getTime();
+      if (diffMs < 60000) {
         setLocalError({ id: m.id, msg: "DURAÇÃO INVÁLIDA: O manifesto deve durar no mínimo 1 minuto." });
         setTimeout(() => setLocalError(null), 5000);
         return;

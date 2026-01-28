@@ -6,7 +6,7 @@ import { CustomSelect } from './CustomSelect';
 import { 
   Search, History, Edit3, XCircle, CheckSquare, Plus, Database, Filter, Edit, 
   ChevronDown, ChevronUp, Archive, User as UserIcon, LogOut, Loader2, Lock, 
-  KeyRound, Eye, EyeOff, AlertOctagon
+  KeyRound, Eye, EyeOff, AlertOctagon, HelpCircle
 } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
@@ -48,13 +48,22 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0, openUpward: false });
   const [showHistory, setShowHistory] = useState(false);
   const [historyFilter, setHistoryFilter] = useState('');
+  const [showPuxadoInfo, setShowPuxadoInfo] = useState(false);
+  const [showRecebidoInfo, setShowRecebidoInfo] = useState(false);
 
-  // Validação de cronologia em tempo real
+  // Validação de cronologia em tempo real (Mínimo 1 minuto de diferença)
   const dateInconsistency = useMemo(() => {
     if (formData.dataHoraPuxado && formData.dataHoraRecebido) {
       const pux = new Date(formData.dataHoraPuxado);
       const rec = new Date(formData.dataHoraRecebido);
-      return rec < pux;
+      
+      // Zeramos segundos e milissegundos para considerar apenas os minutos inteiros
+      pux.setSeconds(0, 0);
+      rec.setSeconds(0, 0);
+      
+      const diffMs = rec.getTime() - pux.getTime();
+      // Bloqueia se a diferença for menor que 60.000ms (1 minuto)
+      return diffMs < 60000;
     }
     return false;
   }, [formData.dataHoraPuxado, formData.dataHoraRecebido]);
@@ -381,14 +390,52 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <label className="text-[12px] font-black text-slate-950 dark:text-slate-300 uppercase tracking-tighter">Companhia Aérea</label>
               <CustomSelect value={formData.cia} onChange={v => setFormData({...formData, cia: v})} />
             </div>
-            <div className="space-y-1.5">
-              <label className="text-[12px] font-black text-slate-950 dark:text-slate-300 uppercase tracking-tighter">Manifesto Puxado</label>
+            <div className="space-y-1.5 relative">
+              <div className="flex items-center gap-2 mb-0.5">
+                <label className="text-[12px] font-black text-slate-950 dark:text-slate-300 uppercase tracking-tighter">Manifesto Puxado</label>
+                <button 
+                  type="button"
+                  onClick={() => setShowPuxadoInfo(!showPuxadoInfo)}
+                  className="text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                >
+                  <HelpCircle size={14} />
+                </button>
+              </div>
+              
+              {showPuxadoInfo && (
+                <div className="absolute bottom-full left-0 mb-3 w-64 bg-slate-900 text-white p-3 rounded-lg shadow-2xl z-[100] animate-fadeIn">
+                   <p className="text-[10px] font-bold leading-relaxed">
+                     Inserir a Data e Hora em que o manifesto foi impresso, essa informação você encontra na folha de Puxe no canto superior direito.
+                   </p>
+                   <div className="absolute top-full left-4 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-slate-900"></div>
+                </div>
+              )}
+
               <div className={dateInconsistency ? "ring-2 ring-red-500 animate-pulse" : ""}>
                 <CustomDateTimePicker value={formData.dataHoraPuxado} onChange={v => setFormData({...formData, dataHoraPuxado: v})} />
               </div>
             </div>
-            <div className="space-y-1.5">
-              <label className="text-[12px] font-black text-slate-950 dark:text-slate-300 uppercase tracking-tighter">Manifesto Recebido</label>
+            <div className="space-y-1.5 relative">
+              <div className="flex items-center gap-2 mb-0.5">
+                <label className="text-[12px] font-black text-slate-950 dark:text-slate-300 uppercase tracking-tighter">Manifesto Recebido</label>
+                <button 
+                  type="button"
+                  onClick={() => setShowRecebidoInfo(!showRecebidoInfo)}
+                  className="text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                >
+                  <HelpCircle size={14} />
+                </button>
+              </div>
+              
+              {showRecebidoInfo && (
+                <div className="absolute bottom-full left-0 mb-3 w-64 bg-slate-900 text-white p-3 rounded-lg shadow-2xl z-[100] animate-fadeIn">
+                   <p className="text-[10px] font-bold leading-relaxed">
+                     Inserir a Data e Hora em que o manifesto foi Recebido, essa é a mesma data que você protocolou com o carimbo na folha da presença.
+                   </p>
+                   <div className="absolute top-full left-4 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-slate-900"></div>
+                </div>
+              )}
+
               <div className={dateInconsistency ? "ring-2 ring-red-500 animate-pulse" : ""}>
                 <CustomDateTimePicker value={formData.dataHoraRecebido} onChange={v => setFormData({...formData, dataHoraRecebido: v})} />
               </div>
@@ -397,16 +444,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
               {dateInconsistency && (
                 <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-2 flex items-center gap-2 animate-fadeIn">
                    <AlertOctagon size={14} className="text-red-600 shrink-0" />
-                   <span className="text-[8px] font-black text-red-700 dark:text-red-400 uppercase leading-tight">BLOQUEIO: Recebimento anterior ao Puxe.</span>
+                   <span className="text-[8px] font-black text-red-700 dark:text-red-400 uppercase leading-tight">BLOQUEIO: O recebimento deve ser no mínimo 1 minuto após o puxe.</span>
                 </div>
               )}
               <button 
                 disabled={dateInconsistency}
                 onClick={() => { 
                   if (!formData.cia || !formData.dataHoraPuxado) return onShowAlert('error', 'Campos Obrigatórios Pendentes'); 
-                  if (dateInconsistency) return onShowAlert('error', 'Inconsistência cronológica detectada.');
+                  if (dateInconsistency) return onShowAlert('error', 'Inconsistência cronológica detectada (mínimo 1 minuto).');
                   onSave(formData, activeProfile.Nome_Completo); 
                   setFormData({ cia: '', dataHoraPuxado: '', dataHoraRecebido: '' }); 
+                  setShowPuxadoInfo(false);
+                  setShowRecebidoInfo(false);
                 }} 
                 className={`w-full h-10 font-black text-[10px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 group shadow-lg ${dateInconsistency ? 'bg-slate-300 dark:bg-slate-700 text-slate-500 cursor-not-allowed opacity-50' : 'bg-[#0f172a] dark:bg-indigo-600 hover:bg-indigo-700 text-white'}`}
               >
