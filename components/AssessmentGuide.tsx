@@ -61,15 +61,15 @@ const QUESTIONS: Question[] = [
   },
   {
     id: 6,
-    text: "Em qual aba o Auxiliar Operacional deve acessar para visualizar e assumir novas cargas (Pool)?",
+    text: "Em qual guia o Auxiliar Operacional deve acessar para iniciar o manifesto e atribuir a responsabilidade para ele?",
     options: ["Cadastro", "Puxe", "Fluxo", "Eficiência"],
     correct: 1
   },
   {
     id: 7,
-    text: "Quantos turnos operacionais existem no sistema SMO padrão?",
-    options: ["1 Turno", "2 Turnos", "3 Turnos", "4 Turnos"],
-    correct: 2
+    text: "Em qual guia o Auxiliar Sistema deve acessar para cadastrar o manifesto e atribuir a responsabilidade para ele?",
+    options: ["Cadastro", "Puxe", "Fluxo", "Eficiência"],
+    correct: 0
   },
   {
     id: 8,
