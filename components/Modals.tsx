@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { Manifesto, Funcionario, OperationalLog } from '../types';
 import { CustomDateTimePicker } from './CustomDateTimePicker';
@@ -147,20 +148,47 @@ export const ReprFillModal: React.FC<{
   );
 };
 
-// Fix: Added missing CancellationModal
-export const CancellationModal: React.FC<{ onConfirm: () => void, onClose: () => void }> = ({ onConfirm, onClose }) => {
+export const CancellationModal: React.FC<{ onConfirm: (reason: string) => void, onClose: () => void }> = ({ onConfirm, onClose }) => {
+  const [reason, setReason] = useState('');
+  const isValid = reason.trim().length >= 5;
+
   return (
-    <div className="fixed inset-0 bg-slate-900/60 dark:bg-black/80 z-[10000] flex items-start justify-center p-4 pt-[15vh] animate-fadeIn backdrop-blur-sm">
-      <div className="bg-white dark:bg-slate-800 w-full max-w-sm border-2 border-slate-900 dark:border-slate-700 shadow-2xl flex flex-col">
-        <div className="bg-red-600 text-white p-3 text-[10px] font-black uppercase tracking-widest flex justify-between items-center">
-          <span className="flex items-center gap-2"><ShieldAlert size={14} /> CONFIRMAR CANCELAMENTO</span>
-          <button onClick={onClose} className="p-1 hover:bg-red-700 transition-colors"><X size={16} /></button>
+    <div className="fixed inset-0 bg-slate-900/60 dark:bg-black/80 z-[10000] flex items-start justify-center p-4 pt-[10vh] animate-fadeIn backdrop-blur-sm">
+      <div className="bg-white dark:bg-slate-800 w-full max-w-md border-2 border-slate-900 dark:border-slate-700 shadow-2xl flex flex-col">
+        <div className="bg-red-600 text-white p-4 text-[10px] font-black uppercase tracking-widest flex justify-between items-center">
+          <span className="flex items-center gap-2"><ShieldAlert size={16} /> JUSTIFICATIVA DE CANCELAMENTO</span>
+          <button onClick={onClose} className="p-1 hover:bg-red-700 transition-colors"><X size={18} /></button>
         </div>
-        <div className="p-6 space-y-5 text-center">
-          <p className="text-xs font-bold text-slate-600 dark:text-slate-300">Tem certeza que deseja cancelar este manifesto? Esta ação é irreversível e será registrada no log de auditoria.</p>
+        <div className="p-6 space-y-5">
+          <div className="text-center mb-2">
+            <p className="text-xs font-bold text-slate-600 dark:text-slate-300">Para cancelar este manifesto, relate o motivo abaixo (obrigatório para fins de auditoria).</p>
+          </div>
+          
+          <div className="space-y-1.5">
+            <label className="text-[9px] font-black text-slate-900 dark:text-slate-200 uppercase tracking-widest flex items-center gap-2">
+              <MessageSquareQuote size={14} className="text-red-600" /> Motivo do Cancelamento
+            </label>
+            <textarea 
+              autoFocus
+              value={reason} 
+              onChange={e => setReason(e.target.value)} 
+              placeholder="Ex: Erro de digitação na CIA, manifesto duplicado, etc..."
+              className="w-full h-28 p-3 bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 text-xs font-bold dark:text-white outline-none focus:border-red-600 dark:focus:border-red-500 focus:bg-white transition-all resize-none shadow-inner" 
+            />
+            <p className={`text-[8px] font-black uppercase ${isValid ? 'text-emerald-600' : 'text-slate-400'}`}>
+              Mínimo: 5 caracteres ({reason.length}/5)
+            </p>
+          </div>
+
           <div className="flex gap-3">
-            <button onClick={onClose} className="flex-1 h-10 border-2 border-slate-200 dark:border-slate-700 text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all">Sair</button>
-            <button onClick={onConfirm} className="flex-1 h-10 bg-red-600 text-white text-[10px] font-black uppercase hover:bg-slate-900 transition-all shadow-md">Confirmar</button>
+            <button onClick={onClose} className="flex-1 h-12 border-2 border-slate-200 dark:border-slate-700 text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all">Sair</button>
+            <button 
+              disabled={!isValid}
+              onClick={() => onConfirm(reason)} 
+              className={`flex-1 h-12 text-white text-[10px] font-black uppercase transition-all shadow-md flex items-center justify-center gap-2 ${isValid ? 'bg-red-600 hover:bg-slate-900 shadow-red-200' : 'bg-slate-200 dark:bg-slate-700 cursor-not-allowed text-slate-400'}`}
+            >
+              Confirmar Cancelamento
+            </button>
           </div>
         </div>
       </div>

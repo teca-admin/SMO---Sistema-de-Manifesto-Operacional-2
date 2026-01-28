@@ -157,11 +157,13 @@ function App() {
       const user = operatorName || activeOperatorName || "Sistema";
       const now = getCurrentTimestampBR();
       
+      const { Justificativa, ...dbUpdateFields } = fields;
+
       const updateData = { 
         Status: status, 
         "Carimbo_Data/HR": now, 
         "Usuario_Ação": user, 
-        ...fields 
+        ...dbUpdateFields 
       };
       
       if (status === 'Manifesto Entregue') {
@@ -175,6 +177,7 @@ function App() {
         ID_Manifesto: id, 
         "Ação": status, 
         Usuario: user, 
+        Justificativa: Justificativa || null,
         "Created_At_BR": now 
       });
       
@@ -322,8 +325,8 @@ function App() {
             onConfirm={(date) => handleSaveReprDate(fillingReprId, date)}
           />
         )}
-        {cancellationId && <CancellationModal onConfirm={() => {
-          updateStatus(cancellationId, 'Manifesto Cancelado');
+        {cancellationId && <CancellationModal onConfirm={(reason) => {
+          updateStatus(cancellationId, 'Manifesto Cancelado', { Justificativa: reason });
           setCancellationId(null);
         }} onClose={() => setCancellationId(null)} />}
         {loadingMsg && <LoadingOverlay msg={loadingMsg} />}
@@ -484,8 +487,8 @@ function App() {
         />
       )}
       {viewingHistoryId && <HistoryModal data={manifestos.find(m => m.id === viewingHistoryId)!} onClose={() => setViewingHistoryId(null)} />}
-      {cancellationId && <CancellationModal onConfirm={() => {
-        updateStatus(cancellationId, 'Manifesto Cancelado');
+      {cancellationId && <CancellationModal onConfirm={(reason) => {
+        updateStatus(cancellationId, 'Manifesto Cancelado', { Justificativa: reason });
         setCancellationId(null);
       }} onClose={() => setCancellationId(null)} />}
       {assigningId && (
