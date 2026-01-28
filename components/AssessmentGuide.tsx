@@ -176,9 +176,13 @@ export const AssessmentGuide: React.FC<AssessmentGuideProps> = ({ onShowAlert })
     
     setLoading(true);
     try {
-      const { data, error } = await supabase.from('SMO_Avaliacoes').select('*').eq('Nome_Funcionario', operator.Nome).single();
+      const { data } = await supabase
+        .from('SMO_Avaliacoes')
+        .select('*')
+        .eq('Nome_Funcionario', operator.Nome)
+        .maybeSingle();
       
-      if (data && data.Tentativa_3 !== null) {
+      if (data && data.Tentativa_3 !== null && data.Tentativa_3 !== undefined) {
         onShowAlert('error', 'Limite de 3 tentativas atingido para este operador.');
         setLoading(false);
         return;
@@ -241,12 +245,13 @@ export const AssessmentGuide: React.FC<AssessmentGuideProps> = ({ onShowAlert })
     updateData.Status = bestScore >= 7 ? 'APROVADO' : 'REPROVADO';
 
     try {
-      const { error } = await supabase.from('SMO_Avaliacoes').upsert(updateData, { onConflict: 'Nome_Funcionario' });
+      // Usamos upsert sem especificar onConflict explicitamente para que o Supabase utilize a Primary Key (id) ou a Unique Constraint no banco
+      const { error } = await supabase.from('SMO_Avaliacoes').upsert(updateData);
       if (error) throw error;
       onShowAlert('success', `Avaliação Finalizada! Pontuação: ${score}/10`);
-    } catch (e) {
-      console.error(e);
-      onShowAlert('error', 'Erro ao salvar resultado.');
+    } catch (e: any) {
+      console.error("Erro ao salvar:", e);
+      onShowAlert('error', `Falha ao salvar resultado: ${e.message || 'Erro desconhecido'}`);
     }
   };
 
@@ -471,7 +476,7 @@ export const AssessmentGuide: React.FC<AssessmentGuideProps> = ({ onShowAlert })
                            .map((r, idx) => {
                            const best = Math.max(r.Tentativa_1 || 0, r.Tentativa_2 || 0, r.Tentativa_3 || 0);
                            return (
-                             <tr key={r.id} className="hover:bg-slate-50 dark:hover:bg-indigo-900/10 transition-colors group">
+                             <tr key={r.id || r.Nome_Funcionario} className="hover:bg-slate-50 dark:hover:bg-indigo-900/10 transition-colors group">
                                 <td className="p-4">
                                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-black ${idx === 0 ? 'bg-yellow-500 text-white' : idx === 1 ? 'bg-slate-400 text-white' : idx === 2 ? 'bg-amber-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>
                                       {idx + 1}
