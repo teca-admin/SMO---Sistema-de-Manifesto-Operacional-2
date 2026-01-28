@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Manifesto, User as UserType } from '../types';
@@ -196,10 +197,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const renderTable = (data: Manifesto[], isHistory: boolean = false) => {
-    const historyHeaders = ['ID MANIFESTO', 'STATUS', 'CIA', 'PUXADO', 'RECEBIDO', 'REPR. CIA', 'ENTREGUE', 'TURNO', 'AÇÃO'];
+    const historyHeaders = ['ID MANIFESTO', 'STATUS', 'CIA', 'PUXADO', 'RECEBIDO', 'REPRESENTANTE CIA', 'ENTREGUE', 'TURNO', 'AÇÃO'];
     const historyWidths = ['9%', '11%', '11%', '11%', '11%', '11%', '11%', '11%', '9%'];
     
-    const activeHeaders = ['ID MANIFESTO', 'STATUS', 'CIA', 'PUXADO', 'RECEBIDO', 'REPR. CIA', 'TURNO', 'AÇÃO'];
+    const activeHeaders = ['ID MANIFESTO', 'STATUS', 'CIA', 'PUXADO', 'RECEBIDO', 'REPRESENTANTE CIA', 'TURNO', 'AÇÃO'];
     const activeWidths = ['10%', '11%', '11%', '15%', '15%', '15%', '15%', '8%'];
     
     const headers = isHistory ? historyHeaders : activeHeaders;

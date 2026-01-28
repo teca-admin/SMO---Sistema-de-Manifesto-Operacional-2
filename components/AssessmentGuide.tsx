@@ -44,14 +44,14 @@ const QUESTIONS: Question[] = [
   },
   {
     id: 3,
-    text: "Após a finalização do manifesto (WFS), em quanto tempo o representante da CIA deve assinar?",
+    text: "Após a finalização do manifesto (WFS), em quanto tempo o representante da CIA deve comparecer ao setor de expedição?",
     options: ["Imediatamente", "10 Minutos", "15 Minutos", "30 Minutos"],
     correct: 2
   },
   {
     id: 4,
-    text: "Qual documento/ação é obrigatório registrar antes de realizar a 'Entrega' de um manifesto?",
-    options: ["Identidade do Motorista", "Assinatura/Data do Repr. CIA", "Foto da Carga", "Conferência Cega"],
+    text: "Qual o nome do campo que é obrigatório registrar antes de realizar a 'Entrega' de um manifesto?",
+    options: ["Identidade do Motorista", "REPRESENTANTE CIA", "Foto da Carga", "Conferência Cega"],
     correct: 1
   },
   {
