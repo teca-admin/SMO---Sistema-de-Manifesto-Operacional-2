@@ -5,14 +5,15 @@ import { OperationalDashboard } from './components/OperationalDashboard';
 import { KanbanBoard } from './components/KanbanBoard';
 import { EfficiencyDashboard } from './components/EfficiencyDashboard';
 import { AssessmentGuide } from './components/AssessmentGuide';
+import { SlaAuditor } from './components/SlaAuditor';
 import { MobileView } from './components/MobileView';
 import { EditModal, LoadingOverlay, HistoryModal, AlertToast, CancellationModal, AssignResponsibilityModal, ReprFillModal } from './components/Modals';
 import { Manifesto, User, SMO_Sistema_DB } from './types';
 import { supabase } from './supabaseClient';
-import { LayoutGrid, Plane, LogOut, Terminal, Activity, Columns, BarChart3, Sun, Moon, GraduationCap } from 'lucide-react';
+import { LayoutGrid, Plane, LogOut, Terminal, Activity, Columns, BarChart3, Sun, Moon, GraduationCap, ClipboardCheck } from 'lucide-react';
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'sistema' | 'operacional' | 'fluxo' | 'eficiencia' | 'avaliacao'>('sistema');
+  const [activeTab, setActiveTab] = useState<'sistema' | 'operacional' | 'fluxo' | 'eficiencia' | 'avaliacao' | 'auditoria'>('sistema');
   const [manifestos, setManifestos] = useState<Manifesto[]>([]);
   const [nextId, setNextId] = useState<string>('Automático');
   const [isMobile, setIsMobile] = useState(false);
@@ -36,6 +37,14 @@ function App() {
       return saved ? JSON.parse(saved) : null;
     } catch { return null; }
   });
+
+  useEffect(() => {
+    if (activeUser) {
+      localStorage.setItem('smo_active_profile', JSON.stringify(activeUser));
+    } else {
+      localStorage.removeItem('smo_active_profile');
+    }
+  }, [activeUser]);
 
   const activeOperatorName = activeUser?.Nome_Completo || null;
   const isAdmin = activeUser?.Usuario?.toLowerCase() === "rafael";
@@ -69,7 +78,6 @@ function App() {
   const getCurrentTimestampBR = () => {
     const d = new Date();
     const date = d.toLocaleDateString('pt-BR');
-    // Adicionado segundos para maior precisão na auditoria de processos rápidos
     const time = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     return `${date} ${time}`;
   };
@@ -143,7 +151,9 @@ function App() {
     return () => clearInterval(interval);
   }, [fetchManifestos, fetchNextId]);
 
-  const updateStatus = async (id: string, status: string, fields: any = {}, operatorName?: string) => {
+  const updateStatus = async (id: string, status: string, fields: any = {}, operatorNameOverride?: string) => {
+    const user = activeOperatorName || operatorNameOverride || "Sistema";
+    
     if (status === 'Manifesto Entregue') {
       const target = manifestos.find(m => m.id === id);
       const signature = target?.dataHoraRepresentanteCIA || fields?.Representante_CIA;
@@ -155,9 +165,7 @@ function App() {
 
     setLoadingMsg("Processando...");
     try {
-      const user = operatorName || activeOperatorName || "Sistema";
       const now = getCurrentTimestampBR();
-      
       const { Justificativa, ...dbUpdateFields } = fields;
 
       const updateData = { 
@@ -192,9 +200,9 @@ function App() {
   };
 
   const handleSaveEdit = async (data: any) => {
+    const user = activeOperatorName || "Sistema";
     setLoadingMsg("Salvando Alterações...");
     try {
-      const user = activeOperatorName || "Sistema";
       const now = getCurrentTimestampBR();
       const { error } = await supabase.from('SMO_Sistema').update({
         CIA: data.cia,
@@ -229,9 +237,9 @@ function App() {
   };
 
   const handleSaveReprDate = async (id: string, date: string) => {
+    const user = activeOperatorName || "Sistema";
     setLoadingMsg("Atualizando Representante...");
     try {
-      const user = activeOperatorName || "Sistema";
       const now = getCurrentTimestampBR();
       const { error } = await supabase.from('SMO_Sistema').update({
         Representante_CIA: date,
@@ -277,29 +285,41 @@ function App() {
     return (
       <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950">
         <MobileView 
-          activeTab={(activeTab === 'avaliacao' && !canSeeAvaliacao) ? 'sistema' : activeTab}
+          activeTab={(activeTab === 'avaliacao' && !canSeeAvaliacao) ? 'sistema' : activeTab as any}
           setActiveTab={setActiveTab as any}
           manifestos={manifestos}
           darkMode={darkMode}
           setDarkMode={setDarkMode}
-          onSave={async (d, operatorName) => {
+          onSave={async (d) => {
+            if (!activeOperatorName) return showAlert('error', 'Sessão expirada. Faça login novamente.');
             setLoadingMsg("Registrando...");
             const id = await fetchNextId();
             const turno = getTurnoAtual();
             const now = getCurrentTimestampBR();
             const { error } = await supabase.from('SMO_Sistema').insert({
               ID_Manifesto: id, 
-              Usuario_Sistema: operatorName, 
+              Usuario_Sistema: activeOperatorName, 
               CIA: d.cia, 
               Manifesto_Puxado: d.dataHoraPuxado, 
               Manifesto_Recebido: d.dataHoraRecebido,
               Status: "Manifesto Recebido", 
               Turno: turno, 
               "Carimbo_Data/HR": now, 
-              "Usuario_Ação": operatorName
+              "Usuario_Ação": activeOperatorName
             });
-            if (error) showAlert('error', error.message);
-            else { showAlert('success', `Registro Concluído (${turno})`); fetchManifestos(); }
+            
+            if (!error) {
+              await supabase.from('SMO_Operacional').insert({ 
+                ID_Manifesto: id, 
+                "Ação": "Manifesto Cadastrado", 
+                Usuario: activeOperatorName, 
+                "Created_At_BR": now 
+              });
+              showAlert('success', `Registro Concluído (${turno})`); 
+              fetchManifestos();
+            } else {
+              showAlert('error', error.message);
+            }
             setLoadingMsg(null);
           }}
           onAction={(act, id) => {
@@ -353,96 +373,57 @@ function App() {
             <div className="h-8 w-[1px] bg-slate-700 mx-2" />
             
             <nav className="flex h-full">
-              <button 
-                onClick={() => setActiveTab('sistema')} 
-                className={`group flex items-center gap-2 px-5 h-16 text-[9px] font-black uppercase tracking-widest transition-all border-b-4 ${activeTab === 'sistema' ? 'border-indigo-500 bg-slate-800/50' : 'border-transparent text-slate-400 hover:text-white hover:bg-slate-800/30'}`}
-              >
-                <LayoutGrid size={13} className={activeTab === 'sistema' ? 'text-indigo-400' : 'text-slate-50'} />
-                CADASTRO
-              </button>
-              <button 
-                onClick={() => setActiveTab('operacional')} 
-                className={`group flex items-center gap-2 px-5 h-16 text-[9px] font-black uppercase tracking-widest transition-all border-b-4 ${activeTab === 'operacional' ? 'border-red-500 bg-slate-800/50' : 'border-transparent text-slate-400 hover:text-white hover:bg-slate-800/30'}`}
-              >
-                <Plane size={13} className={activeTab === 'operacional' ? 'text-red-400' : 'text-slate-50'} />
-                PUXE
-              </button>
-              <button 
-                onClick={() => setActiveTab('fluxo')} 
-                className={`group flex items-center gap-2 px-5 h-16 text-[9px] font-black uppercase tracking-widest transition-all border-b-4 ${activeTab === 'fluxo' ? 'border-emerald-500 bg-slate-800/50' : 'border-transparent text-slate-400 hover:text-white hover:bg-slate-800/30'}`}
-              >
-                <Columns size={13} className={activeTab === 'fluxo' ? 'text-emerald-400' : 'text-slate-50'} />
-                FLUXO
-              </button>
-              <button 
-                onClick={() => setActiveTab('eficiencia')} 
-                className={`group flex items-center gap-2 px-5 h-16 text-[9px] font-black uppercase tracking-widest transition-all border-b-4 ${activeTab === 'eficiencia' ? 'border-indigo-400 bg-slate-800/50' : 'border-transparent text-slate-400 hover:text-white hover:bg-slate-800/30'}`}
-              >
-                <BarChart3 size={13} className={activeTab === 'eficiencia' ? 'text-indigo-300' : 'text-slate-50'} />
-                EFICIÊNCIA
-              </button>
-              {canSeeAvaliacao && (
-                <button 
-                  onClick={() => setActiveTab('avaliacao')} 
-                  className={`group flex items-center gap-2 px-5 h-16 text-[9px] font-black uppercase tracking-widest transition-all border-b-4 ${activeTab === 'avaliacao' ? 'border-yellow-500 bg-slate-800/50' : 'border-transparent text-slate-400 hover:text-white hover:bg-slate-800/30'}`}
-                >
-                  <GraduationCap size={13} className={activeTab === 'avaliacao' ? 'text-yellow-400' : 'text-slate-50'} />
-                  AVALIAÇÃO
-                </button>
-              )}
+              <button onClick={() => setActiveTab('sistema')} className={`group flex items-center justify-center gap-2 w-32 h-16 text-[9px] font-black uppercase tracking-widest transition-all border-b-4 ${activeTab === 'sistema' ? 'border-indigo-500 bg-slate-800/50' : 'border-transparent text-slate-400 hover:text-white hover:bg-slate-800/30'}`}><LayoutGrid size={13} className={activeTab === 'sistema' ? 'text-indigo-400' : 'text-slate-50'} />CADASTRO</button>
+              <button onClick={() => setActiveTab('operacional')} className={`group flex items-center justify-center gap-2 w-32 h-16 text-[9px] font-black uppercase tracking-widest transition-all border-b-4 ${activeTab === 'operacional' ? 'border-red-500 bg-slate-800/50' : 'border-transparent text-slate-400 hover:text-white hover:bg-slate-800/30'}`}><Plane size={13} className={activeTab === 'operacional' ? 'text-red-400' : 'text-slate-50'} />PUXE</button>
+              <button onClick={() => setActiveTab('fluxo')} className={`group flex items-center justify-center gap-2 w-32 h-16 text-[9px] font-black uppercase tracking-widest transition-all border-b-4 ${activeTab === 'fluxo' ? 'border-emerald-500 bg-slate-800/50' : 'border-transparent text-slate-400 hover:text-white hover:bg-slate-800/30'}`}><Columns size={13} className={activeTab === 'fluxo' ? 'text-emerald-400' : 'text-slate-50'} />FLUXO</button>
+              <button onClick={() => setActiveTab('eficiencia')} className={`group flex items-center justify-center gap-2 w-32 h-16 text-[9px] font-black uppercase tracking-widest transition-all border-b-4 ${activeTab === 'eficiencia' ? 'border-indigo-400 bg-slate-800/50' : 'border-transparent text-slate-400 hover:text-white hover:bg-slate-800/30'}`}><BarChart3 size={13} className={activeTab === 'eficiencia' ? 'text-indigo-300' : 'text-slate-50'} />EFICIÊNCIA</button>
+              <button onClick={() => setActiveTab('auditoria')} className={`group flex items-center justify-center gap-2 w-32 h-16 text-[9px] font-black uppercase tracking-widest transition-all border-b-4 ${activeTab === 'auditoria' ? 'border-blue-500 bg-slate-800/50' : 'border-transparent text-slate-400 hover:text-white hover:bg-slate-800/30'}`}><ClipboardCheck size={13} className={activeTab === 'auditoria' ? 'text-blue-400' : 'text-slate-50'} />AUDITORIA</button>
+              {canSeeAvaliacao && (<button onClick={() => setActiveTab('avaliacao')} className={`group flex items-center justify-center gap-2 w-32 h-16 text-[9px] font-black uppercase tracking-widest transition-all border-b-4 ${activeTab === 'avaliacao' ? 'border-yellow-500 bg-slate-800/50' : 'border-transparent text-slate-400 hover:text-white hover:bg-slate-800/30'}`}><GraduationCap size={13} className={activeTab === 'avaliacao' ? 'text-yellow-400' : 'text-slate-50'} />AVALIAÇÃO</button>)}
             </nav>
           </div>
           
           <div className="flex items-center gap-6">
-            <button 
-              onClick={() => setDarkMode(!darkMode)}
-              className="p-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-indigo-400 transition-all rounded"
-              title={darkMode ? "Ativar Modo Claro" : "Ativar Modo Escuro"}
-            >
-              {darkMode ? <Sun size={16} /> : <Moon size={16} />}
-            </button>
-
-            <div className="hidden lg:flex items-center gap-3 px-4 py-1.5 bg-slate-800 border border-slate-700">
-              <Activity size={14} className="text-emerald-400" />
-              <div className="text-left leading-none">
-                <p className="text-[9px] font-bold text-slate-500 uppercase">Sistema Operacional</p>
-                <p className="text-[10px] font-bold text-slate-200">Online</p>
-              </div>
-            </div>
-
-            <div className="text-right">
-              <p className="text-[9px] font-black text-indigo-400 uppercase tracking-tighter">Terminal Livre</p>
-              <p className="text-[11px] font-bold text-slate-100 uppercase">Acesso Direto</p>
-            </div>
+            <button onClick={() => setDarkMode(!darkMode)} className="p-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-indigo-400 transition-all rounded">{darkMode ? <Sun size={16} /> : <Moon size={16} />}</button>
+            <div className="hidden lg:flex items-center gap-3 px-4 py-1.5 bg-slate-800 border border-slate-700"><Activity size={14} className="text-emerald-400" /><div className="text-left leading-none"><p className="text-[9px] font-bold text-slate-500 uppercase">Sistema Operacional</p><p className="text-[10px] font-bold text-slate-200">Online</p></div></div>
+            <div className="text-right"><p className="text-[9px] font-black text-indigo-400 uppercase tracking-tighter">Terminal Livre</p><p className="text-[11px] font-bold text-slate-100 uppercase">Acesso Direto</p></div>
           </div>
         </div>
       </header>
 
-      <main className={`flex-1 overflow-auto p-6`}>
+      <main className="flex-1 overflow-auto p-6">
         <div className="max-w-[1700px] mx-auto space-y-6">
           {activeTab === 'sistema' ? (
             <Dashboard 
               manifestos={manifestos}
-              onSave={async (d, operatorName) => {
+              activeUser={activeUser}
+              onSave={async (d) => {
+                if (!activeOperatorName) return showAlert('error', 'Sessão expirada. Faça login novamente.');
                 setLoadingMsg("Registrando...");
                 const id = await fetchNextId();
                 const turno = getTurnoAtual();
                 const now = getCurrentTimestampBR();
                 const { error } = await supabase.from('SMO_Sistema').insert({
                   ID_Manifesto: id, 
-                  Usuario_Sistema: operatorName, 
+                  Usuario_Sistema: activeOperatorName, 
                   CIA: d.cia, 
                   Manifesto_Puxado: d.dataHoraPuxado, 
                   Manifesto_Recebido: d.dataHoraRecebido,
                   Status: "Manifesto Recebido", 
                   Turno: turno, 
                   "Carimbo_Data/HR": now, 
-                  "Usuario_Ação": operatorName
+                  "Usuario_Ação": activeOperatorName
                 });
-                if (error) showAlert('error', error.message);
-                else { 
+                if (!error) {
+                  await supabase.from('SMO_Operacional').insert({ 
+                    ID_Manifesto: id, 
+                    "Ação": "Manifesto Cadastrado", 
+                    Usuario: activeOperatorName, 
+                    "Created_At_BR": now 
+                  });
                   showAlert('success', `Registro Concluído (${turno})`); 
                   fetchManifestos(); 
+                } else {
+                  showAlert('error', error.message);
                 }
                 setLoadingMsg(null);
               }}
@@ -468,42 +449,20 @@ function App() {
           ) : activeTab === 'fluxo' ? (
             <KanbanBoard manifestos={manifestos} isAdmin={isAdmin} />
           ) : activeTab === 'eficiencia' ? (
-            <EfficiencyDashboard manifestos={manifestos} openHistory={setViewingHistoryId} />
+            <EfficiencyDashboard manifestos={manifestos} activeUser={activeUser} openHistory={setViewingHistoryId} />
+          ) : activeTab === 'auditoria' ? (
+            <SlaAuditor manifestos={manifestos} openHistory={setViewingHistoryId} />
           ) : (
             canSeeAvaliacao && <AssessmentGuide onShowAlert={showAlert} />
           )}
         </div>
       </main>
 
-      {editingId && (
-        <EditModal 
-          data={manifestos.find(m => m.id === editingId)!} 
-          onClose={() => setEditingId(null)} 
-          onSave={handleSaveEdit} 
-        />
-      )}
-      {fillingReprId && (
-        <ReprFillModal
-          manifesto={manifestos.find(m => m.id === fillingReprId)!}
-          onClose={() => setFillingReprId(null)}
-          onConfirm={(date) => handleSaveReprDate(fillingReprId, date)}
-        />
-      )}
+      {editingId && (<EditModal data={manifestos.find(m => m.id === editingId)!} onClose={() => setEditingId(null)} onSave={handleSaveEdit} />)}
+      {fillingReprId && (<ReprFillModal manifesto={manifestos.find(m => m.id === fillingReprId)!} onClose={() => setFillingReprId(null)} onConfirm={(date) => handleSaveReprDate(fillingReprId, date)} />)}
       {viewingHistoryId && <HistoryModal data={manifestos.find(m => m.id === viewingHistoryId)!} onClose={() => setViewingHistoryId(null)} />}
-      {cancellationId && <CancellationModal onConfirm={(reason) => {
-        updateStatus(cancellationId, 'Manifesto Cancelado', { Justificativa: reason });
-        setCancellationId(null);
-      }} onClose={() => setCancellationId(null)} />}
-      {assigningId && (
-        <AssignResponsibilityModal 
-          manifestoId={assigningId} 
-          onConfirm={(name) => {
-            updateStatus(assigningId, 'Manifesto Recebido', { "Usuario_Operação": name });
-            setAssigningId(null);
-          }} 
-          onClose={() => setAssigningId(null)} 
-        />
-      )}
+      {cancellationId && <CancellationModal onConfirm={(reason) => { updateStatus(cancellationId, 'Manifesto Cancelado', { Justificativa: reason }); setCancellationId(null); }} onClose={() => setCancellationId(null)} />}
+      {assigningId && (<AssignResponsibilityModal manifestoId={assigningId} onConfirm={(name) => { updateStatus(assigningId, 'Manifesto Recebido', { "Usuario_Operação": name }); setAssigningId(null); }} onClose={() => setAssigningId(null)} />)}
       {loadingMsg && <LoadingOverlay msg={loadingMsg} />}
       {alert && <AlertToast type={alert.type} msg={alert.msg} />}
     </div>

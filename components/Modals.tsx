@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { Manifesto, Funcionario, OperationalLog } from '../types';
 import { CustomDateTimePicker } from './CustomDateTimePicker';
@@ -252,7 +253,6 @@ export const ReprFillModal: React.FC<{
   onConfirm: (date: string) => void
 }> = ({ manifesto, onClose, onConfirm }) => {
   const handleConfirm = () => {
-    // Registra o carimbo automático da data e hora atual no formato ISO compatível
     const now = new Date().toISOString();
     onConfirm(now);
   };
@@ -430,6 +430,19 @@ export const HistoryModal: React.FC<{ data: Manifesto, onClose: () => void }> = 
     { label: 'Manifesto Entregue', time: data.dataHoraEntregue, icon: Plane }
   ];
 
+  // Helper para formatar data de log sem segundos de forma segura
+  const formatLogTime = (str: string) => {
+    if (!str) return '';
+    const clean = str.replace(',', '');
+    const parts = clean.split(' ');
+    if (parts.length < 2) return clean;
+    const timeParts = parts[1].split(':');
+    if (timeParts.length === 3) {
+      return `${parts[0]} ${timeParts[0]}:${timeParts[1]}`;
+    }
+    return clean;
+  };
+
   return (
     <div className="fixed inset-0 bg-slate-900/60 dark:bg-black/80 z-[10000] flex items-start justify-center p-4 pt-[2vh] animate-fadeIn backdrop-blur-sm">
       <div className="bg-white dark:bg-slate-800 w-full max-w-4xl border-2 border-slate-900 dark:border-slate-700 shadow-2xl flex flex-col max-h-[95vh] mb-4">
@@ -504,12 +517,14 @@ export const HistoryModal: React.FC<{ data: Manifesto, onClose: () => void }> = 
                     <div className="p-4 space-y-4 max-h-[500px] overflow-y-auto custom-scrollbar">
                        {logs.map((log) => (
                          <div key={log.id} className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-lg p-3 shadow-sm hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors">
-                            <div className="flex justify-between items-start mb-2">
-                               <div className="flex items-center gap-2">
-                                  <UserCircle size={14} className="text-slate-400" />
-                                  <span className="text-[9px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-tighter">{log.usuario}</span>
+                            <div className="flex justify-between items-start gap-4 mb-2">
+                               <div className="flex items-center gap-2 min-w-0">
+                                  <UserCircle size={14} className="text-slate-400 shrink-0" />
+                                  <span className="text-[9px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-tighter truncate">{log.usuario}</span>
                                </div>
-                               <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-900 px-2 py-0.5 rounded-full">{log.createdAtBR.replace(/:\d{2}$/, '').replace(',', '')}</span>
+                               <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-900 px-2 py-0.5 rounded-full shrink-0 whitespace-nowrap">
+                                 {formatLogTime(log.createdAtBR)}
+                               </span>
                             </div>
                             <span className={`text-[9px] font-black px-2 py-0.5 rounded border ${log.acao.includes('Edição') ? 'bg-indigo-50 text-indigo-600 border-indigo-100 dark:bg-indigo-900/20 dark:text-indigo-400 dark:border-indigo-800/50' : 'bg-slate-50 text-slate-600 border-slate-100 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-700'} uppercase`}>{log.acao}</span>
                             {log.justificativa && <div className="mt-2 p-2 bg-indigo-50/50 dark:bg-indigo-900/10 border-l-4 border-indigo-400"><p className="text-[10px] font-bold text-slate-700 dark:text-slate-300 italic">"{log.justificativa}"</p></div>}
