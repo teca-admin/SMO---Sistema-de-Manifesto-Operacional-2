@@ -265,24 +265,24 @@ export const SlaAuditor: React.FC<SlaAuditorProps> = ({ manifestos, openHistory 
       {/* 2. DASHBOARD DE PERFORMANCE */}
       {!isExpanded && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 shrink-0 animate-fadeIn">
-          {/* Card: Médias Globais */}
-          <div className="bg-slate-900 border-2 border-slate-800 p-4 shadow-xl flex flex-col gap-4">
-             <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                <h4 className="text-[10px] font-black text-white uppercase tracking-[0.2em] flex items-center gap-2">
-                   <TrendingUp size={14} className="text-blue-400" /> Compliance Médio Global
+          {/* Card: Médias Globais - CORRIGIDO TEMA LIGHT/DARK */}
+          <div className="bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 p-4 shadow-xl flex flex-col gap-4">
+             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+                <h4 className="text-[10px] font-black text-slate-950 dark:text-white uppercase tracking-[0.2em] flex items-center gap-2">
+                   <TrendingUp size={14} className="text-blue-500" /> Indicadores Performance SLA
                 </h4>
-                <span className="text-[9px] font-black text-slate-500 uppercase">{stats.total} Manifestos</span>
+                <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase">{stats.total} Manifestos</span>
              </div>
              <div className="grid grid-cols-3 gap-3">
                 {[
-                  { label: 'Apres.', pct: stats.avgApre, color: 'text-blue-400', visible: visibleSlas.apre },
-                  { label: 'WFS', pct: stats.avgWfs, color: 'text-amber-400', visible: visibleSlas.wfs },
-                  { label: 'Comp.', pct: stats.avgComp, color: 'text-emerald-400', visible: visibleSlas.comp }
+                  { label: 'Apres.', pct: stats.avgApre, color: 'text-blue-600 dark:text-blue-400', visible: visibleSlas.apre },
+                  { label: 'WFS', pct: stats.avgWfs, color: 'text-amber-600 dark:text-amber-400', visible: visibleSlas.wfs },
+                  { label: 'Comp.', pct: stats.avgComp, color: 'text-emerald-600 dark:text-emerald-400', visible: visibleSlas.comp }
                 ].map((m, i) => (
-                  <div key={i} className={`text-center bg-black/40 p-2 border rounded transition-opacity duration-300 ${m.visible ? 'border-slate-800 opacity-100' : 'border-slate-900 opacity-20 grayscale'}`}>
-                     <p className="text-[8px] font-black text-slate-500 uppercase mb-1">{m.label}</p>
+                  <div key={i} className={`text-center bg-slate-50 dark:bg-black/40 p-2 border rounded transition-all duration-300 ${m.visible ? 'border-slate-200 dark:border-slate-800 opacity-100' : 'border-transparent opacity-20 grayscale'}`}>
+                     <p className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase mb-1">{m.label}</p>
                      <p className={`text-lg font-black font-mono-tech ${m.color}`}>{Math.round(m.pct)}%</p>
-                     <div className="w-full h-1 bg-slate-800 mt-2 overflow-hidden">
+                     <div className="w-full h-1 bg-slate-200 dark:bg-slate-800 mt-2 overflow-hidden">
                         <div className={`h-full ${m.color.replace('text', 'bg')}`} style={{ width: `${m.pct}%` }}></div>
                      </div>
                   </div>
@@ -290,7 +290,7 @@ export const SlaAuditor: React.FC<SlaAuditorProps> = ({ manifestos, openHistory 
              </div>
           </div>
 
-          {/* Card: Performance por CIA - AJUSTES DE CORES PARA LEGIBILIDADE */}
+          {/* Card: Performance por CIA */}
           <div className="lg:col-span-2 bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 p-4 shadow-xl flex flex-col gap-3 overflow-hidden">
              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-2">
                 <h4 className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-[0.2em] flex items-center gap-2">
@@ -304,9 +304,7 @@ export const SlaAuditor: React.FC<SlaAuditorProps> = ({ manifestos, openHistory 
                 {stats.ciaData.map((cia, i) => (
                   <div key={cia.name} className="flex-1 min-w-[120px] flex flex-col gap-2">
                      <div className="flex justify-between items-end gap-1">
-                        {/* Nome da CIA - Mais claro no dark mode */}
                         <span className="text-[10px] font-black text-slate-950 dark:text-white uppercase truncate">{cia.name}</span>
-                        {/* Percentual - Mais vibrante e visível */}
                         <span className={`text-[11px] font-black font-mono-tech leading-none ${cia.pct >= 90 ? 'text-emerald-600 dark:text-emerald-400' : cia.pct >= 70 ? 'text-amber-500 dark:text-amber-400' : 'text-red-600 dark:text-red-400'}`}>
                           {Math.round(cia.pct)}%
                         </span>
@@ -317,7 +315,6 @@ export const SlaAuditor: React.FC<SlaAuditorProps> = ({ manifestos, openHistory 
                           style={{ height: `${cia.pct}%` }}
                         ></div>
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                           {/* Contador de Itens - Ajustado de cinza escuro para branco puro/brilhante para contraste total sobre a barra escura */}
                            <span className="text-[10px] font-black text-white uppercase tracking-tighter drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]">
                              {cia.total} Itens
                            </span>
