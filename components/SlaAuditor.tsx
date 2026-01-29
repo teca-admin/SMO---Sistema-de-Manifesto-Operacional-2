@@ -16,7 +16,12 @@ import {
   Check,
   ChevronDown,
   ShieldCheck,
-  ShieldAlert
+  ShieldAlert,
+  BarChart3,
+  TrendingUp,
+  Maximize2,
+  Minimize2,
+  PlaneTakeoff
 } from 'lucide-react';
 import { CustomDateRangePicker } from './CustomDateRangePicker';
 import { CustomSelect } from './CustomSelect';
@@ -32,17 +37,22 @@ export const SlaAuditor: React.FC<SlaAuditorProps> = ({ manifestos, openHistory 
     end: new Date(new Date().setHours(23, 59, 59, 999)).toISOString()
   });
 
+  const [isExpanded, setIsExpanded] = useState(false);
   const [visibleSlas, setVisibleSlas] = useState({
     apre: true,
     wfs: true,
     comp: true
   });
 
+  const toggleSlaVisibility = (key: keyof typeof visibleSlas) => {
+    setVisibleSlas(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
   const [filters, setFilters] = useState({
     cia: '',
     turno: '',
     search: '',
-    compliance: '' // '', 'CONFORME', 'NÃO CONFORME'
+    compliance: '' 
   });
 
   const parseAnyDate = (dateStr: string | undefined): Date | null => {
@@ -109,29 +119,63 @@ export const SlaAuditor: React.FC<SlaAuditorProps> = ({ manifestos, openHistory 
 
   const stats = useMemo(() => {
     let total = filteredManifestos.length;
-    let failApre = 0;
-    let failWfs = 0;
-    let failComp = 0;
+    let failApre = 0, failWfs = 0, failComp = 0;
+    let totalApre = 0, totalWfs = 0, totalComp = 0;
+
+    const ciaPerf: Record<string, { total: number, fails: number }> = {};
+    CIAS.forEach(c => ciaPerf[c] = { total: 0, fails: 0 });
 
     filteredManifestos.forEach(m => {
       const apre = getDiffMinutes(m.dataHoraPuxado, m.dataHoraRecebido);
       const wfs = getDiffMinutes(m.dataHoraIniciado, m.dataHoraCompleto);
       const comp = getDiffMinutes(m.dataHoraCompleto, m.dataHoraRepresentanteCIA);
 
-      if (apre !== null && apre > 10) failApre++;
-      if (wfs !== null && wfs > 120) failWfs++;
-      if (comp !== null && comp > 15) failComp++;
+      let isMNonConforming = false;
+
+      if (apre !== null) { 
+        totalApre++; 
+        if (apre > 10) { 
+          failApre++; 
+          if (visibleSlas.apre) isMNonConforming = true; 
+        }
+      }
+      if (wfs !== null) { 
+        totalWfs++; 
+        if (wfs > 120) { 
+          failWfs++; 
+          if (visibleSlas.wfs) isMNonConforming = true;
+        }
+      }
+      if (comp !== null) { 
+        totalComp++; 
+        if (comp > 15) { 
+          failComp++; 
+          if (visibleSlas.comp) isMNonConforming = true;
+        }
+      }
+
+      if (ciaPerf[m.cia]) {
+        ciaPerf[m.cia].total++;
+        if (isMNonConforming) ciaPerf[m.cia].fails++;
+      }
     });
 
-    const totalFails = failApre + failWfs + failComp;
-    return { total, failApre, failWfs, failComp, totalFails };
-  }, [filteredManifestos]);
+    return { 
+      total, 
+      failApre, failWfs, failComp,
+      avgApre: totalApre > 0 ? ((totalApre - failApre) / totalApre) * 100 : 100,
+      avgWfs: totalWfs > 0 ? ((totalWfs - failWfs) / totalWfs) * 100 : 100,
+      avgComp: totalComp > 0 ? ((totalComp - failComp) / totalComp) * 100 : 100,
+      ciaData: Object.entries(ciaPerf).map(([name, d]) => ({
+        name,
+        total: d.total,
+        fails: d.fails,
+        pct: d.total > 0 ? ((d.total - d.fails) / d.total) * 100 : 0
+      })).filter(c => c.total > 0).sort((a, b) => b.pct - a.pct)
+    };
+  }, [filteredManifestos, visibleSlas]);
 
-  const toggleSlaVisibility = (key: keyof typeof visibleSlas) => {
-    setVisibleSlas(prev => ({ ...prev, [key]: !prev[key] }));
-  };
-
-  const visibleColsCount = Object.values(visibleSlas).filter(v => v).length + 2;
+  const visibleColsCount = 2 + (visibleSlas.apre ? 1 : 0) + (visibleSlas.wfs ? 1 : 0) + (visibleSlas.comp ? 1 : 0);
 
   const ciaOptions = [
     { label: "TODAS CIAS", value: "" },
@@ -144,9 +188,7 @@ export const SlaAuditor: React.FC<SlaAuditorProps> = ({ manifestos, openHistory 
          <span className="text-[9px] text-slate-300 italic font-black uppercase tracking-widest">{label}</span>
        </div>
     );
-
     const isViolated = diff > limit;
-
     return (
       <div className="flex items-center justify-between gap-4 h-full w-full">
         <div className="flex items-center gap-4 flex-1">
@@ -160,7 +202,6 @@ export const SlaAuditor: React.FC<SlaAuditorProps> = ({ manifestos, openHistory 
               {formatDateTime(end)}
            </div>
         </div>
-        
         <div className={`px-2 py-0.5 rounded-sm text-[11px] font-black flex items-center gap-1.5 shadow-sm border shrink-0 min-w-[50px] justify-center ${isViolated ? 'bg-red-600 border-red-700 text-white' : 'bg-emerald-600 border-emerald-700 text-white'}`}>
            <span className="leading-none">{diff}m</span>
            {isViolated ? <AlertTriangle size={10} /> : <Check size={10} />}
@@ -171,20 +212,17 @@ export const SlaAuditor: React.FC<SlaAuditorProps> = ({ manifestos, openHistory 
 
   return (
     <div className="flex flex-col gap-4 animate-fadeIn h-[calc(100vh-100px)] overflow-hidden">
-      {/* Linha Única de Filtros */}
+      {/* 1. BARRA DE FILTROS SUPERIOR */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 shrink-0">
-        <div className="lg:col-span-9 bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 p-2 flex items-center gap-3 shadow-lg">
-          {/* Icone / Titulo Compacto */}
-          <div className="flex items-center justify-center w-10 h-10 bg-blue-600 rounded shrink-0">
+        <div className="lg:col-span-12 bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 p-2 flex flex-wrap items-center gap-3 shadow-lg">
+          <div className="flex items-center justify-center w-10 h-10 bg-blue-600 rounded shrink-0 shadow-md">
             <Target size={20} className="text-white" />
           </div>
 
-          {/* 1. DATA */}
           <div className="w-[300px] shrink-0">
             <CustomDateRangePicker start={dateRange.start} end={dateRange.end} onChange={(s, e) => setDateRange({ start: s, end: e })} />
           </div>
 
-          {/* 2. CONFORMIDADE */}
           <div className="flex items-center bg-slate-100 dark:bg-slate-900 p-1 border border-slate-200 dark:border-slate-700 rounded-sm shrink-0">
              {[
                { label: 'TODOS', value: '', icon: Filter },
@@ -194,7 +232,7 @@ export const SlaAuditor: React.FC<SlaAuditorProps> = ({ manifestos, openHistory 
                <button 
                 key={item.label}
                 onClick={() => setFilters({...filters, compliance: item.value})}
-                className={`px-3 h-8 text-[9px] font-black uppercase transition-all flex items-center gap-2 ${filters.compliance === item.value ? 'bg-white dark:bg-slate-800 shadow-sm text-slate-900 dark:text-white' : 'text-slate-400 opacity-50 hover:opacity-100'}`}
+                className={`px-3 h-8 text-[9px] font-black uppercase transition-all flex items-center gap-2 ${filters.compliance === item.value ? 'bg-white dark:bg-slate-800 shadow-sm text-slate-900 dark:text-white border border-slate-200 dark:border-slate-600' : 'text-slate-400 opacity-50 hover:opacity-100'}`}
                >
                  <item.icon size={12} className={filters.compliance === item.value ? item.activeColor : ''} />
                  <span className="hidden xl:inline">{item.label}</span>
@@ -202,7 +240,6 @@ export const SlaAuditor: React.FC<SlaAuditorProps> = ({ manifestos, openHistory 
              ))}
           </div>
 
-          {/* 3. CIA */}
           <div className="w-40 shrink-0">
             <CustomSelect 
               value={filters.cia} 
@@ -212,45 +249,100 @@ export const SlaAuditor: React.FC<SlaAuditorProps> = ({ manifestos, openHistory 
             />
           </div>
 
-          {/* 4. PESQUISA MANIFESTO */}
-          <div className="relative flex-1 min-w-[120px]">
+          <div className="relative flex-1 min-w-[150px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
             <input 
               type="text" 
-              placeholder="MANIFESTO..."
+              placeholder="PESQUISAR MANIFESTO..."
               value={filters.search}
               onChange={e => setFilters({...filters, search: e.target.value})}
-              className="w-full h-10 pl-9 pr-4 bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 text-[10px] font-black uppercase outline-none focus:border-blue-600 dark:text-white"
+              className="w-full h-10 pl-9 pr-4 bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 text-[10px] font-black uppercase outline-none focus:border-blue-600 dark:text-white transition-all"
             />
-          </div>
-        </div>
-
-        {/* Resumo Estatístico - CORREÇÃO DE BORDAS E CORES NO MODO LIGHT */}
-        <div className="lg:col-span-3 bg-white dark:bg-black p-2 flex items-center justify-around shadow-lg border-2 border-slate-200 dark:border-slate-800">
-          <div className="text-center">
-            <p className="text-[8px] font-black text-slate-500 uppercase mb-0.5 tracking-tighter">Analisado</p>
-            <p className="text-xl font-black text-slate-900 dark:text-white font-mono-tech leading-none">{stats.total}</p>
-          </div>
-          <div className="text-center">
-            <p className="text-[8px] font-black text-red-500 uppercase mb-0.5 tracking-tighter">Não Conforme</p>
-            <p className="text-xl font-black text-red-500 font-mono-tech leading-none">{stats.totalFails}</p>
-          </div>
-          <div className="text-center">
-            <p className="text-[8px] font-black text-emerald-500 uppercase mb-0.5 tracking-tighter">Eficiência</p>
-            <p className="text-xl font-black text-emerald-500 font-mono-tech leading-none">
-              {stats.total > 0 ? Math.round(((stats.total - (stats.totalFails / 3)) / stats.total) * 100) : 0}%
-            </p>
           </div>
         </div>
       </div>
 
-      {/* Tabela Principal */}
-      <div className="flex-1 bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 panel-shadow overflow-hidden flex flex-col">
-        <div className="bg-slate-900 px-5 py-2 flex items-center justify-between shrink-0 border-b border-slate-800">
-          <h3 className="text-[10px] font-black text-white uppercase tracking-[0.2em] flex items-center gap-2">
-            <ClipboardCheck size={16} className="text-blue-400" /> Relatório de Auditoria Compacto
-          </h3>
+      {/* 2. DASHBOARD DE PERFORMANCE */}
+      {!isExpanded && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 shrink-0 animate-fadeIn">
+          {/* Card: Médias Globais */}
+          <div className="bg-slate-900 border-2 border-slate-800 p-4 shadow-xl flex flex-col gap-4">
+             <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                <h4 className="text-[10px] font-black text-white uppercase tracking-[0.2em] flex items-center gap-2">
+                   <TrendingUp size={14} className="text-blue-400" /> Compliance Médio Global
+                </h4>
+                <span className="text-[9px] font-black text-slate-500 uppercase">{stats.total} Manifestos</span>
+             </div>
+             <div className="grid grid-cols-3 gap-3">
+                {[
+                  { label: 'Apres.', pct: stats.avgApre, color: 'text-blue-400', visible: visibleSlas.apre },
+                  { label: 'WFS', pct: stats.avgWfs, color: 'text-amber-400', visible: visibleSlas.wfs },
+                  { label: 'Comp.', pct: stats.avgComp, color: 'text-emerald-400', visible: visibleSlas.comp }
+                ].map((m, i) => (
+                  <div key={i} className={`text-center bg-black/40 p-2 border rounded transition-opacity duration-300 ${m.visible ? 'border-slate-800 opacity-100' : 'border-slate-900 opacity-20 grayscale'}`}>
+                     <p className="text-[8px] font-black text-slate-500 uppercase mb-1">{m.label}</p>
+                     <p className={`text-lg font-black font-mono-tech ${m.color}`}>{Math.round(m.pct)}%</p>
+                     <div className="w-full h-1 bg-slate-800 mt-2 overflow-hidden">
+                        <div className={`h-full ${m.color.replace('text', 'bg')}`} style={{ width: `${m.pct}%` }}></div>
+                     </div>
+                  </div>
+                ))}
+             </div>
+          </div>
+
+          {/* Card: Performance por CIA - AJUSTES DE CORES PARA LEGIBILIDADE */}
+          <div className="lg:col-span-2 bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 p-4 shadow-xl flex flex-col gap-3 overflow-hidden">
+             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-2">
+                <h4 className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-[0.2em] flex items-center gap-2">
+                   <BarChart3 size={14} className="text-indigo-600" /> Ranking de Eficiência por CIA
+                </h4>
+                <div className="flex gap-2">
+                   <div className="flex items-center gap-1"><div className="w-2 h-2 bg-indigo-600 rounded-full"></div><span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">Sincronizado com colunas ativas</span></div>
+                </div>
+             </div>
+             <div className="flex-1 overflow-x-auto custom-scrollbar flex gap-4 pb-2 items-end">
+                {stats.ciaData.map((cia, i) => (
+                  <div key={cia.name} className="flex-1 min-w-[120px] flex flex-col gap-2">
+                     <div className="flex justify-between items-end gap-1">
+                        {/* Nome da CIA - Mais claro no dark mode */}
+                        <span className="text-[10px] font-black text-slate-950 dark:text-white uppercase truncate">{cia.name}</span>
+                        {/* Percentual - Mais vibrante e visível */}
+                        <span className={`text-[11px] font-black font-mono-tech leading-none ${cia.pct >= 90 ? 'text-emerald-600 dark:text-emerald-400' : cia.pct >= 70 ? 'text-amber-500 dark:text-amber-400' : 'text-red-600 dark:text-red-400'}`}>
+                          {Math.round(cia.pct)}%
+                        </span>
+                     </div>
+                     <div className="relative h-12 w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-sm overflow-hidden flex items-end">
+                        <div 
+                          className="w-full bg-indigo-600 dark:bg-indigo-500 transition-all duration-700 shadow-[0_0_10px_rgba(79,70,229,0.3)]"
+                          style={{ height: `${cia.pct}%` }}
+                        ></div>
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                           {/* Contador de Itens - Ajustado de cinza escuro para branco puro/brilhante para contraste total sobre a barra escura */}
+                           <span className="text-[10px] font-black text-white uppercase tracking-tighter drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]">
+                             {cia.total} Itens
+                           </span>
+                        </div>
+                     </div>
+                  </div>
+                ))}
+                {stats.ciaData.length === 0 && (
+                   <div className="w-full h-full flex items-center justify-center text-slate-300 italic text-[10px] font-black uppercase tracking-widest">
+                      Aguardando dados...
+                   </div>
+                )}
+             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 3. TABELA PRINCIPAL EXPANSÍVEL */}
+      <div className={`flex-1 bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 panel-shadow overflow-hidden flex flex-col transition-all duration-300 ${isExpanded ? 'h-full' : ''}`}>
+        <div className="bg-slate-900 px-5 py-2.5 flex items-center justify-between shrink-0 border-b border-slate-800 shadow-md">
           <div className="flex items-center gap-4">
+             <h3 className="text-[10px] font-black text-white uppercase tracking-[0.2em] flex items-center gap-2">
+               <ClipboardCheck size={16} className="text-blue-400" /> Relatório Detalhado de Auditoria
+             </h3>
+             <div className="h-4 w-px bg-slate-700"></div>
              <div className="flex items-center bg-slate-800 p-1 rounded gap-1 border border-slate-700">
                {[
                  { label: 'APRE.', key: 'apre', color: 'bg-blue-500' },
@@ -260,27 +352,38 @@ export const SlaAuditor: React.FC<SlaAuditorProps> = ({ manifestos, openHistory 
                  <button 
                   key={item.key}
                   onClick={() => toggleSlaVisibility(item.key as any)}
-                  className={`px-2 h-6 text-[8px] font-black uppercase transition-all flex items-center gap-1.5 ${visibleSlas[item.key as keyof typeof visibleSlas] ? 'bg-slate-700 text-white' : 'text-slate-500 opacity-40 hover:opacity-100'}`}
+                  className={`px-3 h-7 text-[8px] font-black uppercase transition-all flex items-center gap-2 ${visibleSlas[item.key as keyof typeof visibleSlas] ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-800 text-slate-500 opacity-40 hover:opacity-100'}`}
                  >
-                   <div className={`w-1.5 h-1.5 rounded-full ${visibleSlas[item.key as keyof typeof visibleSlas] ? item.color : 'bg-slate-500'}`}></div>
+                   <div className={`w-1.5 h-1.5 rounded-full ${visibleSlas[item.key as keyof typeof visibleSlas] ? 'bg-white' : item.color}`}></div>
                    {item.label}
                  </button>
                ))}
              </div>
-             <div className="h-4 w-px bg-slate-700"></div>
-             <div className="flex items-center gap-1.5">
-                <span className="text-[8px] font-black text-indigo-200 uppercase">I = Início</span>
+          </div>
+
+          <div className="flex items-center gap-4">
+             <div className="hidden xl:flex items-center gap-4 border-r border-slate-800 pr-4">
+                <div className="flex items-center gap-1.5">
+                   <span className="text-[8px] font-black text-indigo-300 uppercase tracking-tighter">I = Início</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                   <span className="text-[8px] font-black text-indigo-500 uppercase tracking-tighter">F = Fim</span>
+                </div>
              </div>
-             <div className="flex items-center gap-1.5">
-                <span className="text-[8px] font-black text-indigo-400 uppercase">F = Fim</span>
-             </div>
+             <button 
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="p-1.5 bg-slate-800 hover:bg-indigo-600 text-slate-400 hover:text-white transition-all rounded shadow-inner"
+              title={isExpanded ? "Reduzir" : "Expandir"}
+             >
+                {isExpanded ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+             </button>
           </div>
         </div>
 
         <div className="flex-1 overflow-auto custom-scrollbar">
           <table className="w-full text-left border-collapse table-fixed">
             <thead className="sticky top-0 z-20">
-              <tr className="bg-slate-100 dark:bg-slate-900 border-b-2 border-slate-200 dark:border-slate-700 shadow-sm">
+              <tr className="bg-slate-50 dark:bg-slate-900 border-b-2 border-slate-200 dark:border-slate-700 shadow-sm">
                 <th className="py-2 px-4 w-56 text-[9px] font-black text-slate-800 dark:text-slate-200 uppercase tracking-tighter">Manifesto / CIA / Turno</th>
                 
                 {visibleSlas.apre && (
@@ -366,15 +469,21 @@ export const SlaAuditor: React.FC<SlaAuditorProps> = ({ manifestos, openHistory 
         </div>
       </div>
 
-      <div className="bg-slate-50 dark:bg-slate-900/50 p-2.5 border-2 border-slate-200 dark:border-slate-700 flex items-center justify-between shrink-0">
+      {/* 4. RODAPÉ DE LEGENDAS E VERSÃO */}
+      <div className="bg-slate-50 dark:bg-slate-900/50 p-2.5 border-2 border-slate-200 dark:border-slate-700 flex items-center justify-between shrink-0 shadow-inner">
          <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
-               <div className="w-2.5 h-2.5 bg-red-600 rounded-full"></div>
-               <span className="text-[9px] font-black text-slate-600 dark:text-slate-300 uppercase">Não Conforme</span>
+               <div className="w-2.5 h-2.5 bg-red-600 rounded-full shadow-sm"></div>
+               <span className="text-[9px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest">Não Conforme</span>
             </div>
             <div className="flex items-center gap-2">
-               <div className="w-2.5 h-2.5 bg-emerald-600 rounded-full"></div>
-               <span className="text-[9px] font-black text-slate-600 dark:text-slate-300 uppercase">Conforme</span>
+               <div className="w-2.5 h-2.5 bg-emerald-600 rounded-full shadow-sm"></div>
+               <span className="text-[9px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest">Conforme</span>
+            </div>
+            <div className="h-3 w-px bg-slate-300 dark:bg-slate-700"></div>
+            <div className="flex items-center gap-2">
+               <PlaneTakeoff size={12} className="text-slate-400" />
+               <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">WFS Ground Handling</span>
             </div>
          </div>
          <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] italic flex items-center gap-2 opacity-60">
