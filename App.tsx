@@ -73,7 +73,7 @@ function App() {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     handleResize();
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    return () => window.removeResizeListener('resize', handleResize);
   }, []);
 
   const getCurrentTimestampBR = () => {
@@ -138,7 +138,7 @@ function App() {
           dataHoraIniciado: item.Manifesto_Iniciado,
           dataHoraDisponivel: item.Manifesto_Disponivel,
           dataHoraConferencia: item["Manifesto_em_Conferência"],
-          dataHoraPendente: item.Manifesto_Pendente,
+          dataHoraIniciado: item.Manifesto_Iniciado,
           dataHoraCompleto: item.Manifesto_Completo
         })));
       }
@@ -237,27 +237,35 @@ function App() {
     }
   };
 
+  // Fix: Added missing handleSaveReprDate function to process representative signatures
   const handleSaveReprDate = async (id: string, date: string) => {
-    const user = activeOperatorName || "Sistema";
-    setLoadingMsg("Atualizando Representante...");
+    setLoadingMsg("Registrando Assinatura...");
     try {
       const now = getCurrentTimestampBR();
-      const { error } = await supabase.from('SMO_Sistema').update({
-        Representante_CIA: date,
-        "Carimbo_Data/HR": now,
-        "Usuario_Ação": user
-      }).eq('ID_Manifesto', id);
+      const user = activeOperatorName || "Sistema";
+      
+      const d = new Date(date);
+      const brDate = d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+      const { error } = await supabase
+        .from('SMO_Sistema')
+        .update({ 
+          Representante_CIA: brDate,
+          "Carimbo_Data/HR": now,
+          "Usuario_Ação": user
+        })
+        .eq('ID_Manifesto', id);
 
       if (error) throw error;
 
       await supabase.from('SMO_Operacional').insert({ 
         ID_Manifesto: id, 
-        "Ação": "Registro Representante CIA", 
+        "Ação": "Assinatura Repr. CIA", 
         Usuario: user, 
         "Created_At_BR": now 
       });
 
-      showAlert('success', 'Data do Representante Salva');
+      showAlert('success', 'Assinatura Registrada');
       setFillingReprId(null);
       fetchManifestos();
     } catch (err: any) {
@@ -374,18 +382,18 @@ function App() {
             <div className="h-8 w-[1px] bg-slate-700 mx-2" />
             
             <nav className="flex h-full">
-              <button onClick={() => setActiveTab('sistema')} className={`group flex items-center justify-center gap-2 w-32 h-16 text-[9px] font-black uppercase tracking-widest transition-all border-b-4 ${activeTab === 'sistema' ? 'border-indigo-500 bg-slate-800/50' : 'border-transparent text-slate-400 hover:text-white hover:bg-slate-800/30'}`}><LayoutGrid size={13} className={activeTab === 'sistema' ? 'text-indigo-400' : 'text-slate-50'} />CADASTRO</button>
-              <button onClick={() => setActiveTab('operacional')} className={`group flex items-center justify-center gap-2 w-32 h-16 text-[9px] font-black uppercase tracking-widest transition-all border-b-4 ${activeTab === 'operacional' ? 'border-red-500 bg-slate-800/50' : 'border-transparent text-slate-400 hover:text-white hover:bg-slate-800/30'}`}><Plane size={13} className={activeTab === 'operacional' ? 'text-red-400' : 'text-slate-50'} />PUXE</button>
-              <button onClick={() => setActiveTab('fluxo')} className={`group flex items-center justify-center gap-2 w-32 h-16 text-[9px] font-black uppercase tracking-widest transition-all border-b-4 ${activeTab === 'fluxo' ? 'border-emerald-500 bg-slate-800/50' : 'border-transparent text-slate-400 hover:text-white hover:bg-slate-800/30'}`}><Columns size={13} className={activeTab === 'fluxo' ? 'text-emerald-400' : 'text-slate-50'} />FLUXO</button>
-              <button onClick={() => setActiveTab('eficiencia')} className={`group flex items-center justify-center gap-2 w-32 h-16 text-[9px] font-black uppercase tracking-widest transition-all border-b-4 ${activeTab === 'eficiencia' ? 'border-yellow-500 bg-slate-800/50' : 'border-transparent text-slate-400 hover:text-white hover:bg-slate-800/30'}`}><BarChart3 size={13} className={activeTab === 'eficiencia' ? 'text-yellow-400' : 'text-slate-50'} />EFICIÊNCIA</button>
-              {canSeeAuditoria && (<button onClick={() => setActiveTab('auditoria')} className={`group flex items-center justify-center gap-2 w-32 h-16 text-[9px] font-black uppercase tracking-widest transition-all border-b-4 ${activeTab === 'auditoria' ? 'border-blue-500 bg-slate-800/50' : 'border-transparent text-slate-400 hover:text-white hover:bg-slate-800/30'}`}><ClipboardCheck size={13} className={activeTab === 'auditoria' ? 'text-blue-400' : 'text-slate-50'} />AUDITORIA</button>)}
-              {canSeeAvaliacao && (<button onClick={() => setActiveTab('avaliacao')} className={`group flex items-center justify-center gap-2 w-32 h-16 text-[9px] font-black uppercase tracking-widest transition-all border-b-4 ${activeTab === 'avaliacao' ? 'border-orange-500 bg-slate-800/50' : 'border-transparent text-slate-400 hover:text-white hover:bg-slate-800/30'}`}><GraduationCap size={13} className={activeTab === 'avaliacao' ? 'text-orange-400' : 'text-slate-50'} />AVALIAÇÃO</button>)}
+              <button onClick={() => setActiveTab('sistema')} className={`group flex items-center justify-center gap-2 w-32 h-16 text-[9px] font-black uppercase tracking-widest transition-all border-b-4 ${activeTab === 'sistema' ? 'border-indigo-500 bg-slate-800/50 text-white' : 'border-transparent text-slate-300 hover:text-white hover:bg-slate-800/30'}`}><LayoutGrid size={13} className={activeTab === 'sistema' ? 'text-indigo-400' : 'text-slate-100'} />CADASTRO</button>
+              <button onClick={() => setActiveTab('operacional')} className={`group flex items-center justify-center gap-2 w-32 h-16 text-[9px] font-black uppercase tracking-widest transition-all border-b-4 ${activeTab === 'operacional' ? 'border-red-500 bg-slate-800/50 text-white' : 'border-transparent text-slate-300 hover:text-white hover:bg-slate-800/30'}`}><Plane size={13} className={activeTab === 'operacional' ? 'text-red-400' : 'text-slate-100'} />PUXE</button>
+              <button onClick={() => setActiveTab('fluxo')} className={`group flex items-center justify-center gap-2 w-32 h-16 text-[9px] font-black uppercase tracking-widest transition-all border-b-4 ${activeTab === 'fluxo' ? 'border-emerald-500 bg-slate-800/50 text-white' : 'border-transparent text-slate-300 hover:text-white hover:bg-slate-800/30'}`}><Columns size={13} className={activeTab === 'fluxo' ? 'text-emerald-400' : 'text-slate-100'} />FLUXO</button>
+              <button onClick={() => setActiveTab('eficiencia')} className={`group flex items-center justify-center gap-2 w-32 h-16 text-[9px] font-black uppercase tracking-widest transition-all border-b-4 ${activeTab === 'eficiencia' ? 'border-yellow-500 bg-slate-800/50 text-white' : 'border-transparent text-slate-300 hover:text-white hover:bg-slate-800/30'}`}><BarChart3 size={13} className={activeTab === 'eficiencia' ? 'text-yellow-400' : 'text-slate-100'} />EFICIÊNCIA</button>
+              {canSeeAuditoria && (<button onClick={() => setActiveTab('auditoria')} className={`group flex items-center justify-center gap-2 w-32 h-16 text-[9px] font-black uppercase tracking-widest transition-all border-b-4 ${activeTab === 'auditoria' ? 'border-blue-500 bg-slate-800/50 text-white' : 'border-transparent text-slate-300 hover:text-white hover:bg-slate-800/30'}`}><ClipboardCheck size={13} className={activeTab === 'auditoria' ? 'text-blue-400' : 'text-slate-100'} />AUDITORIA</button>)}
+              {canSeeAvaliacao && (<button onClick={() => setActiveTab('avaliacao')} className={`group flex items-center justify-center gap-2 w-32 h-16 text-[9px] font-black uppercase tracking-widest transition-all border-b-4 ${activeTab === 'avaliacao' ? 'border-orange-500 bg-slate-800/50 text-white' : 'border-transparent text-slate-300 hover:text-white hover:bg-slate-800/30'}`}><GraduationCap size={13} className={activeTab === 'avaliacao' ? 'text-orange-400' : 'text-slate-100'} />AVALIAÇÃO</button>)}
             </nav>
           </div>
           
           <div className="flex items-center gap-6">
             <button onClick={() => setDarkMode(!darkMode)} className="p-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-indigo-400 transition-all rounded">{darkMode ? <Sun size={16} /> : <Moon size={16} />}</button>
-            <div className="hidden lg:flex items-center gap-3 px-4 py-1.5 bg-slate-800 border border-slate-700"><Activity size={14} className="text-emerald-400" /><div className="text-left leading-none"><p className="text-[9px] font-bold text-slate-500 uppercase">Sistema Operacional</p><p className="text-[10px] font-bold text-slate-200">Online</p></div></div>
+            <div className="hidden lg:flex items-center gap-3 px-4 py-1.5 bg-slate-800 border border-slate-700"><Activity size={14} className="text-emerald-400" /><div className="text-left leading-none"><p className="text-[9px] font-bold text-slate-400 uppercase">Sistema Operacional</p><p className="text-[10px] font-bold text-slate-200">Online</p></div></div>
             <div className="text-right"><p className="text-[9px] font-black text-indigo-400 uppercase tracking-tighter">Terminal Livre</p><p className="text-[11px] font-bold text-slate-100 uppercase">Acesso Direto</p></div>
           </div>
         </div>

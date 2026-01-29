@@ -185,20 +185,22 @@ export const SlaAuditor: React.FC<SlaAuditorProps> = ({ manifestos, openHistory 
   const SlaCell = ({ start, end, diff, limit, label }: { start: string|undefined, end: string|undefined, diff: number|null, limit: number, label: string }) => {
     if (diff === null) return (
        <div className="flex items-center justify-center h-full">
-         <span className="text-[9px] text-slate-300 italic font-black uppercase tracking-widest">{label}</span>
+         {/* Ajuste de Contraste: text-slate-300 alterado para text-slate-400 para melhor visibilidade em fundo branco */}
+         <span className="text-[9px] text-slate-400 dark:text-slate-500 italic font-black uppercase tracking-widest">{label}</span>
        </div>
     );
     const isViolated = diff > limit;
     return (
       <div className="flex items-center justify-between gap-4 h-full w-full">
         <div className="flex items-center gap-4 flex-1">
+           {/* Melhoria de contraste nos labels I e F */}
            <div className="flex items-center gap-1.5 border-l-2 border-indigo-200 dark:border-indigo-900/50 pl-2">
-              <span className="text-[8px] font-black text-slate-400 uppercase">I</span>
+              <span className="text-[8px] font-black text-slate-500 dark:text-slate-400 uppercase">I</span>
               {formatDateTime(start)}
            </div>
            <div className="h-4 w-px bg-slate-200 dark:bg-slate-700"></div>
            <div className="flex items-center gap-1.5 border-l-2 border-indigo-400 pl-2">
-              <span className="text-[8px] font-black text-slate-400 uppercase">F</span>
+              <span className="text-[8px] font-black text-slate-500 dark:text-slate-400 uppercase">F</span>
               {formatDateTime(end)}
            </div>
         </div>
@@ -212,7 +214,7 @@ export const SlaAuditor: React.FC<SlaAuditorProps> = ({ manifestos, openHistory 
 
   return (
     <div className="flex flex-col gap-4 animate-fadeIn h-[calc(100vh-100px)] overflow-hidden">
-      {/* 1. BARRA DE FILTROS SUPERIOR */}
+      {/* Barra de Filtros */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 shrink-0">
         <div className="lg:col-span-12 bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 p-2 flex flex-wrap items-center gap-3 shadow-lg">
           <div className="flex items-center justify-center w-10 h-10 bg-blue-600 rounded shrink-0 shadow-md">
@@ -232,7 +234,7 @@ export const SlaAuditor: React.FC<SlaAuditorProps> = ({ manifestos, openHistory 
                <button 
                 key={item.label}
                 onClick={() => setFilters({...filters, compliance: item.value})}
-                className={`px-3 h-8 text-[9px] font-black uppercase transition-all flex items-center gap-2 ${filters.compliance === item.value ? 'bg-white dark:bg-slate-800 shadow-sm text-slate-900 dark:text-white border border-slate-200 dark:border-slate-600' : 'text-slate-400 opacity-50 hover:opacity-100'}`}
+                className={`px-3 h-8 text-[9px] font-black uppercase transition-all flex items-center gap-2 ${filters.compliance === item.value ? 'bg-white dark:bg-slate-800 shadow-sm text-slate-900 dark:text-white border border-slate-200 dark:border-slate-600' : 'text-slate-500 opacity-70 hover:opacity-100'}`}
                >
                  <item.icon size={12} className={filters.compliance === item.value ? item.activeColor : ''} />
                  <span className="hidden xl:inline">{item.label}</span>
@@ -262,16 +264,15 @@ export const SlaAuditor: React.FC<SlaAuditorProps> = ({ manifestos, openHistory 
         </div>
       </div>
 
-      {/* 2. DASHBOARD DE PERFORMANCE */}
+      {/* Dashboard de Performance */}
       {!isExpanded && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 shrink-0 animate-fadeIn">
-          {/* Card: Médias Globais - CORRIGIDO TEMA LIGHT/DARK */}
           <div className="bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 p-4 shadow-xl flex flex-col gap-4">
              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
                 <h4 className="text-[10px] font-black text-slate-950 dark:text-white uppercase tracking-[0.2em] flex items-center gap-2">
                    <TrendingUp size={14} className="text-blue-500" /> Indicadores Performance SLA
                 </h4>
-                <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase">{stats.total} Manifestos</span>
+                <span className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase">{stats.total} Manifestos</span>
              </div>
              <div className="grid grid-cols-3 gap-3">
                 {[
@@ -280,7 +281,7 @@ export const SlaAuditor: React.FC<SlaAuditorProps> = ({ manifestos, openHistory 
                   { label: 'Comp.', pct: stats.avgComp, color: 'text-emerald-600 dark:text-emerald-400', visible: visibleSlas.comp }
                 ].map((m, i) => (
                   <div key={i} className={`text-center bg-slate-50 dark:bg-black/40 p-2 border rounded transition-all duration-300 ${m.visible ? 'border-slate-200 dark:border-slate-800 opacity-100' : 'border-transparent opacity-20 grayscale'}`}>
-                     <p className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase mb-1">{m.label}</p>
+                     <p className="text-[8px] font-black text-slate-500 dark:text-slate-400 uppercase mb-1">{m.label}</p>
                      <p className={`text-lg font-black font-mono-tech ${m.color}`}>{Math.round(m.pct)}%</p>
                      <div className="w-full h-1 bg-slate-200 dark:bg-slate-800 mt-2 overflow-hidden">
                         <div className={`h-full ${m.color.replace('text', 'bg')}`} style={{ width: `${m.pct}%` }}></div>
@@ -290,14 +291,13 @@ export const SlaAuditor: React.FC<SlaAuditorProps> = ({ manifestos, openHistory 
              </div>
           </div>
 
-          {/* Card: Performance por CIA */}
           <div className="lg:col-span-2 bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 p-4 shadow-xl flex flex-col gap-3 overflow-hidden">
              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-2">
                 <h4 className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-[0.2em] flex items-center gap-2">
                    <BarChart3 size={14} className="text-indigo-600" /> Ranking de Eficiência por CIA
                 </h4>
                 <div className="flex gap-2">
-                   <div className="flex items-center gap-1"><div className="w-2 h-2 bg-indigo-600 rounded-full"></div><span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">Sincronizado com colunas ativas</span></div>
+                   <div className="flex items-center gap-1"><div className="w-2 h-2 bg-indigo-600 rounded-full"></div><span className="text-[8px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-tighter">Sincronizado com colunas ativas</span></div>
                 </div>
              </div>
              <div className="flex-1 overflow-x-auto custom-scrollbar flex gap-4 pb-2 items-end">
@@ -322,17 +322,12 @@ export const SlaAuditor: React.FC<SlaAuditorProps> = ({ manifestos, openHistory 
                      </div>
                   </div>
                 ))}
-                {stats.ciaData.length === 0 && (
-                   <div className="w-full h-full flex items-center justify-center text-slate-300 italic text-[10px] font-black uppercase tracking-widest">
-                      Aguardando dados...
-                   </div>
-                )}
              </div>
           </div>
         </div>
       )}
 
-      {/* 3. TABELA PRINCIPAL EXPANSÍVEL */}
+      {/* Tabela Principal */}
       <div className={`flex-1 bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 panel-shadow overflow-hidden flex flex-col transition-all duration-300 ${isExpanded ? 'h-full' : ''}`}>
         <div className="bg-slate-900 px-5 py-2.5 flex items-center justify-between shrink-0 border-b border-slate-800 shadow-md">
           <div className="flex items-center gap-4">
@@ -349,7 +344,7 @@ export const SlaAuditor: React.FC<SlaAuditorProps> = ({ manifestos, openHistory 
                  <button 
                   key={item.key}
                   onClick={() => toggleSlaVisibility(item.key as any)}
-                  className={`px-3 h-7 text-[8px] font-black uppercase transition-all flex items-center gap-2 ${visibleSlas[item.key as keyof typeof visibleSlas] ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-800 text-slate-500 opacity-40 hover:opacity-100'}`}
+                  className={`px-3 h-7 text-[8px] font-black uppercase transition-all flex items-center gap-2 ${visibleSlas[item.key as keyof typeof visibleSlas] ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-800 text-slate-500 opacity-60 hover:opacity-100'}`}
                  >
                    <div className={`w-1.5 h-1.5 rounded-full ${visibleSlas[item.key as keyof typeof visibleSlas] ? 'bg-white' : item.color}`}></div>
                    {item.label}
@@ -401,13 +396,13 @@ export const SlaAuditor: React.FC<SlaAuditorProps> = ({ manifestos, openHistory 
                   </th>
                 )}
                 
-                <th className="py-2 px-2 w-14 border-l border-slate-200 dark:border-slate-700 text-center text-[9px] font-black text-slate-400 uppercase tracking-tighter">Dossiê</th>
+                <th className="py-2 px-2 w-14 border-l border-slate-200 dark:border-slate-700 text-center text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-tighter">Dossiê</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
               {filteredManifestos.length === 0 ? (
                 <tr>
-                  <td colSpan={visibleColsCount} className="p-20 text-center text-slate-400 dark:text-slate-600 font-black uppercase italic tracking-widest text-[11px]">
+                  <td colSpan={visibleColsCount} className="p-20 text-center text-slate-500 dark:text-slate-400 font-black uppercase italic tracking-widest text-[11px]">
                     Nenhum manifesto encontrado com os filtros aplicados.
                   </td>
                 </tr>
@@ -425,7 +420,7 @@ export const SlaAuditor: React.FC<SlaAuditorProps> = ({ manifestos, openHistory 
                           <div className="h-3 w-px bg-slate-200 dark:bg-slate-700"></div>
                           <div className="flex items-center gap-1.5">
                             <span className="text-[8px] font-black px-1.5 py-0.5 bg-slate-900 text-white rounded-xs uppercase tracking-tighter shrink-0">{m.cia}</span>
-                            <span className="text-[8px] font-bold text-slate-400 uppercase truncate tracking-tighter shrink-0">{m.turno?.split(' ')[0]}T</span>
+                            <span className="text-[8px] font-bold text-slate-500 dark:text-slate-400 uppercase truncate tracking-tighter shrink-0">{m.turno?.split(' ')[0]}T</span>
                           </div>
                         </div>
                       </td>
@@ -451,7 +446,7 @@ export const SlaAuditor: React.FC<SlaAuditorProps> = ({ manifestos, openHistory 
                       <td className="py-1 px-2 border-l border-slate-100 dark:border-slate-700 text-center">
                          <button 
                           onClick={() => openHistory && openHistory(m.id)}
-                          className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-all rounded-md"
+                          className="p-1 text-slate-500 dark:text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-all rounded-md"
                           title="Abrir Log de Auditoria"
                          >
                             <FileSearch size={16} />
@@ -466,24 +461,19 @@ export const SlaAuditor: React.FC<SlaAuditorProps> = ({ manifestos, openHistory 
         </div>
       </div>
 
-      {/* 4. RODAPÉ DE LEGENDAS E VERSÃO */}
+      {/* Rodapé */}
       <div className="bg-slate-50 dark:bg-slate-900/50 p-2.5 border-2 border-slate-200 dark:border-slate-700 flex items-center justify-between shrink-0 shadow-inner">
          <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
                <div className="w-2.5 h-2.5 bg-red-600 rounded-full shadow-sm"></div>
-               <span className="text-[9px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest">Não Conforme</span>
+               <span className="text-[9px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest">Não Conforme</span>
             </div>
             <div className="flex items-center gap-2">
                <div className="w-2.5 h-2.5 bg-emerald-600 rounded-full shadow-sm"></div>
-               <span className="text-[9px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest">Conforme</span>
-            </div>
-            <div className="h-3 w-px bg-slate-300 dark:bg-slate-700"></div>
-            <div className="flex items-center gap-2">
-               <PlaneTakeoff size={12} className="text-slate-400" />
-               <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">WFS Ground Handling</span>
+               <span className="text-[9px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest">Conforme</span>
             </div>
          </div>
-         <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] italic flex items-center gap-2 opacity-60">
+         <p className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] italic flex items-center gap-2 opacity-80">
             <Clock size={10} /> Hostinger SMO Auditoria SLA v2.5
          </p>
       </div>
