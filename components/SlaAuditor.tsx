@@ -19,6 +19,7 @@ import {
   ShieldAlert
 } from 'lucide-react';
 import { CustomDateRangePicker } from './CustomDateRangePicker';
+import { CustomSelect } from './CustomSelect';
 
 interface SlaAuditorProps {
   manifestos: Manifesto[];
@@ -132,6 +133,11 @@ export const SlaAuditor: React.FC<SlaAuditorProps> = ({ manifestos, openHistory 
 
   const visibleColsCount = Object.values(visibleSlas).filter(v => v).length + 2;
 
+  const ciaOptions = [
+    { label: "TODAS CIAS", value: "" },
+    ...CIAS.map(c => ({ label: c.toUpperCase(), value: c }))
+  ];
+
   const SlaCell = ({ start, end, diff, limit, label }: { start: string|undefined, end: string|undefined, diff: number|null, limit: number, label: string }) => {
     if (diff === null) return (
        <div className="flex items-center justify-center h-full">
@@ -167,7 +173,7 @@ export const SlaAuditor: React.FC<SlaAuditorProps> = ({ manifestos, openHistory 
     <div className="flex flex-col gap-4 animate-fadeIn h-[calc(100vh-100px)] overflow-hidden">
       {/* Linha Única de Filtros */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 shrink-0">
-        <div className="lg:col-span-9 bg-white dark:bg-slate-800 border-2 border-slate-900 dark:border-slate-700 p-2 flex items-center gap-3 shadow-lg">
+        <div className="lg:col-span-9 bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 p-2 flex items-center gap-3 shadow-lg">
           {/* Icone / Titulo Compacto */}
           <div className="flex items-center justify-center w-10 h-10 bg-blue-600 rounded shrink-0">
             <Target size={20} className="text-white" />
@@ -197,15 +203,13 @@ export const SlaAuditor: React.FC<SlaAuditorProps> = ({ manifestos, openHistory 
           </div>
 
           {/* 3. CIA */}
-          <div className="w-36 shrink-0">
-            <select 
-              value={filters.cia}
-              onChange={e => setFilters({...filters, cia: e.target.value})}
-              className="w-full h-10 px-3 bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 text-[10px] font-black uppercase outline-none focus:border-blue-600 dark:text-white"
-            >
-              <option value="">TODAS CIAS</option>
-              {CIAS.map(c => <option key={c} value={c}>{c.toUpperCase()}</option>)}
-            </select>
+          <div className="w-40 shrink-0">
+            <CustomSelect 
+              value={filters.cia} 
+              onChange={v => setFilters({...filters, cia: v})} 
+              options={ciaOptions}
+              placeholder="TODAS CIAS"
+            />
           </div>
 
           {/* 4. PESQUISA MANIFESTO */}
@@ -221,11 +225,11 @@ export const SlaAuditor: React.FC<SlaAuditorProps> = ({ manifestos, openHistory 
           </div>
         </div>
 
-        {/* Resumo Estatístico */}
-        <div className="lg:col-span-3 bg-slate-900 dark:bg-black p-2 flex items-center justify-around shadow-lg border-2 border-slate-800">
+        {/* Resumo Estatístico - CORREÇÃO DE BORDAS E CORES NO MODO LIGHT */}
+        <div className="lg:col-span-3 bg-white dark:bg-black p-2 flex items-center justify-around shadow-lg border-2 border-slate-200 dark:border-slate-800">
           <div className="text-center">
             <p className="text-[8px] font-black text-slate-500 uppercase mb-0.5 tracking-tighter">Analisado</p>
-            <p className="text-xl font-black text-white font-mono-tech leading-none">{stats.total}</p>
+            <p className="text-xl font-black text-slate-900 dark:text-white font-mono-tech leading-none">{stats.total}</p>
           </div>
           <div className="text-center">
             <p className="text-[8px] font-black text-red-500 uppercase mb-0.5 tracking-tighter">Não Conforme</p>

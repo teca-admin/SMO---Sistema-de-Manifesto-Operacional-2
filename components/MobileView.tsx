@@ -9,8 +9,8 @@ import {
   KeyRound, Eye, EyeOff, Loader2, GraduationCap
 } from 'lucide-react';
 import { supabase } from '../supabaseClient';
-// Fix: Import AssessmentGuide component to resolve the 'Cannot find name' error
 import { AssessmentGuide } from './AssessmentGuide';
+import { CustomSelect } from './CustomSelect';
 
 interface MobileViewProps {
   activeTab: 'sistema' | 'operacional' | 'fluxo' | 'eficiencia' | 'avaliacao';
@@ -198,7 +198,6 @@ export const MobileView: React.FC<MobileViewProps> = ({
         
         {activeTab === 'sistema' && (
           <div className="space-y-6 animate-fadeIn">
-            {/* ... (rest of the sistema tab content remains unchanged) */}
             <div className="bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm">
               <div className="bg-slate-100 dark:bg-slate-800 p-4 border-b border-slate-200 dark:border-slate-700">
                 <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-slate-800 dark:text-white">
@@ -209,14 +208,11 @@ export const MobileView: React.FC<MobileViewProps> = ({
                 <div className="grid grid-cols-1 gap-4">
                   <div className="space-y-1">
                     <label className="text-[10px] font-black text-slate-500 uppercase">CIA Aérea</label>
-                    <select 
-                      value={form.cia}
-                      onChange={e => setForm({...form, cia: e.target.value})}
-                      className="w-full h-12 px-4 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-lg text-sm font-bold outline-none focus:border-indigo-600 dark:text-white"
-                    >
-                      <option value="">Selecione...</option>
-                      {CIAS.map(c => <option key={c} value={c}>{c.toUpperCase()}</option>)}
-                    </select>
+                    <CustomSelect 
+                      value={form.cia} 
+                      onChange={v => setForm({...form, cia: v})} 
+                      placeholder="SELECIONE A CIA..."
+                    />
                   </div>
                   <div className="grid grid-cols-1 gap-4">
                     <div className="space-y-1">
@@ -281,7 +277,6 @@ export const MobileView: React.FC<MobileViewProps> = ({
 
         {activeTab === 'fluxo' && (
           <div className="space-y-4 animate-fadeIn">
-            {/* ... (fluxo content) */}
             <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 text-center py-2">Monitor de Fluxo (Mobile)</h3>
             {['Manifesto Recebido', 'Manifesto Iniciado', 'Manifesto Finalizado'].map(status => {
               const filtered = manifestos.filter(m => m.status === status);
@@ -311,7 +306,6 @@ export const MobileView: React.FC<MobileViewProps> = ({
 
         {activeTab === 'eficiencia' && (
           <div className="space-y-4 animate-fadeIn">
-            {/* ... (eficiencia content) */}
             <div className="grid grid-cols-2 gap-3">
               {[
                 { label: 'Total', val: manifestos.length, color: 'indigo' },
