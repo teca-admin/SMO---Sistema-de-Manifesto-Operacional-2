@@ -11,6 +11,8 @@ import {
 import { supabase } from '../supabaseClient';
 import { AssessmentGuide } from './AssessmentGuide';
 import { SlaAuditor } from './SlaAuditor';
+// Adicionando a importação que faltava para corrigir o erro na linha 320
+import { EfficiencyDashboard } from './EfficiencyDashboard';
 import { CustomSelect } from './CustomSelect';
 
 interface MobileViewProps {
@@ -165,7 +167,7 @@ export const MobileView: React.FC<MobileViewProps> = ({
   const navItems = [
     { id: 'sistema', icon: LayoutGrid, label: 'Cadastro' },
     { id: 'fluxo', icon: Columns, label: 'Fluxo' },
-    { id: 'eficiencia', icon: BarChart3, label: 'Dashboard' }
+    { id: 'eficiencia', icon: BarChart3, label: 'Eficiência' }
   ];
 
   if (canSeeAuditoria) {
@@ -316,19 +318,9 @@ export const MobileView: React.FC<MobileViewProps> = ({
 
         {activeTab === 'eficiencia' && (
           <div className="space-y-4 animate-fadeIn">
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                { label: 'Total', val: manifestos.length, color: 'indigo' },
-                { label: 'Entregues', val: manifestos.filter(m => m.status === 'Manifesto Entregue').length, color: 'emerald' },
-                { label: 'Processo', val: manifestos.filter(m => m.status !== 'Manifesto Entregue' && m.status !== 'Manifesto Cancelado').length, color: 'amber' },
-                { label: 'Cancelados', val: manifestos.filter(m => m.status === 'Manifesto Cancelado').length, color: 'red' }
-              ].map((kpi, idx) => (
-                <div key={idx} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-sm">
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">{kpi.label}</p>
-                  <p className={`text-2xl font-black text-${kpi.color}-600`}>{kpi.val}</p>
-                </div>
-              ))}
-            </div>
+             <div className="bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden h-full">
+                <EfficiencyDashboard manifestos={manifestos} activeUser={activeUser} openHistory={openHistory} />
+             </div>
           </div>
         )}
 
@@ -351,18 +343,31 @@ export const MobileView: React.FC<MobileViewProps> = ({
 
       {/* Bottom Navigation Mobile */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-black border-t border-slate-200 dark:border-slate-800 h-20 flex items-center justify-around px-2 z-[9999] shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
-        {navItems.map((item) => (
-          <button
-            key={item.id}
-            onClick={() => setActiveTab(item.id as any)}
-            className={`flex flex-col items-center justify-center w-full h-full gap-1 transition-all ${activeTab === item.id ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-600'}`}
-          >
-            <div className={`p-1 rounded-lg transition-colors ${activeTab === item.id ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''}`}>
-              <item.icon size={22} className={activeTab === item.id ? 'stroke-[2.5px]' : 'stroke-[1.5px]'} />
-            </div>
-            <span className={`text-[9px] font-black uppercase tracking-tighter ${activeTab === item.id ? 'opacity-100' : 'opacity-60'}`}>{item.label}</span>
-          </button>
-        ))}
+        {navItems.map((item) => {
+          const isEficienciaActive = activeTab === 'eficiencia' && item.id === 'eficiencia';
+          const isActive = activeTab === item.id;
+          
+          return (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id as any)}
+              className={`flex flex-col items-center justify-center w-full h-full gap-1 transition-all ${
+                isEficienciaActive 
+                ? 'text-yellow-600 dark:text-yellow-400' 
+                : isActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-600'
+              }`}
+            >
+              <div className={`p-1 rounded-lg transition-colors ${
+                isEficienciaActive 
+                ? 'bg-yellow-50 dark:bg-yellow-900/20' 
+                : isActive ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''
+              }`}>
+                <item.icon size={22} className={isActive ? 'stroke-[2.5px]' : 'stroke-[1.5px]'} />
+              </div>
+              <span className={`text-[9px] font-black uppercase tracking-tighter ${isActive ? 'opacity-100' : 'opacity-60'}`}>{item.label}</span>
+            </button>
+          );
+        })}
       </nav>
     </div>
   );
