@@ -352,7 +352,7 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
     let currentAngle = 0;
     return (
       <div className="flex items-center justify-center relative w-full h-full p-2">
-        <svg viewBox="0 0 100 100" className="w-full h-full max-h-[120px] -rotate-90">
+        <svg viewBox="0 0 100 100" className="w-full h-full max-h-[138px] -rotate-90">
           {data.map((item, i) => {
             const angle = (item.pct / 100) * 360;
             const color = colorMapper(item.label);
