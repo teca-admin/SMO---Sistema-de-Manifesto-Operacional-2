@@ -6,15 +6,16 @@ import {
   Terminal, Activity, Plus, Database, History, 
   CheckCircle2, Box, Timer, ShieldAlert,
   ChevronRight, ArrowRight, User as UserIcon,
-  KeyRound, Eye, EyeOff, Loader2, GraduationCap
+  KeyRound, Eye, EyeOff, Loader2, GraduationCap, ClipboardCheck
 } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { AssessmentGuide } from './AssessmentGuide';
+import { SlaAuditor } from './SlaAuditor';
 import { CustomSelect } from './CustomSelect';
 
 interface MobileViewProps {
-  activeTab: 'sistema' | 'operacional' | 'fluxo' | 'eficiencia' | 'avaliacao';
-  setActiveTab: (tab: 'sistema' | 'operacional' | 'fluxo' | 'eficiencia' | 'avaliacao') => void;
+  activeTab: 'sistema' | 'operacional' | 'fluxo' | 'eficiencia' | 'avaliacao' | 'auditoria';
+  setActiveTab: (tab: 'sistema' | 'operacional' | 'fluxo' | 'eficiencia' | 'avaliacao' | 'auditoria') => void;
   manifestos: Manifesto[];
   darkMode: boolean;
   setDarkMode: (val: boolean) => void;
@@ -41,9 +42,11 @@ export const MobileView: React.FC<MobileViewProps> = ({
   const [showPass, setShowPass] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-  const canSeeAvaliacao = activeUser?.Usuario?.toLowerCase() === "rafael";
+  const isAdmin = activeUser?.Usuario?.toLowerCase() === "rafael";
+  const canSeeAvaliacao = isAdmin;
+  const canSeeAuditoria = isAdmin;
 
-  // Redireciona se estiver na aba oculta 'operacional'
+  // Redireciona se estiver na aba oculta ou sem permissão
   React.useEffect(() => {
     if (activeTab === 'operacional') {
       setActiveTab('sistema');
@@ -51,7 +54,10 @@ export const MobileView: React.FC<MobileViewProps> = ({
     if (activeTab === 'avaliacao' && !canSeeAvaliacao) {
       setActiveTab('sistema');
     }
-  }, [activeTab, setActiveTab, canSeeAvaliacao]);
+    if (activeTab === 'auditoria' && !canSeeAuditoria) {
+      setActiveTab('sistema');
+    }
+  }, [activeTab, setActiveTab, canSeeAvaliacao, canSeeAuditoria]);
 
   const handleLogin = async () => {
     if (!loginId.trim() || !loginPass.trim()) {
@@ -161,6 +167,10 @@ export const MobileView: React.FC<MobileViewProps> = ({
     { id: 'fluxo', icon: Columns, label: 'Fluxo' },
     { id: 'eficiencia', icon: BarChart3, label: 'Dashboard' }
   ];
+
+  if (canSeeAuditoria) {
+    navItems.push({ id: 'auditoria', icon: ClipboardCheck, label: 'Auditoria' });
+  }
 
   if (canSeeAvaliacao) {
     navItems.push({ id: 'avaliacao', icon: GraduationCap, label: 'Avaliação' });
@@ -319,6 +329,14 @@ export const MobileView: React.FC<MobileViewProps> = ({
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {activeTab === 'auditoria' && canSeeAuditoria && (
+          <div className="flex-1 animate-fadeIn overflow-hidden">
+             <div className="bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden h-full">
+                <SlaAuditor manifestos={manifestos} openHistory={openHistory} />
+             </div>
           </div>
         )}
 

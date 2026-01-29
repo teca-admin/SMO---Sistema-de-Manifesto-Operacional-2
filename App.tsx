@@ -49,6 +49,7 @@ function App() {
   const activeOperatorName = activeUser?.Nome_Completo || null;
   const isAdmin = activeUser?.Usuario?.toLowerCase() === "rafael";
   const canSeeAvaliacao = isAdmin;
+  const canSeeAuditoria = isAdmin;
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -285,7 +286,7 @@ function App() {
     return (
       <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950">
         <MobileView 
-          activeTab={(activeTab === 'avaliacao' && !canSeeAvaliacao) ? 'sistema' : activeTab as any}
+          activeTab={(activeTab === 'avaliacao' && !canSeeAvaliacao) || (activeTab === 'auditoria' && !canSeeAuditoria) ? 'sistema' : activeTab as any}
           setActiveTab={setActiveTab as any}
           manifestos={manifestos}
           darkMode={darkMode}
@@ -377,7 +378,7 @@ function App() {
               <button onClick={() => setActiveTab('operacional')} className={`group flex items-center justify-center gap-2 w-32 h-16 text-[9px] font-black uppercase tracking-widest transition-all border-b-4 ${activeTab === 'operacional' ? 'border-red-500 bg-slate-800/50' : 'border-transparent text-slate-400 hover:text-white hover:bg-slate-800/30'}`}><Plane size={13} className={activeTab === 'operacional' ? 'text-red-400' : 'text-slate-50'} />PUXE</button>
               <button onClick={() => setActiveTab('fluxo')} className={`group flex items-center justify-center gap-2 w-32 h-16 text-[9px] font-black uppercase tracking-widest transition-all border-b-4 ${activeTab === 'fluxo' ? 'border-emerald-500 bg-slate-800/50' : 'border-transparent text-slate-400 hover:text-white hover:bg-slate-800/30'}`}><Columns size={13} className={activeTab === 'fluxo' ? 'text-emerald-400' : 'text-slate-50'} />FLUXO</button>
               <button onClick={() => setActiveTab('eficiencia')} className={`group flex items-center justify-center gap-2 w-32 h-16 text-[9px] font-black uppercase tracking-widest transition-all border-b-4 ${activeTab === 'eficiencia' ? 'border-indigo-400 bg-slate-800/50' : 'border-transparent text-slate-400 hover:text-white hover:bg-slate-800/30'}`}><BarChart3 size={13} className={activeTab === 'eficiencia' ? 'text-indigo-300' : 'text-slate-50'} />EFICIÊNCIA</button>
-              <button onClick={() => setActiveTab('auditoria')} className={`group flex items-center justify-center gap-2 w-32 h-16 text-[9px] font-black uppercase tracking-widest transition-all border-b-4 ${activeTab === 'auditoria' ? 'border-blue-500 bg-slate-800/50' : 'border-transparent text-slate-400 hover:text-white hover:bg-slate-800/30'}`}><ClipboardCheck size={13} className={activeTab === 'auditoria' ? 'text-blue-400' : 'text-slate-50'} />AUDITORIA</button>
+              {canSeeAuditoria && (<button onClick={() => setActiveTab('auditoria')} className={`group flex items-center justify-center gap-2 w-32 h-16 text-[9px] font-black uppercase tracking-widest transition-all border-b-4 ${activeTab === 'auditoria' ? 'border-blue-500 bg-slate-800/50' : 'border-transparent text-slate-400 hover:text-white hover:bg-slate-800/30'}`}><ClipboardCheck size={13} className={activeTab === 'auditoria' ? 'text-blue-400' : 'text-slate-50'} />AUDITORIA</button>)}
               {canSeeAvaliacao && (<button onClick={() => setActiveTab('avaliacao')} className={`group flex items-center justify-center gap-2 w-32 h-16 text-[9px] font-black uppercase tracking-widest transition-all border-b-4 ${activeTab === 'avaliacao' ? 'border-yellow-500 bg-slate-800/50' : 'border-transparent text-slate-400 hover:text-white hover:bg-slate-800/30'}`}><GraduationCap size={13} className={activeTab === 'avaliacao' ? 'text-yellow-400' : 'text-slate-50'} />AVALIAÇÃO</button>)}
             </nav>
           </div>
@@ -451,7 +452,7 @@ function App() {
           ) : activeTab === 'eficiencia' ? (
             <EfficiencyDashboard manifestos={manifestos} activeUser={activeUser} openHistory={setViewingHistoryId} />
           ) : activeTab === 'auditoria' ? (
-            <SlaAuditor manifestos={manifestos} openHistory={setViewingHistoryId} />
+            canSeeAuditoria && <SlaAuditor manifestos={manifestos} openHistory={setViewingHistoryId} />
           ) : (
             canSeeAvaliacao && <AssessmentGuide onShowAlert={showAlert} />
           )}
