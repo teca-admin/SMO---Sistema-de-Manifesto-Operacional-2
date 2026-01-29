@@ -345,6 +345,7 @@ export const MobileView: React.FC<MobileViewProps> = ({
       <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-black border-t border-slate-200 dark:border-slate-800 h-20 flex items-center justify-around px-2 z-[9999] shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
         {navItems.map((item) => {
           const isEficienciaActive = activeTab === 'eficiencia' && item.id === 'eficiencia';
+          const isAvaliacaoActive = activeTab === 'avaliacao' && item.id === 'avaliacao';
           const isActive = activeTab === item.id;
           
           return (
@@ -354,12 +355,16 @@ export const MobileView: React.FC<MobileViewProps> = ({
               className={`flex flex-col items-center justify-center w-full h-full gap-1 transition-all ${
                 isEficienciaActive 
                 ? 'text-yellow-600 dark:text-yellow-400' 
+                : isAvaliacaoActive
+                ? 'text-orange-600 dark:text-orange-400'
                 : isActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-600'
               }`}
             >
               <div className={`p-1 rounded-lg transition-colors ${
                 isEficienciaActive 
                 ? 'bg-yellow-50 dark:bg-yellow-900/20' 
+                : isAvaliacaoActive
+                ? 'bg-orange-50 dark:bg-orange-900/20'
                 : isActive ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''
               }`}>
                 <item.icon size={22} className={isActive ? 'stroke-[2.5px]' : 'stroke-[1.5px]'} />
