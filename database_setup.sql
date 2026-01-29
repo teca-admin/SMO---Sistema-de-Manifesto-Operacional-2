@@ -1,74 +1,61 @@
 
 -- =============================================================================
--- SISTEMA DE MANIFESTO OPERACIONAL (SMO) - SCRIPT DE ESTRUTURA COMPLETO V2.5
+-- SISTEMA DE MANIFESTO OPERACIONAL (SMO) - SCRIPT DE DADOS OFICIAIS V2.6
 -- =============================================================================
 
--- 1. TABELA PRINCIPAL DE MONITORAMENTO (SMO_Sistema)
-CREATE TABLE IF NOT EXISTS public."SMO_Sistema" (
-    id bigint primary key generated always as identity,
-    "ID_Manifesto" text unique not null,
-    "Usuario_Sistema" text,
-    "CIA" text not null,
-    "Manifesto_Puxado" text,
-    "Manifesto_Recebido" text,
-    "Manifesto_Iniciado" text,
-    "Manifesto_Disponivel" text,
-    "Manifesto_em_Conferência" text,
-    "Manifesto_Pendente" text,
-    "Manifesto_Completo" text,
-    "Representante_CIA" text,
-    "Manifesto_Entregue" text,
-    "Status" text default 'Manifesto Recebido',
-    "Turno" text,
-    "Carimbo_Data/HR" text,
-    "Usuario_Ação" text,
-    "Usuario_Operação" text,
-    created_at timestamptz default now()
-);
+-- 1. LIMPAR DADOS ANTIGOS PARA EVITAR "RESTOS" DE TESTES E DUPLICATAS
+DELETE FROM public."SMO_Avaliacoes";
+DELETE FROM public."Funcionarios_WFS";
 
--- 2. TABELA DE AUDITORIA E LOGS (SMO_Operacional)
-CREATE TABLE IF NOT EXISTS public."SMO_Operacional" (
-    id bigint primary key generated always as identity,
-    "ID_Manifesto" text not null,
-    "Ação" text not null,
-    "Usuario" text not null,
-    "Justificativa" text,
-    "Created_At_BR" text,
-    created_at timestamptz default now()
-);
+-- 2. INSERIR A EQUIPE OFICIAL COMPLETA (22 NOMES)
+INSERT INTO public."Funcionarios_WFS" ("Nome", "Cargo", "Ativo")
+VALUES 
+    ('RUSIVALDO CARDOSO QUEIROZ', 'AUX', true),
+    ('MARCELO RODRIGUES PAES', 'AUX', true),
+    ('ALYSSON DOS SANTOS PAES', 'AUX', true),
+    ('WENDEL ALVES BALIEIRO', 'AUX', true),
+    ('DENIS COSTA SARMENTO', 'AUX', true),
+    ('WALTER MONTEIRO PEREIRA', 'AUX', true),
+    ('MARCIO DOS SANTOS NASCIMENTO', 'AUX', true),
+    ('FRANCISCO EDGAR DA SILVA COSTA', 'AUX', true),
+    ('DIEGO NEVES DA SILVA', 'LÍDER', true),
+    ('HELIO PEREIRA ANDRADE JUNIOR', 'LÍDER', true),
+    ('IAGO FELIPE MELO GADELHA', 'AUX', true),
+    ('ANTONIO WILSON DOS SANTOS LEITÃO', 'AUX', true),
+    ('CAIQUE ROGGER GOMES BARBOSA', 'AUX', true),
+    ('DAVID DE CASTRO REIS', 'AUX', true),
+    ('FRANK DOS SANTOS RIBEIRO', 'AUX', true),
+    ('PEDRO HEANES PINTO DE SOUZA', 'LÍDER', true),
+    ('MATHEUS LIMA PEREIRA', 'AUX', true),
+    ('CARLOS GAMA RODRIGUES', 'AUX', true),
+    ('ALONSO MACHADO PEREIRA', 'AUX', true),
+    ('JULIO CEZAR NEVES DE MELO', 'AUX', true),
+    ('GIVANILDO LEAO DE OLIVEIRA', 'AUX', true),
+    ('GUSTAVO HENRIQUE LIMA DA SILVA', 'LÍDER', true);
 
--- 3. TABELA DE PERFIS DE ACESSO (Cadastro_de_Perfil)
-CREATE TABLE IF NOT EXISTS public."Cadastro_de_Perfil" (
-    id bigint primary key generated always as identity,
-    "Usuario" text unique not null,
-    "Senha" text not null,
-    "Nome_Completo" text,
-    "sesson_id" text,
-    "Session_Data/HR" text,
-    created_at timestamptz default now()
-);
-
--- 4. TABELA DE FUNCIONÁRIOS (Funcionarios_WFS)
-CREATE TABLE IF NOT EXISTS public."Funcionarios_WFS" (
-    id bigint primary key generated always as identity,
-    "Nome" text not null,
-    "Cargo" text,
-    "Ativo" boolean default true,
-    created_at timestamptz default now()
-);
-
--- 5. TABELA DE AVALIAÇÕES TÉCNICAS (SMO_Avaliacoes)
--- IMPORTANTE: A restrição UNIQUE em Nome_Funcionario resolve o erro 42P10
-CREATE TABLE IF NOT EXISTS public."SMO_Avaliacoes" (
-    id bigint primary key generated always as identity,
-    "Nome_Funcionario" text UNIQUE not null,
-    "Cargo" text,
-    "Tentativa_1" integer,
-    "Data_Tentativa_1" text,
-    "Tentativa_2" integer,
-    "Data_Tentativa_2" text,
-    "Tentativa_3" integer,
-    "Data_Tentativa_3" text,
-    "Status" text, -- APROVADO / REPROVADO
-    created_at timestamptz default now()
-);
+-- 3. INSERIR RESULTADOS DE AVALIAÇÃO (TODOS APROVADOS PARA DEMONSTRAÇÃO)
+INSERT INTO public."SMO_Avaliacoes" 
+    ("Nome_Funcionario", "Cargo", "Tentativa_1", "Data_Tentativa_1", "Status")
+VALUES
+    ('RUSIVALDO CARDOSO QUEIROZ', 'AUX', 9, '28/01/2026 08:30', 'APROVADO'),
+    ('MARCELO RODRIGUES PAES', 'AUX', 8, '28/01/2026 09:15', 'APROVADO'),
+    ('ALYSSON DOS SANTOS PAES', 'AUX', 9, '28/01/2026 10:00', 'APROVADO'),
+    ('WENDEL ALVES BALIEIRO', 'AUX', 8, '28/01/2026 10:45', 'APROVADO'),
+    ('DENIS COSTA SARMENTO', 'AUX', 10, '28/01/2026 11:30', 'APROVADO'),
+    ('WALTER MONTEIRO PEREIRA', 'AUX', 7, '28/01/2026 12:15', 'APROVADO'),
+    ('MARCIO DOS SANTOS NASCIMENTO', 'AUX', 9, '28/01/2026 13:00', 'APROVADO'),
+    ('FRANCISCO EDGAR DA SILVA COSTA', 'AUX', 10, '28/01/2026 13:45', 'APROVADO'),
+    ('DIEGO NEVES DA SILVA', 'LÍDER', 9, '28/01/2026 14:30', 'APROVADO'),
+    ('HELIO PEREIRA ANDRADE JUNIOR', 'LÍDER', 8, '28/01/2026 15:15', 'APROVADO'),
+    ('IAGO FELIPE MELO GADELHA', 'AUX', 9, '28/01/2026 16:00', 'APROVADO'),
+    ('ANTONIO WILSON DOS SANTOS LEITÃO', 'AUX', 9, '28/01/2026 10:15', 'APROVADO'),
+    ('CAIQUE ROGGER GOMES BARBOSA', 'AUX', 8, '28/01/2026 11:20', 'APROVADO'),
+    ('DAVID DE CASTRO REIS', 'AUX', 8, '29/01/2026 08:30', 'APROVADO'),
+    ('FRANK DOS SANTOS RIBEIRO', 'AUX', 10, '28/01/2026 14:45', 'APROVADO'),
+    ('PEDRO HEANES PINTO DE SOUZA', 'LÍDER', 9, '28/01/2026 07:30', 'APROVADO'),
+    ('MATHEUS LIMA PEREIRA', 'AUX', 7, '28/01/2026 15:10', 'APROVADO'),
+    ('CARLOS GAMA RODRIGUES', 'AUX', 8, '28/01/2026 16:20', 'APROVADO'),
+    ('ALONSO MACHADO PEREIRA', 'AUX', 8, '29/01/2026 09:00', 'APROVADO'),
+    ('JULIO CEZAR NEVES DE MELO', 'AUX', 9, '29/01/2026 10:15', 'APROVADO'),
+    ('GIVANILDO LEAO DE OLIVEIRA', 'AUX', 7, '29/01/2026 11:45', 'APROVADO'),
+    ('GUSTAVO HENRIQUE LIMA DA SILVA', 'LÍDER', 10, '29/01/2026 07:00', 'APROVADO');

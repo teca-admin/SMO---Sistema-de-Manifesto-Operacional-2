@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabaseClient';
 import { Funcionario } from '../types';
@@ -27,6 +28,32 @@ interface Question {
   options: string[];
   correct: number;
 }
+
+// Lista oficial completa fornecida pelo usuário (22 Funcionários)
+const STATIC_EMPLOYEES: Funcionario[] = [
+  { id: 901, Nome: "RUSIVALDO CARDOSO QUEIROZ", Cargo: "AUX", Ativo: true },
+  { id: 902, Nome: "MARCELO RODRIGUES PAES", Cargo: "AUX", Ativo: true },
+  { id: 903, Nome: "ALYSSON DOS SANTOS PAES", Cargo: "AUX", Ativo: true },
+  { id: 904, Nome: "WENDEL ALVES BALIEIRO", Cargo: "AUX", Ativo: true },
+  { id: 905, Nome: "DENIS COSTA SARMENTO", Cargo: "AUX", Ativo: true },
+  { id: 906, Nome: "WALTER MONTEIRO PEREIRA", Cargo: "AUX", Ativo: true },
+  { id: 907, Nome: "MARCIO DOS SANTOS NASCIMENTO", Cargo: "AUX", Ativo: true },
+  { id: 908, Nome: "FRANCISCO EDGAR DA SILVA COSTA", Cargo: "AUX", Ativo: true },
+  { id: 909, Nome: "DIEGO NEVES DA SILVA", Cargo: "LÍDER", Ativo: true },
+  { id: 910, Nome: "HELIO PEREIRA ANDRADE JUNIOR", Cargo: "LÍDER", Ativo: true },
+  { id: 911, Nome: "IAGO FELIPE MELO GADELHA", Cargo: "AUX", Ativo: true },
+  { id: 912, Nome: "ANTONIO WILSON DOS SANTOS LEITÃO", Cargo: "AUX", Ativo: true },
+  { id: 913, Nome: "CAIQUE ROGGER GOMES BARBOSA", Cargo: "AUX", Ativo: true },
+  { id: 914, Nome: "DAVID DE CASTRO REIS", Cargo: "AUX", Ativo: true },
+  { id: 915, Nome: "FRANK DOS SANTOS RIBEIRO", Cargo: "AUX", Ativo: true },
+  { id: 916, Nome: "PEDRO HEANES PINTO DE SOUZA", Cargo: "LÍDER", Ativo: true },
+  { id: 917, Nome: "MATHEUS LIMA PEREIRA", Cargo: "AUX", Ativo: true },
+  { id: 918, Nome: "CARLOS GAMA RODRIGUES", Cargo: "AUX", Ativo: true },
+  { id: 919, Nome: "ALONSO MACHADO PEREIRA", Cargo: "AUX", Ativo: true },
+  { id: 920, Nome: "JULIO CEZAR NEVES DE MELO", Cargo: "AUX", Ativo: true },
+  { id: 921, Nome: "GIVANILDO LEAO DE OLIVEIRA", Cargo: "AUX", Ativo: true },
+  { id: 922, Nome: "GUSTAVO HENRIQUE LIMA DA SILVA", Cargo: "LÍDER", Ativo: true },
+];
 
 const QUESTIONS: Question[] = [
   {
@@ -83,7 +110,7 @@ const QUESTIONS: Question[] = [
     correct: 1
   },
   {
-    id: 9,
+    id: 10,
     text: "Qual informação deve ser inserida no campo 'Manifesto Recebido'?",
     options: [
       "Horário de abertura do portão de carga",
@@ -94,7 +121,7 @@ const QUESTIONS: Question[] = [
     correct: 2
   },
   {
-    id: 10,
+    id: 11,
     text: "No setor de entrega existem duas estações, qual é o fluxo correto para usar as duas estações?",
     options: [
       "Ambas as estações realizam as mesmas funções de Cadastro e Puxe de forma alternada",
@@ -156,11 +183,35 @@ export const AssessmentGuide: React.FC<AssessmentGuideProps> = ({ onShowAlert })
       return;
     }
     setLoading(true);
+
+    // 1. Filtrar na lista local (estática)
+    const localMatches = STATIC_EMPLOYEES.filter(e => 
+      e.Nome.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
     try {
-      const { data } = await supabase.from('Funcionarios_WFS').select('*').ilike('Nome', `%${searchTerm}%`).eq('Ativo', true).limit(5);
-      if (data) setSuggestions(data);
+      // 2. Buscar no Supabase
+      const { data } = await supabase
+        .from('Funcionarios_WFS')
+        .select('*')
+        .ilike('Nome', `%${searchTerm}%`)
+        .eq('Ativo', true)
+        .limit(10);
+      
+      const dbResults = data || [];
+      
+      // 3. Unificar resultados removendo duplicatas por Nome
+      const unified = [...localMatches];
+      dbResults.forEach(dbItem => {
+        if (!unified.some(u => u.Nome.toLowerCase() === dbItem.Nome.toLowerCase())) {
+          unified.push(dbItem);
+        }
+      });
+
+      setSuggestions(unified.slice(0, 10));
     } catch (e) {
       console.error(e);
+      setSuggestions(localMatches);
     } finally {
       setLoading(false);
     }
@@ -229,10 +280,8 @@ export const AssessmentGuide: React.FC<AssessmentGuideProps> = ({ onShowAlert })
     setQuizFinished(true);
     const now = new Date().toLocaleString('pt-BR');
     
-    // Clonamos o objeto para evitar mutação direta
     const updateData: any = { ...userResult };
 
-    // Lógica rigorosa de identificação da tentativa disponível
     if (updateData.Tentativa_1 === undefined || updateData.Tentativa_1 === null) {
       updateData.Tentativa_1 = score;
       updateData.Data_Tentativa_1 = now;
@@ -252,9 +301,6 @@ export const AssessmentGuide: React.FC<AssessmentGuideProps> = ({ onShowAlert })
     updateData.Status = bestScore >= 7 ? 'APROVADO' : 'REPROVADO';
 
     try {
-      // CORREÇÃO CRÍTICA ERRO 428C9: 
-      // Removemos o 'id' e 'created_at' do objeto de atualização.
-      // Como Nome_Funcionario é UNIQUE, o Supabase usará ele para encontrar e atualizar o registro.
       const { id, created_at, ...payload } = updateData;
 
       const { error } = await supabase
@@ -273,7 +319,7 @@ export const AssessmentGuide: React.FC<AssessmentGuideProps> = ({ onShowAlert })
     <div className="flex flex-col gap-6 animate-fadeIn h-full">
       <div className="bg-[#0f172a] dark:bg-[#020617] border-2 border-slate-800 dark:border-slate-900 p-4 flex items-center justify-between shadow-lg shrink-0">
         <div className="flex items-center gap-4">
-          <div className="p-2 bg-yellow-600 rounded">
+          <div className="p-2 bg-orange-600 rounded">
             <GraduationCap size={20} className="text-white" />
           </div>
           <div>
@@ -459,7 +505,7 @@ export const AssessmentGuide: React.FC<AssessmentGuideProps> = ({ onShowAlert })
                    </p>
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-900/50 p-5 border-2 border-slate-200 dark:border-slate-700 rounded-xl">
-                   <p className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-1">Total Avaliados</p>
+                   <p className="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1">Total de Candidatos</p>
                    <p className="text-3xl font-black text-slate-900 dark:text-white">{reportData.length}</p>
                 </div>
              </div>

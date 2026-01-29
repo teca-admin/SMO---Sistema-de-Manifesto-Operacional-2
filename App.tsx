@@ -73,7 +73,8 @@ function App() {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     handleResize();
     window.addEventListener('resize', handleResize);
-    return () => window.removeResizeListener('resize', handleResize);
+    // Fix: replaced non-existent removeResizeListener with removeEventListener
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   const getCurrentTimestampBR = () => {
@@ -138,7 +139,7 @@ function App() {
           dataHoraIniciado: item.Manifesto_Iniciado,
           dataHoraDisponivel: item.Manifesto_Disponivel,
           dataHoraConferencia: item["Manifesto_em_Conferência"],
-          dataHoraIniciado: item.Manifesto_Iniciado,
+          // Fix: removed duplicate property dataHoraIniciado
           dataHoraCompleto: item.Manifesto_Completo
         })));
       }
@@ -237,7 +238,6 @@ function App() {
     }
   };
 
-  // Fix: Added missing handleSaveReprDate function to process representative signatures
   const handleSaveReprDate = async (id: string, date: string) => {
     setLoadingMsg("Registrando Assinatura...");
     try {
