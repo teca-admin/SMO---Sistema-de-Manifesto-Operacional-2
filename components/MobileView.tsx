@@ -43,23 +43,27 @@ export const MobileView: React.FC<MobileViewProps> = ({
   const [showPass, setShowPass] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-  // LOGINS ADMINISTRATIVOS: WFS ADM e VINCI ADM
-  const isAdmin = activeUser?.Usuario?.toUpperCase() === "WFS ADM" || activeUser?.Usuario?.toUpperCase() === "VINCI ADM";
-  // APENAS WFS ADM PODE VER AVALIAÇÃO
-  const canSeeAvaliacao = activeUser?.Usuario?.toUpperCase() === "WFS ADM";
-  const canSeeAuditoria = isAdmin;
+  // PERMISSÕES REFINADAS
+  const isVinciAdm = activeUser?.Usuario?.toUpperCase() === "VINCI ADM";
+  const isWfsAdm = activeUser?.Usuario?.toUpperCase() === "WFS ADM";
+  
+  const canSeeCadastro = !isVinciAdm;
+  const canSeePuxe = !isVinciAdm;
+  const canSeeAvaliacao = isWfsAdm;
+  const canSeeAuditoria = isWfsAdm || isVinciAdm;
 
   React.useEffect(() => {
-    if (activeTab === 'operacional') {
-      setActiveTab('sistema');
+    // Redirecionamentos de segurança para guias proibidas
+    if (isVinciAdm && (activeTab === 'sistema' || activeTab === 'operacional')) {
+      setActiveTab('fluxo');
     }
     if (activeTab === 'avaliacao' && !canSeeAvaliacao) {
-      setActiveTab('sistema');
+      setActiveTab('fluxo');
     }
     if (activeTab === 'auditoria' && !canSeeAuditoria) {
-      setActiveTab('sistema');
+      setActiveTab('fluxo');
     }
-  }, [activeTab, setActiveTab, canSeeAvaliacao, canSeeAuditoria]);
+  }, [activeTab, setActiveTab, canSeeAvaliacao, canSeeAuditoria, isVinciAdm]);
 
   const handleLogin = async () => {
     if (!loginId.trim() || !loginPass.trim()) {
@@ -178,19 +182,13 @@ export const MobileView: React.FC<MobileViewProps> = ({
     );
   }
 
-  const navItems = [
-    { id: 'sistema', icon: LayoutGrid, label: 'Cadastro' },
-    { id: 'fluxo', icon: Columns, label: 'Fluxo' },
-    { id: 'eficiencia', icon: BarChart3, label: 'Eficiência' }
-  ];
-
-  if (canSeeAuditoria) {
-    navItems.push({ id: 'auditoria', icon: ClipboardCheck, label: 'Auditoria' });
-  }
-
-  if (canSeeAvaliacao) {
-    navItems.push({ id: 'avaliacao', icon: GraduationCap, label: 'Avaliação' });
-  }
+  // CONSTRUÇÃO DINÂMICA DO MENU MOBILE
+  const navItems = [];
+  if (canSeeCadastro) navItems.push({ id: 'sistema', icon: LayoutGrid, label: 'Cadastro' });
+  navItems.push({ id: 'fluxo', icon: Columns, label: 'Fluxo' });
+  navItems.push({ id: 'eficiencia', icon: BarChart3, label: 'Eficiência' });
+  if (canSeeAuditoria) navItems.push({ id: 'auditoria', icon: ClipboardCheck, label: 'Auditoria' });
+  if (canSeeAvaliacao) navItems.push({ id: 'avaliacao', icon: GraduationCap, label: 'Avaliação' });
 
   return (
     <div className="flex flex-col h-screen bg-slate-50 dark:bg-slate-950 overflow-hidden font-sans">
@@ -220,7 +218,7 @@ export const MobileView: React.FC<MobileViewProps> = ({
 
       <main className="flex-1 overflow-y-auto p-4 pb-24 space-y-4 custom-scrollbar">
         
-        {activeTab === 'sistema' && (
+        {activeTab === 'sistema' && canSeeCadastro && (
           <div className="space-y-6 animate-fadeIn">
             <div className="bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm">
               <div className="bg-slate-100 dark:bg-slate-800 p-4 border-b border-slate-200 dark:border-slate-700">
@@ -245,7 +243,7 @@ export const MobileView: React.FC<MobileViewProps> = ({
                         type="datetime-local" 
                         value={form.puxado}
                         onChange={e => setForm({...form, puxado: e.target.value})}
-                        className="w-full h-12 px-4 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-lg text-sm font-bold outline-none focus:border-indigo-600 dark:text-white"
+                        className="w-full h-12 px-4 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-lg text-sm font-bold outline-none focus:border-indigo-600 text-slate-900 dark:text-white"
                       />
                     </div>
                   </div>
