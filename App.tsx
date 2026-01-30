@@ -10,7 +10,7 @@ import { MobileView } from './components/MobileView';
 import { EditModal, LoadingOverlay, HistoryModal, AlertToast, CancellationModal, AssignResponsibilityModal, ReprFillModal } from './components/Modals';
 import { Manifesto, User, SMO_Sistema_DB } from './types';
 import { supabase } from './supabaseClient';
-import { LayoutGrid, Plane, LogOut, Terminal, Activity, Columns, BarChart3, Sun, Moon, GraduationCap, ClipboardCheck } from 'lucide-react';
+import { LayoutGrid, Plane, LogOut, Terminal, Activity, Columns, BarChart3, Sun, Moon, GraduationCap, ClipboardCheck, Lock, User as UserIcon, KeyRound, Eye, EyeOff, Loader2, ChevronDown, UserCircle } from 'lucide-react';
 
 // Variável de controle fora do React para evitar stale closures
 let GLOBAL_SESSION_ID: string | null = null;
@@ -22,6 +22,13 @@ function App() {
   const [isMobile, setIsMobile] = useState(false);
   const [isExternalView, setIsExternalView] = useState(false);
   
+  // Estados para o Login Rápido no Header
+  const [headerLoginOpen, setHeaderLoginOpen] = useState(false);
+  const [hLoginUser, setHLoginUser] = useState('');
+  const [hLoginPass, setHLoginPass] = useState('');
+  const [hShowPass, setHShowPass] = useState(false);
+  const [hIsLoggingIn, setHIsLoggingIn] = useState(false);
+
   const [darkMode, setDarkMode] = useState(() => {
     return localStorage.getItem('smo_theme') === 'dark';
   });
@@ -54,10 +61,10 @@ function App() {
   const handleLogout = useCallback(async (clearDb: boolean = true) => {
     const userId = activeUser?.id;
     
-    // Limpeza local imediata
     setActiveUser(null);
     GLOBAL_SESSION_ID = null;
     localStorage.removeItem('smo_active_profile');
+    setHeaderLoginOpen(false);
 
     if (clearDb && userId) {
       try {
@@ -71,11 +78,52 @@ function App() {
     }
   }, [activeUser]);
 
+  const handleHeaderLogin = async () => {
+    if (!hLoginUser.trim() || !hLoginPass.trim()) {
+      showAlert('error', 'Preencha usuário e senha');
+      return;
+    }
+    setHIsLoggingIn(true);
+    try {
+      const { data, error } = await supabase
+        .from('Cadastro_de_Perfil')
+        .select('*')
+        .ilike('Usuario', hLoginUser.trim())
+        .eq('Senha', hLoginPass.trim())
+        .single();
+      
+      if (error) {
+        showAlert('error', 'Credenciais Inválidas');
+      } else {
+        const sessionId = crypto.randomUUID();
+        const nowBR = new Date().toLocaleString('pt-BR');
+        
+        const { error: updateError } = await supabase
+          .from('Cadastro_de_Perfil')
+          .update({ sesson_id: sessionId, "Session_Data/HR": nowBR })
+          .eq('id', data.id);
+
+        if (updateError) throw updateError;
+
+        const updatedUser = { ...data, sesson_id: sessionId };
+        setActiveUser(updatedUser);
+        localStorage.setItem('smo_active_profile', JSON.stringify(updatedUser));
+        showAlert('success', `Bem-vindo, ${data.Nome_Completo}`);
+        setHeaderLoginOpen(false);
+        setHLoginUser('');
+        setHLoginPass('');
+      }
+    } catch (err) {
+      showAlert('error', 'Erro de conexão');
+    } finally {
+      setHIsLoggingIn(false);
+    }
+  };
+
   // MONITOR DE SESSÃO DUPLICADA (REALTIME + FOCUS CHECK)
   useEffect(() => {
     if (!activeUser || !activeUser.id) return;
 
-    // Função para validar se o ID no banco é igual ao ID desta máquina
     const validateSessionIntegrity = async () => {
       const { data, error } = await supabase
         .from('Cadastro_de_Perfil')
@@ -84,34 +132,22 @@ function App() {
         .single();
       
       if (!error && data) {
-        // Se o banco tem um ID e é diferente do nosso ID global salvo no login
         if (data.sesson_id && data.sesson_id !== GLOBAL_SESSION_ID) {
           handleLogout(false);
-          showAlert('error', 'SESSÃO ENCERRADA: Este perfil foi aberto em outro computador. Acesso revogado neste terminal.');
+          showAlert('error', 'SESSÃO ENCERRADA: Este perfil foi aberto em outro computador.');
         }
       }
     };
 
-    // 1. Verifica integridade ao abrir a aba ou mudar de aba (Focus)
     window.addEventListener('focus', validateSessionIntegrity);
 
-    // 2. Realtime: Escuta mudanças na tabela em tempo real
     const channel = supabase
       .channel(`security_check_${activeUser.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'Cadastro_de_Perfil',
-          filter: `id=eq.${activeUser.id}`
-        },
-        (payload) => {
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'Cadastro_de_Perfil', filter: `id=eq.${activeUser.id}` }, (payload) => {
           const remoteId = payload.new?.sesson_id;
-          // Se houve um update e o ID novo não é nulo e é diferente do nosso... DERRUBA.
           if (remoteId && remoteId !== GLOBAL_SESSION_ID) {
             handleLogout(false);
-            showAlert('error', 'KICK-OUT: Novo login detectado. Sessão encerrada instantaneamente por segurança.');
+            showAlert('error', 'KICK-OUT: Novo login detectado em outro terminal.');
           }
         }
       )
@@ -123,7 +159,6 @@ function App() {
     };
   }, [activeUser?.id, handleLogout]);
 
-  // Atualiza a variável global sempre que o usuário ativo mudar (ex: no login)
   useEffect(() => {
     if (activeUser) {
       localStorage.setItem('smo_active_profile', JSON.stringify(activeUser));
@@ -132,8 +167,8 @@ function App() {
   }, [activeUser]);
 
   const activeOperatorName = activeUser?.Nome_Completo || null;
-  const isAdmin = activeUser?.Usuario?.toLowerCase() === "rafael";
-  const canSeeAvaliacao = isAdmin;
+  const isAdmin = activeUser?.Usuario?.toUpperCase() === "WFS ADM" || activeUser?.Usuario?.toUpperCase() === "VINCI ADM";
+  const canSeeAvaliacao = activeUser?.Usuario?.toUpperCase() === "WFS ADM";
   const canSeeAuditoria = isAdmin;
 
   useEffect(() => {
@@ -466,7 +501,86 @@ function App() {
           <div className="flex items-center gap-6">
             <button onClick={() => setDarkMode(!darkMode)} className="p-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-indigo-400 transition-all rounded">{darkMode ? <Sun size={16} /> : <Moon size={16} />}</button>
             <div className="hidden lg:flex items-center gap-3 px-4 py-1.5 bg-slate-800 border border-slate-700"><Activity size={14} className="text-emerald-400" /><div className="text-left leading-none"><p className="text-[9px] font-bold text-slate-400 uppercase">Sistema Operacional</p><p className="text-[10px] font-bold text-slate-200">Online</p></div></div>
-            <div className="text-right"><p className="text-[9px] font-black text-indigo-400 uppercase tracking-tighter">Terminal Livre</p><p className="text-[11px] font-bold text-slate-100 uppercase">Acesso Direto</p></div>
+            
+            {/* NOVO: ACESSO RESTRITO NO HEADER */}
+            <div className="relative">
+              <button 
+                onClick={() => setHeaderLoginOpen(!headerLoginOpen)}
+                className={`h-10 px-4 transition-all flex flex-col justify-center border ${activeUser ? 'bg-indigo-600/10 border-indigo-500/50 text-indigo-100' : 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700'}`}
+              >
+                <div className="flex items-center gap-2">
+                  {activeUser ? <UserCircle size={14} className="text-indigo-400" /> : <Lock size={14} className="text-slate-400" />}
+                  <p className="text-[9px] font-black uppercase tracking-tighter">{activeUser ? 'Perfil Ativo' : 'Acesso Restrito'}</p>
+                </div>
+                <p className="text-[11px] font-bold uppercase truncate max-w-[120px]">{activeUser ? activeUser.Usuario : 'Acesso ADM'}</p>
+              </button>
+
+              {headerLoginOpen && (
+                <div className="absolute top-full right-0 mt-2 w-72 bg-white dark:bg-slate-900 border-2 border-slate-900 dark:border-slate-700 shadow-2xl p-6 animate-fadeIn z-[100]">
+                  <div className="absolute top-0 right-6 -translate-y-full border-[8px] border-transparent border-b-slate-900 dark:border-b-slate-700"></div>
+                  
+                  {activeUser ? (
+                    <div className="space-y-4">
+                      <div className="flex flex-col items-center text-center p-4 bg-slate-50 dark:bg-slate-800 rounded">
+                        <div className="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center text-white font-black text-lg mb-2">
+                          {activeUser.Nome_Completo.charAt(0)}
+                        </div>
+                        <p className="text-xs font-black text-slate-900 dark:text-white uppercase truncate w-full">{activeUser.Nome_Completo}</p>
+                        <p className="text-[9px] font-bold text-slate-400 uppercase">{activeUser.Usuario}</p>
+                      </div>
+                      <button 
+                        onClick={() => handleLogout(true)}
+                        className="w-full h-10 bg-red-600 hover:bg-red-700 text-white font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2"
+                      >
+                        <LogOut size={14} /> Encerrar Sessão
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="p-1.5 bg-indigo-600 rounded">
+                          <Lock size={14} className="text-white" />
+                        </div>
+                        <p className="text-[10px] font-black text-slate-900 dark:text-white uppercase">Login Administrativo</p>
+                      </div>
+                      <div className="space-y-3">
+                        <div className="relative">
+                          <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                          <input 
+                            type="text" 
+                            placeholder="USUÁRIO" 
+                            value={hLoginUser}
+                            onChange={e => setHLoginUser(e.target.value)}
+                            className="w-full h-10 pl-10 pr-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[10px] font-black outline-none focus:border-indigo-600 text-slate-900 dark:text-white uppercase"
+                          />
+                        </div>
+                        <div className="relative">
+                          <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                          <input 
+                            type={hShowPass ? "text" : "password"} 
+                            placeholder="SENHA" 
+                            value={hLoginPass}
+                            onChange={e => setHLoginPass(e.target.value)}
+                            onKeyDown={e => e.key === 'Enter' && handleHeaderLogin()}
+                            className="w-full h-10 pl-10 pr-10 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[10px] font-black outline-none focus:border-indigo-600 text-slate-900 dark:text-white uppercase"
+                          />
+                          <button onClick={() => setHShowPass(!hShowPass)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
+                            {hShowPass ? <EyeOff size={14} /> : <Eye size={14} />}
+                          </button>
+                        </div>
+                        <button 
+                          onClick={handleHeaderLogin}
+                          disabled={hIsLoggingIn}
+                          className="w-full h-11 bg-slate-900 dark:bg-indigo-600 hover:bg-indigo-700 text-white font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-3 shadow-lg"
+                        >
+                          {hIsLoggingIn ? <Loader2 className="animate-spin" size={14} /> : 'Autenticar'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </header>

@@ -43,8 +43,10 @@ export const MobileView: React.FC<MobileViewProps> = ({
   const [showPass, setShowPass] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-  const isAdmin = activeUser?.Usuario?.toLowerCase() === "rafael";
-  const canSeeAvaliacao = isAdmin;
+  // LOGINS ADMINISTRATIVOS: WFS ADM e VINCI ADM
+  const isAdmin = activeUser?.Usuario?.toUpperCase() === "WFS ADM" || activeUser?.Usuario?.toUpperCase() === "VINCI ADM";
+  // APENAS WFS ADM PODE VER AVALIAÇÃO
+  const canSeeAvaliacao = activeUser?.Usuario?.toUpperCase() === "WFS ADM";
   const canSeeAuditoria = isAdmin;
 
   React.useEffect(() => {
@@ -142,7 +144,7 @@ export const MobileView: React.FC<MobileViewProps> = ({
                 placeholder="USUÁRIO" 
                 value={loginId} 
                 onChange={e => setLoginId(e.target.value)}
-                className="w-full h-14 pl-12 pr-4 bg-slate-50 dark:bg-slate-800/50 border-2 border-slate-100 dark:border-slate-700 text-xs font-black tracking-widest outline-none focus:border-indigo-600 dark:text-white transition-all"
+                className="w-full h-14 pl-12 pr-4 bg-slate-50 dark:bg-slate-800/50 border-2 border-slate-100 dark:border-slate-700 text-xs font-black tracking-widest outline-none focus:border-indigo-600 text-slate-900 dark:text-white transition-all"
               />
             </div>
             <div className="relative">
@@ -153,7 +155,7 @@ export const MobileView: React.FC<MobileViewProps> = ({
                 value={loginPass} 
                 onChange={e => setLoginPass(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleLogin()}
-                className="w-full h-14 pl-12 pr-12 bg-slate-50 dark:bg-slate-800/50 border-2 border-slate-100 dark:border-slate-700 text-xs font-black tracking-widest outline-none focus:border-indigo-600 dark:text-white transition-all"
+                className="w-full h-14 pl-12 pr-12 bg-slate-50 dark:bg-slate-800/50 border-2 border-slate-100 dark:border-slate-700 text-xs font-black tracking-widest outline-none focus:border-indigo-600 text-slate-900 dark:text-white transition-all"
               />
               <button 
                 onClick={() => setShowPass(!showPass)}
