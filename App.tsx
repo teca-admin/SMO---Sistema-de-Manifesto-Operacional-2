@@ -12,6 +12,9 @@ import { Manifesto, User, SMO_Sistema_DB } from './types';
 import { supabase } from './supabaseClient';
 import { LayoutGrid, Plane, LogOut, Terminal, Activity, Columns, BarChart3, Sun, Moon, GraduationCap, ClipboardCheck } from 'lucide-react';
 
+// Variável de controle fora do React para evitar stale closures
+let GLOBAL_SESSION_ID: string | null = null;
+
 function App() {
   const [activeTab, setActiveTab] = useState<'sistema' | 'operacional' | 'fluxo' | 'eficiencia' | 'avaliacao' | 'auditoria'>('sistema');
   const [manifestos, setManifestos] = useState<Manifesto[]>([]);
@@ -33,39 +36,29 @@ function App() {
   
   const [activeUser, setActiveUser] = useState<User | null>(() => {
     const saved = localStorage.getItem('smo_active_profile');
-    try {
-      return saved ? JSON.parse(saved) : null;
-    } catch { return null; }
-  });
-
-  // REF para monitorar o ID da sessão sem depender do ciclo de render do React no callback do Realtime
-  const sessionIdRef = useRef<string | null>(activeUser?.sesson_id || null);
-
-  useEffect(() => {
-    if (activeUser) {
-      localStorage.setItem('smo_active_profile', JSON.stringify(activeUser));
-      sessionIdRef.current = activeUser.sesson_id || null;
-    } else {
-      localStorage.removeItem('smo_active_profile');
-      sessionIdRef.current = null;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        GLOBAL_SESSION_ID = parsed.sesson_id || null;
+        return parsed;
+      } catch { return null; }
     }
-  }, [activeUser]);
+    return null;
+  });
 
   const showAlert = (type: 'success' | 'error', msg: string) => {
      setAlert({ type, msg });
-     setTimeout(() => setAlert(null), 5000);
+     setTimeout(() => setAlert(null), 6000);
   };
 
-  // FUNÇÃO DE LOGOFF UNIFICADA
   const handleLogout = useCallback(async (clearDb: boolean = true) => {
     const userId = activeUser?.id;
     
-    // 1. Limpa estado local imediatamente para UX rápida
+    // Limpeza local imediata
     setActiveUser(null);
+    GLOBAL_SESSION_ID = null;
     localStorage.removeItem('smo_active_profile');
-    sessionIdRef.current = null;
 
-    // 2. Limpa no banco se for logoff manual
     if (clearDb && userId) {
       try {
         await supabase
@@ -73,17 +66,17 @@ function App() {
           .update({ sesson_id: null })
           .eq('id', userId);
       } catch (err) {
-        console.error("Erro ao limpar sessão no servidor:", err);
+        console.error("Erro ao limpar sessão remota:", err);
       }
     }
   }, [activeUser]);
 
-  // LÓGICA DE DERRUBADA INSTANTÂNEA E VALIDAÇÃO DE BOOT
+  // MONITOR DE SESSÃO DUPLICADA (REALTIME + FOCUS CHECK)
   useEffect(() => {
     if (!activeUser || !activeUser.id) return;
 
-    // A. VALIDAÇÃO DE BOOT: Verifica se a sessão ainda é válida ao carregar/abrir a aba
-    const validateCurrentSession = async () => {
+    // Função para validar se o ID no banco é igual ao ID desta máquina
+    const validateSessionIntegrity = async () => {
       const { data, error } = await supabase
         .from('Cadastro_de_Perfil')
         .select('sesson_id')
@@ -91,17 +84,20 @@ function App() {
         .single();
       
       if (!error && data) {
-        if (data.sesson_id !== activeUser.sesson_id) {
+        // Se o banco tem um ID e é diferente do nosso ID global salvo no login
+        if (data.sesson_id && data.sesson_id !== GLOBAL_SESSION_ID) {
           handleLogout(false);
-          showAlert('error', 'SESSÃO INVÁLIDA: Este perfil foi acessado em outro terminal enquanto você estava fora.');
+          showAlert('error', 'SESSÃO ENCERRADA: Este perfil foi aberto em outro computador. Acesso revogado neste terminal.');
         }
       }
     };
-    validateCurrentSession();
 
-    // B. REALTIME: Escuta derrubada enquanto a aba está aberta
+    // 1. Verifica integridade ao abrir a aba ou mudar de aba (Focus)
+    window.addEventListener('focus', validateSessionIntegrity);
+
+    // 2. Realtime: Escuta mudanças na tabela em tempo real
     const channel = supabase
-      .channel(`session_monitor_${activeUser.id}`)
+      .channel(`security_check_${activeUser.id}`)
       .on(
         'postgres_changes',
         {
@@ -111,20 +107,29 @@ function App() {
           filter: `id=eq.${activeUser.id}`
         },
         (payload) => {
-          const newId = payload.new?.sesson_id;
-          // Se o novo ID for diferente do que esta máquina registrou e não for nulo (vindo de outro login)
-          if (newId !== undefined && newId !== null && newId !== sessionIdRef.current) {
+          const remoteId = payload.new?.sesson_id;
+          // Se houve um update e o ID novo não é nulo e é diferente do nosso... DERRUBA.
+          if (remoteId && remoteId !== GLOBAL_SESSION_ID) {
             handleLogout(false);
-            showAlert('error', 'SESSÃO ENCERRADA: Um novo acesso foi detectado em outro dispositivo.');
+            showAlert('error', 'KICK-OUT: Novo login detectado. Sessão encerrada instantaneamente por segurança.');
           }
         }
       )
       .subscribe();
 
     return () => {
+      window.removeEventListener('focus', validateSessionIntegrity);
       supabase.removeChannel(channel);
     };
-  }, [activeUser?.id, handleLogout]); // Dependemos apenas do ID para não reiniciar o channel em cada render
+  }, [activeUser?.id, handleLogout]);
+
+  // Atualiza a variável global sempre que o usuário ativo mudar (ex: no login)
+  useEffect(() => {
+    if (activeUser) {
+      localStorage.setItem('smo_active_profile', JSON.stringify(activeUser));
+      GLOBAL_SESSION_ID = activeUser.sesson_id || null;
+    }
+  }, [activeUser]);
 
   const activeOperatorName = activeUser?.Nome_Completo || null;
   const isAdmin = activeUser?.Usuario?.toLowerCase() === "rafael";
