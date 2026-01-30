@@ -46,32 +46,34 @@ function App() {
     }
   }, [activeUser]);
 
-  // LÓGICA DE VERIFICAÇÃO DE SESSÃO ÚNICA (DERRUBADA)
+  // LÓGICA DE DERRUBADA INSTANTÂNEA VIA SUPABASE REALTIME
   useEffect(() => {
     if (!activeUser || !activeUser.id) return;
 
-    const checkSessionIntegrity = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('Cadastro_de_Perfil')
-          .select('sesson_id')
-          .eq('id', activeUser.id)
-          .single();
-
-        if (!error && data) {
-          // Se o ID da sessão no banco for diferente do local, desloga
-          if (data.sesson_id !== activeUser.sesson_id) {
+    // Subscreve apenas para mudanças no perfil do usuário atual
+    const channel = supabase
+      .channel(`session_monitor_${activeUser.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'Cadastro_de_Perfil',
+          filter: `id=eq.${activeUser.id}`
+        },
+        (payload) => {
+          // Se o novo sesson_id no banco for diferente do que temos localmente, desloga na hora
+          if (payload.new && payload.new.sesson_id !== activeUser.sesson_id) {
             handleLogout();
-            showAlert('error', 'SESSÃO ENCERRADA: Detectado novo acesso a este perfil em outro terminal.');
+            showAlert('error', 'SESSÃO ENCERRADA: Detectado novo acesso a este perfil em outro dispositivo.');
           }
         }
-      } catch (err) {
-        console.error("Erro na verificação de sessão:", err);
-      }
-    };
+      )
+      .subscribe();
 
-    const sessionInterval = setInterval(checkSessionIntegrity, 15000); // Verifica a cada 15 segundos
-    return () => clearInterval(sessionInterval);
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [activeUser]);
 
   const activeOperatorName = activeUser?.Nome_Completo || null;
@@ -304,7 +306,7 @@ function App() {
   const handleLogout = () => {
     setActiveUser(null);
     localStorage.removeItem('smo_active_profile');
-    // Não precisa de reload, o estado reativo cuida da interface
+    // Forçar limpeza de estados de formulário para segurança
   };
 
   if (isExternalView) {
