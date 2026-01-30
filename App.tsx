@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Dashboard } from './components/Dashboard';
 import { OperationalDashboard } from './components/OperationalDashboard';
 import { KanbanBoard } from './components/KanbanBoard';
@@ -38,36 +38,68 @@ function App() {
     } catch { return null; }
   });
 
+  // REF para monitorar o ID da sessão sem depender do ciclo de render do React no callback do Realtime
+  const sessionIdRef = useRef<string | null>(activeUser?.sesson_id || null);
+
   useEffect(() => {
     if (activeUser) {
       localStorage.setItem('smo_active_profile', JSON.stringify(activeUser));
+      sessionIdRef.current = activeUser.sesson_id || null;
     } else {
       localStorage.removeItem('smo_active_profile');
+      sessionIdRef.current = null;
     }
   }, [activeUser]);
 
-  // FUNÇÃO DE LOGOFF UNIFICADA (LIMPA BANCO E LOCAL)
+  const showAlert = (type: 'success' | 'error', msg: string) => {
+     setAlert({ type, msg });
+     setTimeout(() => setAlert(null), 5000);
+  };
+
+  // FUNÇÃO DE LOGOFF UNIFICADA
   const handleLogout = useCallback(async (clearDb: boolean = true) => {
-    if (clearDb && activeUser && activeUser.id) {
+    const userId = activeUser?.id;
+    
+    // 1. Limpa estado local imediatamente para UX rápida
+    setActiveUser(null);
+    localStorage.removeItem('smo_active_profile');
+    sessionIdRef.current = null;
+
+    // 2. Limpa no banco se for logoff manual
+    if (clearDb && userId) {
       try {
-        // Define sesson_id como NULL no banco para liberar o perfil
         await supabase
           .from('Cadastro_de_Perfil')
           .update({ sesson_id: null })
-          .eq('id', activeUser.id);
+          .eq('id', userId);
       } catch (err) {
         console.error("Erro ao limpar sessão no servidor:", err);
       }
     }
-    
-    setActiveUser(null);
-    localStorage.removeItem('smo_active_profile');
   }, [activeUser]);
 
-  // LÓGICA DE DERRUBADA INSTANTÂNEA VIA SUPABASE REALTIME
+  // LÓGICA DE DERRUBADA INSTANTÂNEA E VALIDAÇÃO DE BOOT
   useEffect(() => {
     if (!activeUser || !activeUser.id) return;
 
+    // A. VALIDAÇÃO DE BOOT: Verifica se a sessão ainda é válida ao carregar/abrir a aba
+    const validateCurrentSession = async () => {
+      const { data, error } = await supabase
+        .from('Cadastro_de_Perfil')
+        .select('sesson_id')
+        .eq('id', activeUser.id)
+        .single();
+      
+      if (!error && data) {
+        if (data.sesson_id !== activeUser.sesson_id) {
+          handleLogout(false);
+          showAlert('error', 'SESSÃO INVÁLIDA: Este perfil foi acessado em outro terminal enquanto você estava fora.');
+        }
+      }
+    };
+    validateCurrentSession();
+
+    // B. REALTIME: Escuta derrubada enquanto a aba está aberta
     const channel = supabase
       .channel(`session_monitor_${activeUser.id}`)
       .on(
@@ -79,12 +111,11 @@ function App() {
           filter: `id=eq.${activeUser.id}`
         },
         (payload) => {
-          // Se o novo sesson_id for diferente e não for nulo (um novo login ocorreu)
-          if (payload.new && payload.new.sesson_id !== undefined && payload.new.sesson_id !== null) {
-            if (payload.new.sesson_id !== activeUser.sesson_id) {
-              handleLogout(false); // Apenas local, pois o novo login já sobrescreveu o ID
-              showAlert('error', 'SESSÃO ENCERRADA: Detectado novo acesso a este perfil em outro dispositivo.');
-            }
+          const newId = payload.new?.sesson_id;
+          // Se o novo ID for diferente do que esta máquina registrou e não for nulo (vindo de outro login)
+          if (newId !== undefined && newId !== null && newId !== sessionIdRef.current) {
+            handleLogout(false);
+            showAlert('error', 'SESSÃO ENCERRADA: Um novo acesso foi detectado em outro dispositivo.');
           }
         }
       )
@@ -93,7 +124,7 @@ function App() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [activeUser, handleLogout]);
+  }, [activeUser?.id, handleLogout]); // Dependemos apenas do ID para não reiniciar o channel em cada render
 
   const activeOperatorName = activeUser?.Nome_Completo || null;
   const isAdmin = activeUser?.Usuario?.toLowerCase() === "rafael";
@@ -160,11 +191,6 @@ function App() {
         return newId;
       } catch (err) { return 'Erro ID'; }
   }, []);
-
-  const showAlert = (type: 'success' | 'error', msg: string) => {
-     setAlert({ type, msg });
-     setTimeout(() => setAlert(null), 5000);
-  };
 
   const fetchManifestos = useCallback(async () => {
     try {
