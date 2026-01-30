@@ -56,6 +56,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     return false;
   }, [formData.dataHoraPuxado, formData.dataHoraRecebido]);
 
+  // FUNÇÃO DE LOGIN COM GERAÇÃO DE SESSÃO ÚNICA
   const handleLogin = async () => {
     const cleanedUser = loginId.trim();
     const cleanedPass = loginPass.trim();
@@ -77,7 +78,23 @@ export const Dashboard: React.FC<DashboardProps> = ({
       if (error) {
         onShowAlert('error', 'Credenciais Inválidas ou Erro de Conexão');
       } else {
-        if (onOperatorChange) onOperatorChange(data);
+        // GERA NOVO TOKEN DE SESSÃO ÚNICA
+        const sessionId = crypto.randomUUID();
+        const nowBR = new Date().toLocaleString('pt-BR');
+        
+        // Atualiza no Supabase para invalidar sessões antigas
+        const { error: updateError } = await supabase
+          .from('Cadastro_de_Perfil')
+          .update({ 
+            sesson_id: sessionId, 
+            "Session_Data/HR": nowBR 
+          })
+          .eq('id', data.id);
+
+        if (updateError) throw updateError;
+
+        const updatedUser = { ...data, sesson_id: sessionId };
+        if (onOperatorChange) onOperatorChange(updatedUser);
         onShowAlert('success', `Bem-vindo, ${data.Nome_Completo}`);
       }
     } catch (err) {

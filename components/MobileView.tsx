@@ -11,7 +11,6 @@ import {
 import { supabase } from '../supabaseClient';
 import { AssessmentGuide } from './AssessmentGuide';
 import { SlaAuditor } from './SlaAuditor';
-// Adicionando a importação que faltava para corrigir o erro na linha 320
 import { EfficiencyDashboard } from './EfficiencyDashboard';
 import { CustomSelect } from './CustomSelect';
 
@@ -48,7 +47,6 @@ export const MobileView: React.FC<MobileViewProps> = ({
   const canSeeAvaliacao = isAdmin;
   const canSeeAuditoria = isAdmin;
 
-  // Redireciona se estiver na aba oculta ou sem permissão
   React.useEffect(() => {
     if (activeTab === 'operacional') {
       setActiveTab('sistema');
@@ -78,8 +76,23 @@ export const MobileView: React.FC<MobileViewProps> = ({
       if (error) {
         showAlert('error', 'Credenciais Inválidas');
       } else {
-        setActiveUser(data);
-        localStorage.setItem('smo_active_profile', JSON.stringify(data));
+        // GERA NOVO TOKEN DE SESSÃO ÚNICA (KICK-OUT)
+        const sessionId = crypto.randomUUID();
+        const nowBR = new Date().toLocaleString('pt-BR');
+        
+        const { error: updateError } = await supabase
+          .from('Cadastro_de_Perfil')
+          .update({ 
+            sesson_id: sessionId, 
+            "Session_Data/HR": nowBR 
+          })
+          .eq('id', data.id);
+
+        if (updateError) throw updateError;
+
+        const updatedUser = { ...data, sesson_id: sessionId };
+        setActiveUser(updatedUser);
+        localStorage.setItem('smo_active_profile', JSON.stringify(updatedUser));
         showAlert('success', `Bem-vindo, ${data.Nome_Completo}`);
       }
     } catch (err) {
@@ -108,7 +121,6 @@ export const MobileView: React.FC<MobileViewProps> = ({
     } catch { return '--:--'; }
   };
 
-  // TELA DE LOGIN MOBILE
   if (!activeUser) {
     return (
       <div className="flex flex-col h-screen bg-slate-50 dark:bg-slate-950 items-center justify-center p-6 font-sans">
@@ -180,7 +192,6 @@ export const MobileView: React.FC<MobileViewProps> = ({
 
   return (
     <div className="flex flex-col h-screen bg-slate-50 dark:bg-slate-950 overflow-hidden font-sans">
-      {/* Top Header Mobile */}
       <header className="bg-slate-900 dark:bg-black text-white h-16 flex items-center justify-between px-5 shrink-0 z-50 shadow-lg">
         <div className="flex items-center gap-2">
           <div className="p-1 bg-indigo-600 rounded">
@@ -205,7 +216,6 @@ export const MobileView: React.FC<MobileViewProps> = ({
         </div>
       </header>
 
-      {/* Main Content Area */}
       <main className="flex-1 overflow-y-auto p-4 pb-24 space-y-4 custom-scrollbar">
         
         {activeTab === 'sistema' && (
@@ -341,7 +351,6 @@ export const MobileView: React.FC<MobileViewProps> = ({
         )}
       </main>
 
-      {/* Bottom Navigation Mobile */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-black border-t border-slate-200 dark:border-slate-800 h-20 flex items-center justify-around px-2 z-[9999] shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
         {navItems.map((item) => {
           const isEficienciaActive = activeTab === 'eficiencia' && item.id === 'eficiencia';

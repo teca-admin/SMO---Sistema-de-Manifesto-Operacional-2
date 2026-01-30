@@ -46,6 +46,34 @@ function App() {
     }
   }, [activeUser]);
 
+  // LÓGICA DE VERIFICAÇÃO DE SESSÃO ÚNICA (DERRUBADA)
+  useEffect(() => {
+    if (!activeUser || !activeUser.id) return;
+
+    const checkSessionIntegrity = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('Cadastro_de_Perfil')
+          .select('sesson_id')
+          .eq('id', activeUser.id)
+          .single();
+
+        if (!error && data) {
+          // Se o ID da sessão no banco for diferente do local, desloga
+          if (data.sesson_id !== activeUser.sesson_id) {
+            handleLogout();
+            showAlert('error', 'SESSÃO ENCERRADA: Detectado novo acesso a este perfil em outro terminal.');
+          }
+        }
+      } catch (err) {
+        console.error("Erro na verificação de sessão:", err);
+      }
+    };
+
+    const sessionInterval = setInterval(checkSessionIntegrity, 15000); // Verifica a cada 15 segundos
+    return () => clearInterval(sessionInterval);
+  }, [activeUser]);
+
   const activeOperatorName = activeUser?.Nome_Completo || null;
   const isAdmin = activeUser?.Usuario?.toLowerCase() === "rafael";
   const canSeeAvaliacao = isAdmin;
@@ -73,7 +101,6 @@ function App() {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     handleResize();
     window.addEventListener('resize', handleResize);
-    // Fix: replaced non-existent removeResizeListener with removeEventListener
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
@@ -115,7 +142,7 @@ function App() {
 
   const showAlert = (type: 'success' | 'error', msg: string) => {
      setAlert({ type, msg });
-     setTimeout(() => setAlert(null), 4000);
+     setTimeout(() => setAlert(null), 5000);
   };
 
   const fetchManifestos = useCallback(async () => {
@@ -139,7 +166,6 @@ function App() {
           dataHoraIniciado: item.Manifesto_Iniciado,
           dataHoraDisponivel: item.Manifesto_Disponivel,
           dataHoraConferencia: item["Manifesto_em_Conferência"],
-          // Fix: removed duplicate property dataHoraIniciado
           dataHoraCompleto: item.Manifesto_Completo
         })));
       }
@@ -278,7 +304,7 @@ function App() {
   const handleLogout = () => {
     setActiveUser(null);
     localStorage.removeItem('smo_active_profile');
-    window.location.reload();
+    // Não precisa de reload, o estado reativo cuida da interface
   };
 
   if (isExternalView) {
