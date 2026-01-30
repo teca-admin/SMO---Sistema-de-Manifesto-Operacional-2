@@ -43,27 +43,21 @@ export const MobileView: React.FC<MobileViewProps> = ({
   const [showPass, setShowPass] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-  // PERMISSÕES REFINADAS
-  const isVinciAdm = activeUser?.Usuario?.toUpperCase() === "VINCI ADM";
-  const isWfsAdm = activeUser?.Usuario?.toUpperCase() === "WFS ADM";
-  
-  const canSeeCadastro = !isVinciAdm;
-  const canSeePuxe = !isVinciAdm;
-  const canSeeAvaliacao = isWfsAdm;
-  const canSeeAuditoria = isWfsAdm || isVinciAdm;
+  const isAdmin = activeUser?.Usuario?.toLowerCase() === "rafael";
+  const canSeeAvaliacao = isAdmin;
+  const canSeeAuditoria = isAdmin;
 
   React.useEffect(() => {
-    // Redirecionamentos de segurança para guias proibidas
-    if (isVinciAdm && (activeTab === 'sistema' || activeTab === 'operacional')) {
-      setActiveTab('fluxo');
+    if (activeTab === 'operacional') {
+      setActiveTab('sistema');
     }
     if (activeTab === 'avaliacao' && !canSeeAvaliacao) {
-      setActiveTab('fluxo');
+      setActiveTab('sistema');
     }
     if (activeTab === 'auditoria' && !canSeeAuditoria) {
-      setActiveTab('fluxo');
+      setActiveTab('sistema');
     }
-  }, [activeTab, setActiveTab, canSeeAvaliacao, canSeeAuditoria, isVinciAdm]);
+  }, [activeTab, setActiveTab, canSeeAvaliacao, canSeeAuditoria]);
 
   const handleLogin = async () => {
     if (!loginId.trim() || !loginPass.trim()) {
@@ -148,7 +142,7 @@ export const MobileView: React.FC<MobileViewProps> = ({
                 placeholder="USUÁRIO" 
                 value={loginId} 
                 onChange={e => setLoginId(e.target.value)}
-                className="w-full h-14 pl-12 pr-4 bg-slate-50 dark:bg-slate-800/50 border-2 border-slate-100 dark:border-slate-700 text-xs font-black tracking-widest outline-none focus:border-indigo-600 text-slate-900 dark:text-white transition-all"
+                className="w-full h-14 pl-12 pr-4 bg-slate-50 dark:bg-slate-800/50 border-2 border-slate-100 dark:border-slate-700 text-xs font-black tracking-widest outline-none focus:border-indigo-600 dark:text-white transition-all"
               />
             </div>
             <div className="relative">
@@ -159,7 +153,7 @@ export const MobileView: React.FC<MobileViewProps> = ({
                 value={loginPass} 
                 onChange={e => setLoginPass(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleLogin()}
-                className="w-full h-14 pl-12 pr-12 bg-slate-50 dark:bg-slate-800/50 border-2 border-slate-100 dark:border-slate-700 text-xs font-black tracking-widest outline-none focus:border-indigo-600 text-slate-900 dark:text-white transition-all"
+                className="w-full h-14 pl-12 pr-12 bg-slate-50 dark:bg-slate-800/50 border-2 border-slate-100 dark:border-slate-700 text-xs font-black tracking-widest outline-none focus:border-indigo-600 dark:text-white transition-all"
               />
               <button 
                 onClick={() => setShowPass(!showPass)}
@@ -182,13 +176,19 @@ export const MobileView: React.FC<MobileViewProps> = ({
     );
   }
 
-  // CONSTRUÇÃO DINÂMICA DO MENU MOBILE
-  const navItems = [];
-  if (canSeeCadastro) navItems.push({ id: 'sistema', icon: LayoutGrid, label: 'Cadastro' });
-  navItems.push({ id: 'fluxo', icon: Columns, label: 'Fluxo' });
-  navItems.push({ id: 'eficiencia', icon: BarChart3, label: 'Eficiência' });
-  if (canSeeAuditoria) navItems.push({ id: 'auditoria', icon: ClipboardCheck, label: 'Auditoria' });
-  if (canSeeAvaliacao) navItems.push({ id: 'avaliacao', icon: GraduationCap, label: 'Avaliação' });
+  const navItems = [
+    { id: 'sistema', icon: LayoutGrid, label: 'Cadastro' },
+    { id: 'fluxo', icon: Columns, label: 'Fluxo' },
+    { id: 'eficiencia', icon: BarChart3, label: 'Eficiência' }
+  ];
+
+  if (canSeeAuditoria) {
+    navItems.push({ id: 'auditoria', icon: ClipboardCheck, label: 'Auditoria' });
+  }
+
+  if (canSeeAvaliacao) {
+    navItems.push({ id: 'avaliacao', icon: GraduationCap, label: 'Avaliação' });
+  }
 
   return (
     <div className="flex flex-col h-screen bg-slate-50 dark:bg-slate-950 overflow-hidden font-sans">
@@ -218,7 +218,7 @@ export const MobileView: React.FC<MobileViewProps> = ({
 
       <main className="flex-1 overflow-y-auto p-4 pb-24 space-y-4 custom-scrollbar">
         
-        {activeTab === 'sistema' && canSeeCadastro && (
+        {activeTab === 'sistema' && (
           <div className="space-y-6 animate-fadeIn">
             <div className="bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm">
               <div className="bg-slate-100 dark:bg-slate-800 p-4 border-b border-slate-200 dark:border-slate-700">
@@ -243,7 +243,7 @@ export const MobileView: React.FC<MobileViewProps> = ({
                         type="datetime-local" 
                         value={form.puxado}
                         onChange={e => setForm({...form, puxado: e.target.value})}
-                        className="w-full h-12 px-4 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-lg text-sm font-bold outline-none focus:border-indigo-600 text-slate-900 dark:text-white"
+                        className="w-full h-12 px-4 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-lg text-sm font-bold outline-none focus:border-indigo-600 dark:text-white"
                       />
                     </div>
                   </div>
