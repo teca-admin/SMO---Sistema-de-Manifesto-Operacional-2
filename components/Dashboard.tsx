@@ -21,11 +21,12 @@ interface DashboardProps {
   onOpenReprFill: (id: string) => void;
   onShowAlert: (type: 'success' | 'error', msg: string) => void;
   nextId: string;
+  onLogout: () => void;
   onOperatorChange?: (profile: UserType | null) => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ 
-  manifestos, activeUser, onSave, onAction, openHistory, openEdit, onOpenReprFill, onShowAlert, onOperatorChange
+  manifestos, activeUser, onSave, onAction, openHistory, openEdit, onOpenReprFill, onShowAlert, onLogout, onOperatorChange
 }) => {
   const [loginId, setLoginId] = useState('');
   const [loginPass, setLoginPass] = useState('');
@@ -56,7 +57,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
     return false;
   }, [formData.dataHoraPuxado, formData.dataHoraRecebido]);
 
-  // FUNÇÃO DE LOGIN COM GERAÇÃO DE SESSÃO ÚNICA
   const handleLogin = async () => {
     const cleanedUser = loginId.trim();
     const cleanedPass = loginPass.trim();
@@ -78,11 +78,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
       if (error) {
         onShowAlert('error', 'Credenciais Inválidas ou Erro de Conexão');
       } else {
-        // GERA NOVO TOKEN DE SESSÃO ÚNICA
         const sessionId = crypto.randomUUID();
         const nowBR = new Date().toLocaleString('pt-BR');
         
-        // Atualiza no Supabase para invalidar sessões antigas
         const { error: updateError } = await supabase
           .from('Cadastro_de_Perfil')
           .update({ 
@@ -104,8 +102,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
-  const handleLogout = () => {
-    if (onOperatorChange) onOperatorChange(null);
+  const handleManualLogout = () => {
+    onLogout();
     setLoginId('');
     setLoginPass('');
     setShowPass(false);
@@ -275,7 +273,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
            <div className="w-10 h-10 bg-indigo-600 flex items-center justify-center text-sm font-black text-white rounded">{activeUser.Nome_Completo.charAt(0)}</div>
            <div><p className="text-[8px] font-black text-indigo-400 uppercase tracking-widest mb-0.5">Operador de Cadastro</p><h2 className="text-sm font-black text-white uppercase tracking-tight">{activeUser.Nome_Completo}</h2></div>
         </div>
-        <button onClick={handleLogout} className="h-8 px-4 bg-red-600/10 hover:bg-red-600 border border-red-600/30 hover:border-red-600 text-red-500 hover:text-white text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2"><LogOut size={12} /> Sair do Terminal</button>
+        <button onClick={handleManualLogout} className="h-8 px-4 bg-red-600/10 hover:bg-red-600 border border-red-600/30 hover:border-red-600 text-red-500 hover:text-white text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2"><LogOut size={12} /> Sair do Terminal</button>
       </div>
 
       <div className="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 panel-shadow">

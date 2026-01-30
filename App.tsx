@@ -46,11 +46,28 @@ function App() {
     }
   }, [activeUser]);
 
+  // FUNÇÃO DE LOGOFF UNIFICADA (LIMPA BANCO E LOCAL)
+  const handleLogout = useCallback(async (clearDb: boolean = true) => {
+    if (clearDb && activeUser && activeUser.id) {
+      try {
+        // Define sesson_id como NULL no banco para liberar o perfil
+        await supabase
+          .from('Cadastro_de_Perfil')
+          .update({ sesson_id: null })
+          .eq('id', activeUser.id);
+      } catch (err) {
+        console.error("Erro ao limpar sessão no servidor:", err);
+      }
+    }
+    
+    setActiveUser(null);
+    localStorage.removeItem('smo_active_profile');
+  }, [activeUser]);
+
   // LÓGICA DE DERRUBADA INSTANTÂNEA VIA SUPABASE REALTIME
   useEffect(() => {
     if (!activeUser || !activeUser.id) return;
 
-    // Subscreve apenas para mudanças no perfil do usuário atual
     const channel = supabase
       .channel(`session_monitor_${activeUser.id}`)
       .on(
@@ -62,10 +79,12 @@ function App() {
           filter: `id=eq.${activeUser.id}`
         },
         (payload) => {
-          // Se o novo sesson_id no banco for diferente do que temos localmente, desloga na hora
-          if (payload.new && payload.new.sesson_id !== activeUser.sesson_id) {
-            handleLogout();
-            showAlert('error', 'SESSÃO ENCERRADA: Detectado novo acesso a este perfil em outro dispositivo.');
+          // Se o novo sesson_id for diferente e não for nulo (um novo login ocorreu)
+          if (payload.new && payload.new.sesson_id !== undefined && payload.new.sesson_id !== null) {
+            if (payload.new.sesson_id !== activeUser.sesson_id) {
+              handleLogout(false); // Apenas local, pois o novo login já sobrescreveu o ID
+              showAlert('error', 'SESSÃO ENCERRADA: Detectado novo acesso a este perfil em outro dispositivo.');
+            }
           }
         }
       )
@@ -74,7 +93,7 @@ function App() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [activeUser]);
+  }, [activeUser, handleLogout]);
 
   const activeOperatorName = activeUser?.Nome_Completo || null;
   const isAdmin = activeUser?.Usuario?.toLowerCase() === "rafael";
@@ -303,12 +322,6 @@ function App() {
     }
   };
 
-  const handleLogout = () => {
-    setActiveUser(null);
-    localStorage.removeItem('smo_active_profile');
-    // Forçar limpeza de estados de formulário para segurança
-  };
-
   if (isExternalView) {
     return (
       <div className="min-h-screen flex flex-col bg-[#f8fafc] dark:bg-[#0f172a] p-4 transition-colors duration-300">
@@ -372,7 +385,7 @@ function App() {
           showAlert={showAlert}
           activeUser={activeUser}
           setActiveUser={setActiveUser}
-          onLogout={handleLogout}
+          onLogout={() => handleLogout(true)}
         />
         {editingId && (
           <EditModal data={manifestos.find(m => m.id === editingId)!} onClose={() => setEditingId(null)} onSave={handleSaveEdit} />
@@ -473,6 +486,7 @@ function App() {
               onOpenReprFill={setFillingReprId}
               onShowAlert={showAlert}
               nextId={nextId}
+              onLogout={() => handleLogout(true)}
               onOperatorChange={(profile) => setActiveUser(profile)}
             />
           ) : activeTab === 'operacional' ? (
