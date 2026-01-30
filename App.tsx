@@ -132,9 +132,17 @@ function App() {
   }, [activeUser]);
 
   const activeOperatorName = activeUser?.Nome_Completo || null;
-  const isAdmin = activeUser?.Usuario?.toLowerCase() === "rafael";
-  const canSeeAvaliacao = isAdmin;
-  const canSeeAuditoria = isAdmin;
+  
+  // LOGICA DE PERMISSÃO REFINADA
+  const isRafael = activeUser?.Usuario?.toUpperCase() === "RAFAEL";
+  const isVinciAdm = activeUser?.Usuario?.toUpperCase() === "VINCI ADM";
+  
+  // Ambos podem ver auditoria e têm privilégios de visualização no Kanban
+  const isAdmin = isRafael || isVinciAdm;
+  const canSeeAuditoria = isRafael || isVinciAdm;
+  
+  // Apenas Rafael pode ver Avaliação
+  const canSeeAvaliacao = isRafael;
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);

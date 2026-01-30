@@ -43,9 +43,12 @@ export const MobileView: React.FC<MobileViewProps> = ({
   const [showPass, setShowPass] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-  const isAdmin = activeUser?.Usuario?.toLowerCase() === "rafael";
-  const canSeeAvaliacao = isAdmin;
-  const canSeeAuditoria = isAdmin;
+  // LOGICA DE PERMISSÃO MOBILE REFINADA
+  const isRafael = activeUser?.Usuario?.toUpperCase() === "RAFAEL";
+  const isVinciAdm = activeUser?.Usuario?.toUpperCase() === "VINCI ADM";
+  
+  const canSeeAuditoria = isRafael || isVinciAdm;
+  const canSeeAvaliacao = isRafael;
 
   React.useEffect(() => {
     if (activeTab === 'operacional') {
