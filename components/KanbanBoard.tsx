@@ -117,7 +117,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ manifestos, isExternal
   const getTimeOnly = (isoStr: string | undefined) => {
     if (!isoStr || isoStr === '---' || isoStr === '') return '--:--';
     const d = parseBRDate(isoStr);
-    if (!d) return '--:--';
+    if (!d) return isoStr.substring(11, 16);
     return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   };
 
@@ -130,19 +130,16 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ manifestos, isExternal
           </div>
           <div>
             <h2 className="text-[14px] font-black text-white uppercase tracking-[0.2em]">
-              {isExternalView ? 'Visualização Externa - Monitor de Fluxo' : 'Painel de Controle de Fluxo'}
+              {isExternalView ? 'Monitor de Fluxo' : 'Painel de Controle de Fluxo'}
             </h2>
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest hidden sm:block">
               {isExternalView ? 'Acesso Restrito ao Fluxo Operacional' : 'Monitoramento unificado em tempo real'}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-4">
            {isAdmin && !isExternalView && (
-             <button 
-                onClick={handleCopyLink}
-                className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black uppercase tracking-widest transition-all rounded"
-             >
+             <button onClick={handleCopyLink} className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black uppercase tracking-widest transition-all rounded">
                 {copied ? <Check size={12} /> : <Share2 size={12} />}
                 {copied ? 'Link Copiado!' : 'Gerar Link Externo'}
              </button>
@@ -154,9 +151,9 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ manifestos, isExternal
         </div>
       </div>
 
-      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 overflow-hidden">
+      <div className="flex-1 flex overflow-x-auto gap-4 pb-2 no-scrollbar snap-x snap-mandatory lg:grid lg:grid-cols-4 lg:overflow-hidden">
         {columns.map(col => (
-          <div key={col.id} className={`flex flex-col border-t-4 ${col.color} bg-white dark:bg-slate-800 panel-shadow overflow-hidden`}>
+          <div key={col.id} className={`flex flex-col border-t-4 ${col.color} bg-white dark:bg-slate-800 panel-shadow overflow-hidden min-w-[85vw] lg:min-w-0 snap-center`}>
             <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between bg-white dark:bg-slate-800 shrink-0">
               <div className="flex items-center gap-2">
                 {col.icon}
@@ -167,45 +164,24 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ manifestos, isExternal
 
             <div className={`flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar ${col.bgColor}`}>
               {col.items.length === 0 ? (
-                <div className="h-full flex items-center justify-center opacity-10 grayscale dark:opacity-5">
-                   <Box size={40} className="text-slate-300" />
-                </div>
+                <div className="h-full flex items-center justify-center opacity-10 grayscale dark:opacity-5"><Box size={40} className="text-slate-300" /></div>
               ) : (
                 col.items.map(m => {
                   const sla = getSLAInfo(m, col.id);
                   const barColor = sla.status === 'critical' ? 'bg-red-600' : sla.status === 'warning' ? 'bg-amber-500' : 'bg-slate-900 dark:bg-indigo-600';
                   return (
-                    <div key={m.id} className={`bg-white dark:bg-slate-800 border p-3 shadow-sm hover:shadow-md transition-all group ${sla.status === 'critical' ? 'border-red-400' : sla.status === 'warning' ? 'border-amber-400' : 'border-slate-200 dark:border-slate-700'}`}>
-                      <div className={`mb-2.5 px-2 py-1.5 rounded-sm flex items-center justify-between transition-colors ${barColor}`}>
-                         <div className="flex items-center gap-1.5">
-                            {sla.status === 'critical' ? <ShieldAlert size={11} className="text-white" /> : <Timer size={11} className="text-white" />}
-                            <span className="text-[9px] font-black uppercase tracking-widest text-white">{sla.label || 'Tempo em Status'}</span>
-                         </div>
-                         <span className="text-[11px] font-bold font-mono-tech text-white tracking-widest">{getElapsedTime(m.carimboDataHR)}</span>
+                    <div key={m.id} className={`bg-white dark:bg-slate-800 border p-2.5 shadow-sm hover:shadow-md transition-all group ${sla.status === 'critical' ? 'border-red-400' : sla.status === 'warning' ? 'border-amber-400' : 'border-slate-200 dark:border-slate-700'}`}>
+                      <div className={`mb-2 px-2 py-1 rounded-sm flex items-center justify-between transition-colors ${barColor}`}>
+                         <span className="text-[8px] font-black uppercase tracking-widest text-white">{sla.label || 'Status'}</span>
+                         <span className="text-[10px] font-bold font-mono-tech text-white tracking-widest">{getElapsedTime(m.carimboDataHR)}</span>
                       </div>
-                      <div className="flex justify-between items-center mb-3">
-                        <span className="text-[13px] font-black text-slate-900 dark:text-white font-mono-tech tracking-tighter">{m.id}</span>
-                        <span className={`text-[10px] font-black px-1.5 py-0.5 rounded uppercase ${m.cia === 'LATAM' ? 'bg-indigo-50 text-indigo-600 border border-indigo-100 dark:bg-indigo-900/20 dark:text-indigo-400 dark:border-indigo-800/50' : m.cia === 'AZUL' ? 'bg-blue-50 text-blue-600 border border-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800/50' : 'bg-slate-50 text-slate-600 border border-slate-100 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600'}`}>{m.cia}</span>
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-[12px] font-black text-slate-900 dark:text-white font-mono-tech tracking-tighter">{m.id}</span>
+                        <span className={`text-[9px] font-black px-1.5 py-0.5 rounded uppercase ${m.cia === 'LATAM' ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : 'bg-slate-50 text-slate-600 border border-slate-100'}`}>{m.cia}</span>
                       </div>
-                      <div className="grid grid-cols-2 gap-3 mb-3 px-1">
-                        <div className="flex flex-col">
-                           <span className="text-[9px] font-bold text-slate-400 uppercase">Turno</span>
-                           <span className="text-[10px] font-black text-slate-600 dark:text-slate-300 uppercase italic truncate">{m.turno}</span>
-                        </div>
-                        <div className="flex flex-col text-right">
-                           <span className="text-[9px] font-bold text-slate-400 uppercase">Início Log</span>
-                           <span className="text-[10px] font-bold font-mono text-slate-500 dark:text-slate-400">{getTimeOnly(m.dataHoraPuxado)}</span>
-                        </div>
-                      </div>
-                      <div className="pt-2.5 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
-                         <div className="flex items-center gap-2 max-w-[70%]">
-                            <div className="w-5 h-5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-full flex items-center justify-center text-[10px] font-black text-slate-500 shrink-0">{m.usuarioResponsavel ? m.usuarioResponsavel.charAt(0) : '?'}</div>
-                            <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase truncate">{m.usuarioResponsavel || 'Vago'}</span>
-                         </div>
-                         <div className={`flex items-center gap-1 text-[11px] font-black shrink-0 ${sla.status === 'critical' ? 'text-red-600' : 'text-indigo-500 dark:text-indigo-400'}`}>
-                            {sla.status === 'critical' && <AlertTriangle size={12} className="animate-pulse" />}
-                            <span className="font-mono-tech">{getTimeOnly(m.carimboDataHR)}</span>
-                         </div>
+                      <div className="pt-2 border-t border-slate-50 dark:border-slate-700 flex items-center justify-between">
+                         <span className="text-[9px] font-black text-slate-400 uppercase truncate max-w-[60%]">{m.usuarioResponsavel || 'Livre'}</span>
+                         <span className="text-[10px] font-black font-mono-tech text-indigo-500">{getTimeOnly(m.carimboDataHR)}</span>
                       </div>
                     </div>
                   );
@@ -215,11 +191,6 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ manifestos, isExternal
           </div>
         ))}
       </div>
-      {isExternalView && (
-        <div className="py-2 text-center border-t border-slate-200 dark:border-slate-900 bg-white dark:bg-black/20">
-           <p className="text-[8px] font-black uppercase tracking-[0.5em] text-slate-400">SMO Unified Flow Monitoring - WFS Terminal</p>
-        </div>
-      )}
     </div>
   );
 };

@@ -6,7 +6,8 @@ import {
   Terminal, Activity, Plus, Database, History, 
   CheckCircle2, Box, Timer, ShieldAlert,
   ChevronRight, ArrowRight, User as UserIcon,
-  KeyRound, Eye, EyeOff, Loader2, GraduationCap, ClipboardCheck
+  KeyRound, Eye, EyeOff, Loader2, GraduationCap, ClipboardCheck,
+  UserCheck, Play
 } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { AssessmentGuide } from './AssessmentGuide';
@@ -43,7 +44,6 @@ export const MobileView: React.FC<MobileViewProps> = ({
   const [showPass, setShowPass] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-  // LOGICA DE PERMISSÃO MOBILE REFINADA
   const isRafael = activeUser?.Usuario?.toUpperCase() === "RAFAEL";
   const isVinciAdm = activeUser?.Usuario?.toUpperCase() === "VINCI ADM";
   
@@ -79,7 +79,6 @@ export const MobileView: React.FC<MobileViewProps> = ({
       if (error) {
         showAlert('error', 'Credenciais Inválidas');
       } else {
-        // GERA NOVO TOKEN DE SESSÃO ÚNICA (KICK-OUT)
         const sessionId = crypto.randomUUID();
         const nowBR = new Date().toLocaleString('pt-BR');
         
@@ -108,8 +107,8 @@ export const MobileView: React.FC<MobileViewProps> = ({
   const getStatusClass = (status: string) => {
     switch (status) {
       case 'Manifesto Recebido': return 'bg-blue-600 text-white';
-      case 'Manifesto Iniciado': return 'bg-amber-50 text-white';
-      case 'Manifesto Finalizado': return 'bg-emerald-50 text-white';
+      case 'Manifesto Iniciado': return 'bg-amber-500 text-white';
+      case 'Manifesto Finalizado': return 'bg-emerald-500 text-white';
       case 'Manifesto Entregue': return 'bg-emerald-700 text-white';
       case 'Manifesto Cancelado': return 'bg-red-600 text-white';
       default: return 'bg-slate-600 text-white';
@@ -117,9 +116,10 @@ export const MobileView: React.FC<MobileViewProps> = ({
   };
 
   const formatTime = (iso: string | undefined) => {
-    if (!iso || iso === '---') return '--:--';
+    if (!iso || iso === '---' || iso === '') return '--:--';
     try {
       const d = new Date(iso);
+      if (isNaN(d.getTime())) return iso.substring(11, 16);
       return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     } catch { return '--:--'; }
   };
@@ -185,13 +185,8 @@ export const MobileView: React.FC<MobileViewProps> = ({
     { id: 'eficiencia', icon: BarChart3, label: 'Eficiência' }
   ];
 
-  if (canSeeAuditoria) {
-    navItems.push({ id: 'auditoria', icon: ClipboardCheck, label: 'Auditoria' });
-  }
-
-  if (canSeeAvaliacao) {
-    navItems.push({ id: 'avaliacao', icon: GraduationCap, label: 'Avaliação' });
-  }
+  if (canSeeAuditoria) navItems.push({ id: 'auditoria', icon: ClipboardCheck, label: 'Auditoria' });
+  if (canSeeAvaliacao) navItems.push({ id: 'avaliacao', icon: GraduationCap, label: 'Avaliação' });
 
   return (
     <div className="flex flex-col h-screen bg-slate-50 dark:bg-slate-950 overflow-hidden font-sans">
@@ -204,23 +199,12 @@ export const MobileView: React.FC<MobileViewProps> = ({
         </div>
         
         <div className="flex items-center gap-3">
-          <button 
-            onClick={() => setDarkMode(!darkMode)}
-            className="p-2 bg-slate-800 rounded-full text-indigo-400"
-          >
-            {darkMode ? <Sun size={18} /> : <Moon size={18} />}
-          </button>
-          <button 
-            onClick={onLogout}
-            className="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center font-black text-sm"
-          >
-            {activeUser.Nome_Completo?.charAt(0) || 'U'}
-          </button>
+          <button onClick={() => setDarkMode(!darkMode)} className="p-2 bg-slate-800 rounded-full text-indigo-400">{darkMode ? <Sun size={18} /> : <Moon size={18} />}</button>
+          <button onClick={onLogout} className="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center font-black text-sm">{activeUser.Nome_Completo?.charAt(0) || 'U'}</button>
         </div>
       </header>
 
       <main className="flex-1 overflow-y-auto p-4 pb-24 space-y-4 custom-scrollbar">
-        
         {activeTab === 'sistema' && (
           <div className="space-y-6 animate-fadeIn">
             <div className="bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm">
@@ -233,37 +217,19 @@ export const MobileView: React.FC<MobileViewProps> = ({
                 <div className="grid grid-cols-1 gap-4">
                   <div className="space-y-1">
                     <label className="text-[10px] font-black text-slate-500 uppercase">CIA Aérea</label>
-                    <CustomSelect 
-                      value={form.cia} 
-                      onChange={v => setForm({...form, cia: v})} 
-                      placeholder="SELECIONE A CIA..."
-                    />
+                    <CustomSelect value={form.cia} onChange={v => setForm({...form, cia: v})} placeholder="SELECIONE A CIA..." />
                   </div>
-                  <div className="grid grid-cols-1 gap-4">
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-black text-slate-500 uppercase">Puxado (Horário)</label>
-                      <input 
-                        type="datetime-local" 
-                        value={form.puxado}
-                        onChange={e => setForm({...form, puxado: e.target.value})}
-                        className="w-full h-12 px-4 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-lg text-sm font-bold outline-none focus:border-indigo-600 dark:text-white"
-                      />
-                    </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-slate-500 uppercase">Puxado (Horário)</label>
+                    <input type="datetime-local" value={form.puxado} onChange={e => setForm({...form, puxado: e.target.value})} className="w-full h-12 px-4 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-lg text-sm font-bold outline-none focus:border-indigo-600 dark:text-white" />
                   </div>
                 </div>
-                <button 
-                  onClick={() => onSave({ cia: form.cia, dataHoraPuxado: form.puxado, dataHoraRecebido: form.puxado }, activeUser.Nome_Completo || 'User')}
-                  className="w-full h-14 bg-indigo-600 text-white font-black uppercase text-xs tracking-widest rounded-lg shadow-lg active:scale-95 transition-transform"
-                >
-                  Registrar Manifesto
-                </button>
+                <button onClick={() => onSave({ cia: form.cia, dataHoraPuxado: form.puxado, dataHoraRecebido: form.puxado }, activeUser.Nome_Completo || 'User')} className="w-full h-14 bg-indigo-600 text-white font-black uppercase text-xs tracking-widest rounded-lg shadow-lg active:scale-95 transition-transform">Registrar Manifesto</button>
               </div>
             </div>
 
             <div className="space-y-3">
-              <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 flex items-center gap-2 px-1">
-                <Database size={16} /> Monitoramento Ativo
-              </h3>
+              <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 flex items-center gap-2 px-1"><Database size={16} /> Monitoramento Ativo</h3>
               {manifestos.filter(m => m.status !== 'Manifesto Entregue' && m.status !== 'Manifesto Cancelado').map(m => (
                 <div key={m.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-sm relative overflow-hidden group">
                   <div className={`absolute left-0 top-0 bottom-0 w-1 ${getStatusClass(m.status).split(' ')[0]}`}></div>
@@ -272,27 +238,11 @@ export const MobileView: React.FC<MobileViewProps> = ({
                       <span className="text-[10px] font-bold text-slate-400 font-mono block">ID: {m.id}</span>
                       <h4 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">{m.cia}</h4>
                     </div>
-                    <span className={`text-[8px] font-black px-2 py-1 rounded uppercase tracking-tighter ${getStatusClass(m.status)}`}>
-                      {m.status.replace('Manifesto ', '')}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-4 border-t border-slate-50 dark:border-slate-800 pt-3">
-                    <div className="flex flex-col">
-                      <span className="text-[8px] uppercase text-slate-400">Puxado</span>
-                      <span className="font-mono text-slate-800 dark:text-slate-200">{formatTime(m.dataHoraPuxado)}</span>
-                    </div>
-                    <div className="flex flex-col text-right">
-                      <span className="text-[8px] uppercase text-slate-400">Recebido</span>
-                      <span className="font-mono text-slate-800 dark:text-slate-200">{formatTime(m.dataHoraRecebido)}</span>
-                    </div>
+                    <span className={`text-[8px] font-black px-2 py-1 rounded uppercase tracking-tighter ${getStatusClass(m.status)}`}>{m.status.replace('Manifesto ', '')}</span>
                   </div>
                   <div className="flex gap-2">
-                    <button onClick={() => openHistory(m.id)} className="flex-1 h-10 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg text-[10px] font-black uppercase flex items-center justify-center gap-2">
-                      <History size={14} /> Detalhes
-                    </button>
-                    <button onClick={() => openEdit(m.id)} className="w-12 h-10 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-lg flex items-center justify-center">
-                      <Plus size={18} />
-                    </button>
+                    <button onClick={() => openHistory(m.id)} className="flex-1 h-10 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg text-[10px] font-black uppercase flex items-center justify-center gap-2"><History size={14} /> Detalhes</button>
+                    <button onClick={() => openEdit(m.id)} className="w-12 h-10 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-lg flex items-center justify-center"><Plus size={18} /></button>
                   </div>
                 </div>
               ))}
@@ -301,90 +251,69 @@ export const MobileView: React.FC<MobileViewProps> = ({
         )}
 
         {activeTab === 'fluxo' && (
-          <div className="space-y-4 animate-fadeIn">
-            <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 text-center py-2">Monitor de Fluxo (Mobile)</h3>
-            {['Manifesto Recebido', 'Manifesto Iniciado', 'Manifesto Finalizado'].map(status => {
-              const filtered = manifestos.filter(m => m.status === status);
-              return (
-                <div key={status} className="space-y-3">
-                  <div className="flex items-center justify-between px-2">
-                    <span className="text-[10px] font-black uppercase text-slate-400 tracking-tighter">{status}</span>
-                    <span className="text-[10px] font-black bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded-full">{filtered.length}</span>
-                  </div>
-                  <div className="flex overflow-x-auto gap-3 pb-2 no-scrollbar">
-                    {filtered.map(m => (
-                      <div key={m.id} className="min-w-[160px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-lg shadow-sm">
-                        <p className="text-[9px] font-black text-indigo-600 dark:text-indigo-400 mb-1">{m.id}</p>
-                        <h4 className="text-[11px] font-black text-slate-800 dark:text-slate-100 uppercase truncate mb-2">{m.cia}</h4>
-                        <div className="flex items-center gap-1.5 text-[8px] font-bold text-slate-400">
-                          <Timer size={10} /> {formatTime(m.carimboDataHR)}
-                        </div>
+          <div className="flex flex-col h-full animate-fadeIn -mx-4 -mt-4 pb-2">
+            <div className="bg-slate-900 text-white py-2 px-4 flex items-center justify-between shadow-md">
+               <span className="text-[9px] font-black uppercase tracking-widest text-indigo-400 flex items-center gap-2"><Columns size={12}/> Monitor de Fluxo Mobile</span>
+               <span className="text-[8px] font-bold text-slate-400 uppercase">Arraste para o lado →</span>
+            </div>
+            
+            <div className="flex overflow-x-auto gap-4 p-4 no-scrollbar snap-x snap-mandatory">
+              {[
+                { id: 'recebido', label: 'Recebido', icon: Box, color: 'border-blue-500', items: manifestos.filter(m => m.status === 'Manifesto Recebido' && !m.usuarioResponsavel) },
+                { id: 'iniciado', label: 'Iniciado', icon: Play, color: 'border-amber-500', items: manifestos.filter(m => m.status === 'Manifesto Iniciado' || (m.status === 'Manifesto Recebido' && m.usuarioResponsavel)) },
+                { id: 'finalizado', label: 'Finalizado', icon: CheckCircle2, color: 'border-emerald-500', items: manifestos.filter(m => m.status === 'Manifesto Finalizado' && (!m.dataHoraRepresentanteCIA || m.dataHoraRepresentanteCIA === '---')) },
+                { id: 'assinatura', label: 'Assinatura', icon: UserCheck, color: 'border-indigo-500', items: manifestos.filter(m => m.status === 'Manifesto Finalizado' && m.dataHoraRepresentanteCIA && m.dataHoraRepresentanteCIA !== '---') }
+              ].map(col => (
+                <div key={col.id} className="min-w-[85vw] snap-center flex flex-col gap-3">
+                   <div className={`flex items-center justify-between bg-white dark:bg-slate-900 p-3 border-l-4 ${col.color} shadow-sm rounded-lg`}>
+                      <div className="flex items-center gap-2">
+                         <col.icon size={16} className={col.color.replace('border-', 'text-')} />
+                         <span className="text-[11px] font-black uppercase text-slate-800 dark:text-slate-100">{col.label}</span>
                       </div>
-                    ))}
-                    {filtered.length === 0 && <div className="w-full text-center py-4 text-[9px] font-bold text-slate-300 uppercase italic">Vazio</div>}
-                  </div>
+                      <span className="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full text-[10px] font-black">{col.items.length}</span>
+                   </div>
+                   <div className="flex flex-col gap-2 h-[55vh] overflow-y-auto custom-scrollbar pr-1">
+                      {col.items.map(m => (
+                        <div key={m.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2.5 rounded-lg shadow-sm">
+                           <div className="flex justify-between items-center mb-1">
+                              <span className="text-[11px] font-black font-mono-tech text-indigo-600 dark:text-indigo-400">{m.id}</span>
+                              <span className="text-[9px] font-black bg-slate-900 text-white px-1.5 py-0.5 rounded uppercase">{m.cia}</span>
+                           </div>
+                           <div className="flex items-center justify-between pt-2 border-t border-slate-50 dark:border-slate-800">
+                              <div className="flex items-center gap-1 text-slate-400">
+                                 <Timer size={10} />
+                                 <span className="text-[9px] font-black font-mono-tech">{formatTime(m.carimboDataHR)}</span>
+                              </div>
+                              <span className="text-[9px] font-bold text-slate-400 uppercase truncate max-w-[50%]">{m.usuarioResponsavel || '---'}</span>
+                           </div>
+                        </div>
+                      ))}
+                      {col.items.length === 0 && <div className="flex-1 flex flex-col items-center justify-center opacity-30 italic py-10"><Box size={24}/><span className="text-[10px] font-black uppercase mt-2">Vazio</span></div>}
+                   </div>
                 </div>
-              );
-            })}
-          </div>
-        )}
-
-        {activeTab === 'eficiencia' && (
-          <div className="space-y-4 animate-fadeIn">
-             <div className="bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden h-full">
-                <EfficiencyDashboard manifestos={manifestos} activeUser={activeUser} openHistory={openHistory} />
-             </div>
-          </div>
-        )}
-
-        {activeTab === 'auditoria' && canSeeAuditoria && (
-          <div className="flex-1 animate-fadeIn overflow-hidden">
-             <div className="bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden h-full">
-                <SlaAuditor manifestos={manifestos} openHistory={openHistory} />
-             </div>
-          </div>
-        )}
-
-        {activeTab === 'avaliacao' && canSeeAvaliacao && (
-          <div className="flex-1 animate-fadeIn overflow-hidden">
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden h-full">
-              <AssessmentGuide onShowAlert={showAlert} />
+              ))}
             </div>
           </div>
         )}
+
+        {activeTab === 'eficiencia' && <EfficiencyDashboard manifestos={manifestos} activeUser={activeUser} openHistory={openHistory} />}
+        {activeTab === 'auditoria' && canSeeAuditoria && <SlaAuditor manifestos={manifestos} openHistory={openHistory} />}
+        {activeTab === 'avaliacao' && canSeeAvaliacao && <AssessmentGuide onShowAlert={showAlert} />}
       </main>
 
       <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-black border-t border-slate-200 dark:border-slate-800 h-20 flex items-center justify-around px-2 z-[9999] shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
-        {navItems.map((item) => {
-          const isEficienciaActive = activeTab === 'eficiencia' && item.id === 'eficiencia';
-          const isAvaliacaoActive = activeTab === 'avaliacao' && item.id === 'avaliacao';
-          const isActive = activeTab === item.id;
-          
-          return (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id as any)}
-              className={`flex flex-col items-center justify-center w-full h-full gap-1 transition-all ${
-                isEficienciaActive 
-                ? 'text-yellow-600 dark:text-yellow-400' 
-                : isAvaliacaoActive
-                ? 'text-orange-600 dark:text-orange-400'
-                : isActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-600'
-              }`}
-            >
-              <div className={`p-1 rounded-lg transition-colors ${
-                isEficienciaActive 
-                ? 'bg-yellow-50 dark:bg-yellow-900/20' 
-                : isAvaliacaoActive
-                ? 'bg-orange-50 dark:bg-orange-900/20'
-                : isActive ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''
-              }`}>
-                <item.icon size={22} className={isActive ? 'stroke-[2.5px]' : 'stroke-[1.5px]'} />
-              </div>
-              <span className={`text-[9px] font-black uppercase tracking-tighter ${isActive ? 'opacity-100' : 'opacity-60'}`}>{item.label}</span>
-            </button>
-          );
-        })}
+        {navItems.map((item) => (
+          <button
+            key={item.id}
+            onClick={() => setActiveTab(item.id as any)}
+            className={`flex flex-col items-center justify-center w-full h-full gap-1 transition-all ${activeTab === item.id ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-600'}`}
+          >
+            <div className={`p-1 rounded-lg transition-colors ${activeTab === item.id ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''}`}>
+              <item.icon size={22} className={activeTab === item.id ? 'stroke-[2.5px]' : 'stroke-[1.5px]'} />
+            </div>
+            <span className={`text-[9px] font-black uppercase tracking-tighter ${activeTab === item.id ? 'opacity-100' : 'opacity-60'}`}>{item.label}</span>
+          </button>
+        ))}
       </nav>
     </div>
   );
