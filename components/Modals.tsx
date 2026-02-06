@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { Manifesto, Funcionario, OperationalLog } from '../types';
 import { CustomDateTimePicker } from './CustomDateTimePicker';
@@ -321,7 +320,7 @@ export const CancellationModal: React.FC<{ onConfirm: (reason: string) => void, 
             <p className={`text-[8px] font-black uppercase ${isValid ? 'text-emerald-600' : 'text-slate-400'}`}>Mínimo: 5 caracteres ({reason.length}/5)</p>
           </div>
           <div className="flex gap-3">
-            <button onClick={onClose} className="flex-1 h-12 border-2 border-slate-200 dark:border-slate-700 text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all">Sair</button>
+            <button onClick={onClose} className="flex-1 h-12 border-2 border-slate-300 dark:border-slate-700 text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all">Sair</button>
             <button disabled={!isValid} onClick={() => onConfirm(reason)} className={`flex-1 h-12 text-white text-[10px] font-black uppercase transition-all shadow-md flex items-center justify-center gap-2 ${isValid ? 'bg-red-600 hover:bg-slate-900 shadow-red-200' : 'bg-slate-200 dark:bg-slate-700 cursor-not-allowed text-slate-400'}`}>Confirmar Cancelamento</button>
           </div>
         </div>
@@ -519,11 +518,6 @@ export const HistoryModal: React.FC<{ data: Manifesto, onClose: () => void }> = 
                </div>
             </div>
           </div>
-        </div>
-
-        <div className="p-6 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 flex justify-between items-center shrink-0">
-          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Base de Dados: <span className="font-black text-slate-900 dark:text-slate-200">Hostinger SMO v2.5</span></p>
-          <button onClick={onClose} className="h-11 px-10 bg-slate-900 dark:bg-indigo-600 text-white text-[10px] font-black uppercase tracking-[0.2em] hover:bg-indigo-600 dark:hover:bg-indigo-500 transition-all shadow-xl">Fechar Relatório</button>
         </div>
       </div>
     </div>
