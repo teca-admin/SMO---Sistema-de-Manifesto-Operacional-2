@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState, useEffect } from 'react';
 import { Manifesto, CIAS, User as UserType } from '../types';
 import { 
@@ -97,17 +96,33 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
     return '#6366f1';
   };
 
+  // Função de parse ultra-robusta para evitar erros de meia-noite e localidade
   const parseAnyDate = (dateStr: string | undefined): Date | null => {
     if (!dateStr || dateStr === '---' || dateStr === '') return null;
     try {
-      const directDate = new Date(dateStr);
-      if (!isNaN(directDate.getTime())) return directDate;
+      // Se for formato ISO (do Supabase ou state)
+      if (dateStr.includes('T') && dateStr.endsWith('Z')) {
+        const d = new Date(dateStr);
+        return isNaN(d.getTime()) ? null : d;
+      }
+      
+      // Se for formato Brasileiro DD/MM/AAAA HH:MM
       const parts = dateStr.split(/[\/\s,:]+/);
       if (parts.length >= 5) {
-        const d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]), parseInt(parts[3]), parseInt(parts[4]));
-        if (!isNaN(d.getTime())) return d;
+        const day = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10) - 1;
+        const year = parseInt(parts[2], 10);
+        const hour = parseInt(parts[3], 10);
+        const minute = parseInt(parts[4], 10);
+        const second = parts[5] ? parseInt(parts[5], 10) : 0;
+        
+        const d = new Date(year, month, day, hour, minute, second);
+        return isNaN(d.getTime()) ? null : d;
       }
-      return null;
+
+      // Fallback seguro se não houver barras
+      const fallback = new Date(dateStr);
+      return isNaN(fallback.getTime()) ? null : fallback;
     } catch { return null; }
   };
 
@@ -117,6 +132,7 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
     const ini = parseAnyDate(m.dataHoraIniciado);
     const com = parseAnyDate(m.dataHoraCompleto);
     const ass = parseAnyDate(m.dataHoraRepresentanteCIA);
+    
     if (pux && rec) {
       const diff = (rec.getTime() - pux.getTime()) / 60000;
       if (diff > 10) return 'APRE. > 10M';
@@ -288,6 +304,7 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
       const ini = parseAnyDate(m.dataHoraIniciado);
       const com = parseAnyDate(m.dataHoraCompleto);
       const ass = parseAnyDate(m.dataHoraRepresentanteCIA);
+      
       if (pux && rec) { 
         let diff = (rec.getTime() - pux.getTime()) / 60000;
         if (diff < 0) diff = 0; 

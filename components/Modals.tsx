@@ -6,46 +6,50 @@ import { CustomSelect } from './CustomSelect';
 import { UserPlus, Search, UserCheck, Loader2, X, Clock, ClipboardEdit, CheckCircle2, User as UserIcon, MapPin, Activity, Plane, History, MessageSquareQuote, FileText, UserCircle, ShieldAlert, AlertOctagon, Timer, HelpCircle, CheckSquare } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
+// Função de parse estrita e robusta para formato Brasileiro (DD/MM/AAAA HH:MM:SS)
+const parseBRDate = (dateStr: string | undefined): Date | null => {
+    if (!dateStr || dateStr === '---' || dateStr === '') return null;
+    try {
+      if (dateStr.includes('/')) {
+        // Divide por qualquer separador comum (barra, espaço, dois pontos)
+        const parts = dateStr.split(/[\/\s,:]+/);
+        if (parts.length >= 5) {
+          const day = parseInt(parts[0], 10);
+          const month = parseInt(parts[1], 10) - 1; // Mês no JS começa em 0
+          const year = parseInt(parts[2], 10);
+          const hour = parseInt(parts[3], 10);
+          const minute = parseInt(parts[4], 10);
+          const second = parts[5] ? parseInt(parts[5], 10) : 0;
+          const d = new Date(year, month, day, hour, minute, second);
+          if (!isNaN(d.getTime())) return d;
+        }
+      }
+      const directDate = new Date(dateStr);
+      if (!isNaN(directDate.getTime())) return directDate;
+      return null;
+    } catch { return null; }
+};
+
+const formatDisplayDate = (dateStr: string | undefined) => {
+  if (!dateStr || dateStr === '---' || dateStr === '') return '---';
+  const d = parseBRDate(dateStr);
+  if (!d) return dateStr.replace(',', '');
+  
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  const hours = String(d.getHours()).padStart(2, '0');
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  const seconds = String(d.getSeconds()).padStart(2, '0');
+  
+  return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+};
+
 interface EditModalProps {
   data: Manifesto;
   onClose: () => void;
   onSave: (data: Partial<Manifesto> & { id: string, usuario: string, justificativa: string }) => void;
 }
-
-const formatDisplayDate = (isoStr: string | undefined) => {
-  if (!isoStr || isoStr === '---' || isoStr === '') return '---';
-  try {
-    const parts = isoStr.split(':');
-    const cleanStr = parts.length >= 2 ? isoStr : isoStr; 
-
-    const d = new Date(isoStr);
-    if (isNaN(d.getTime())) return cleanStr.replace(',', '');
-    const day = String(d.getDate()).padStart(2, '0');
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const year = d.getFullYear();
-    const hours = String(d.getHours()).padStart(2, '0');
-    const minutes = String(d.getMinutes()).padStart(2, '0');
-    const seconds = String(d.getSeconds()).padStart(2, '0');
-    return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
-  } catch (e) {
-    return isoStr.replace(',', '');
-  }
-};
-
-const parseBRDate = (brStr: string | undefined): Date | null => {
-    if (!brStr || brStr === '---' || brStr === '') return null;
-    try {
-      const parts = brStr.split(/[\/\s,:]+/);
-      if (parts.length < 5) return null;
-      const day = parseInt(parts[0], 10);
-      const month = parseInt(parts[1], 10) - 1;
-      const year = parseInt(parts[2], 10);
-      const hour = parseInt(parts[3], 10);
-      const minute = parseInt(parts[4], 10);
-      const second = parts[5] ? parseInt(parts[5], 10) : 0;
-      return new Date(year, month, day, hour, minute, second);
-    } catch { return null; }
-};
 
 export const EditModal: React.FC<EditModalProps> = ({ data, onClose, onSave }) => {
   const [formData, setFormData] = React.useState({ ...data });
@@ -56,14 +60,14 @@ export const EditModal: React.FC<EditModalProps> = ({ data, onClose, onSave }) =
 
   const dateInconsistency = useMemo(() => {
     if (formData.dataHoraPuxado && formData.dataHoraRecebido) {
-      const pux = new Date(formData.dataHoraPuxado);
-      const rec = new Date(formData.dataHoraRecebido);
-      
-      pux.setSeconds(0, 0);
-      rec.setSeconds(0, 0);
-      
-      const diffMs = rec.getTime() - pux.getTime();
-      if (diffMs < 60000) return "RECEBIMENTO_INVALIDO";
+      const pux = parseBRDate(formData.dataHoraPuxado);
+      const rec = parseBRDate(formData.dataHoraRecebido);
+      if (pux && rec) {
+        pux.setSeconds(0, 0);
+        rec.setSeconds(0, 0);
+        const diffMs = rec.getTime() - pux.getTime();
+        if (diffMs < 60000) return "RECEBIMENTO_INVALIDO";
+      }
     }
     
     if (formData.dataHoraIniciado && formData.dataHoraCompleto) {
@@ -72,7 +76,6 @@ export const EditModal: React.FC<EditModalProps> = ({ data, onClose, onSave }) =
       if (ini && com) {
          ini.setSeconds(0, 0);
          com.setSeconds(0, 0);
-         
          if (com < ini) return "FINALIZACAO_ANTERIOR";
          const diffMs = com.getTime() - ini.getTime();
          if (diffMs < 60000) return "DURACAO_CURTA";
@@ -145,7 +148,6 @@ export const EditModal: React.FC<EditModalProps> = ({ data, onClose, onSave }) =
                     <HelpCircle size={12} />
                   </button>
                 </div>
-
                 {showPuxadoInfo && (
                   <div className="absolute bottom-full left-0 mb-2 w-56 bg-slate-900 text-white p-2 rounded shadow-2xl z-[100] animate-fadeIn">
                     <p className="text-[9px] font-bold leading-tight">
@@ -154,7 +156,6 @@ export const EditModal: React.FC<EditModalProps> = ({ data, onClose, onSave }) =
                     <div className="absolute top-full left-3 w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[5px] border-t-slate-900"></div>
                   </div>
                 )}
-
                 <div className={dateInconsistency === "RECEBIMENTO_INVALIDO" ? "ring-2 ring-red-500 animate-pulse" : ""}>
                   <CustomDateTimePicker value={formData.dataHoraPuxado || ''} onChange={v => setFormData({...formData, dataHoraPuxado: v})} />
                 </div>
@@ -170,7 +171,6 @@ export const EditModal: React.FC<EditModalProps> = ({ data, onClose, onSave }) =
                     <HelpCircle size={12} />
                   </button>
                 </div>
-
                 {showRecebidoInfo && (
                   <div className="absolute bottom-full left-0 mb-2 w-56 bg-slate-900 text-white p-2 rounded shadow-2xl z-[100] animate-fadeIn">
                     <p className="text-[9px] font-bold leading-tight">
@@ -179,7 +179,6 @@ export const EditModal: React.FC<EditModalProps> = ({ data, onClose, onSave }) =
                     <div className="absolute top-full left-3 w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[5px] border-t-slate-900"></div>
                   </div>
                 )}
-
                 <div className={dateInconsistency === "RECEBIMENTO_INVALIDO" ? "ring-2 ring-red-500 animate-pulse" : ""}>
                   <CustomDateTimePicker value={formData.dataHoraRecebido || ''} onChange={v => setFormData({...formData, dataHoraRecebido: v})} />
                 </div>
@@ -314,7 +313,6 @@ export const CancellationModal: React.FC<{ onConfirm: (reason: string) => void, 
           <div className="text-center mb-2">
             <p className="text-xs font-bold text-slate-600 dark:text-slate-300">Para cancelar este manifesto, relate o motivo abaixo (obrigatório para fins de auditoria).</p>
           </div>
-          
           <div className="space-y-1.5">
             <label className="text-[9px] font-black text-slate-900 dark:text-slate-200 uppercase tracking-widest flex items-center gap-2">
               <MessageSquareQuote size={14} className="text-red-600" /> Motivo do Cancelamento
@@ -322,7 +320,6 @@ export const CancellationModal: React.FC<{ onConfirm: (reason: string) => void, 
             <textarea autoFocus value={reason} onChange={e => setReason(e.target.value)} placeholder="Ex: Erro de digitação na CIA, manifesto duplicado, etc..." className="w-full h-28 p-3 bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 text-xs font-bold dark:text-white outline-none focus:border-red-600 dark:focus:border-red-500 focus:bg-white transition-all resize-none shadow-inner" />
             <p className={`text-[8px] font-black uppercase ${isValid ? 'text-emerald-600' : 'text-slate-400'}`}>Mínimo: 5 caracteres ({reason.length}/5)</p>
           </div>
-
           <div className="flex gap-3">
             <button onClick={onClose} className="flex-1 h-12 border-2 border-slate-200 dark:border-slate-700 text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all">Sair</button>
             <button disabled={!isValid} onClick={() => onConfirm(reason)} className={`flex-1 h-12 text-white text-[10px] font-black uppercase transition-all shadow-md flex items-center justify-center gap-2 ${isValid ? 'bg-red-600 hover:bg-slate-900 shadow-red-200' : 'bg-slate-200 dark:bg-slate-700 cursor-not-allowed text-slate-400'}`}>Confirmar Cancelamento</button>
@@ -386,7 +383,7 @@ export const AssignResponsibilityModal: React.FC<{
                       <p className="text-[8px] font-bold text-slate-400 uppercase">{s.Cargo || 'OPERADOR'}</p>
                     </div>
                   </div>
-                  <UserCheck size={14} className="text-slate-300 group-hover:text-indigo-500" />
+                  <UserCheck size={14} className="text-slate-300 group-hover:text-indigo-50" />
                 </button>
               ))
             ) : searchTerm.length >= 2 && !loading ? (
@@ -429,19 +426,6 @@ export const HistoryModal: React.FC<{ data: Manifesto, onClose: () => void }> = 
     { label: 'Assinatura Representante', time: data.dataHoraRepresentanteCIA, icon: Clock },
     { label: 'Manifesto Entregue', time: data.dataHoraEntregue, icon: Plane }
   ];
-
-  // Helper para formatar data de log sem segundos de forma segura
-  const formatLogTime = (str: string) => {
-    if (!str) return '';
-    const clean = str.replace(',', '');
-    const parts = clean.split(' ');
-    if (parts.length < 2) return clean;
-    const timeParts = parts[1].split(':');
-    if (timeParts.length === 3) {
-      return `${parts[0]} ${timeParts[0]}:${timeParts[1]}`;
-    }
-    return clean;
-  };
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 dark:bg-black/80 z-[10000] flex items-start justify-center p-4 pt-[2vh] animate-fadeIn backdrop-blur-sm">
@@ -523,7 +507,7 @@ export const HistoryModal: React.FC<{ data: Manifesto, onClose: () => void }> = 
                                   <span className="text-[9px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-tighter truncate">{log.usuario}</span>
                                </div>
                                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-900 px-2 py-0.5 rounded-full shrink-0 whitespace-nowrap">
-                                 {formatLogTime(log.createdAtBR)}
+                                 {formatDisplayDate(log.createdAtBR)}
                                </span>
                             </div>
                             <span className={`text-[9px] font-black px-2 py-0.5 rounded border ${log.acao.includes('Edição') ? 'bg-indigo-50 text-indigo-600 border-indigo-100 dark:bg-indigo-900/20 dark:text-indigo-400 dark:border-indigo-800/50' : 'bg-slate-50 text-slate-600 border-slate-100 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-700'} uppercase`}>{log.acao}</span>

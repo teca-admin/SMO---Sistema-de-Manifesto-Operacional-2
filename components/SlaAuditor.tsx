@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState } from 'react';
 import { Manifesto, CIAS } from '../types';
 import { 
@@ -55,16 +54,32 @@ export const SlaAuditor: React.FC<SlaAuditorProps> = ({ manifestos, openHistory 
     compliance: '' 
   });
 
+  // Função de parse manual e estrita para evitar inconsistências de localidade e meia-noite
   const parseAnyDate = (dateStr: string | undefined): Date | null => {
     if (!dateStr || dateStr === '---' || dateStr === '') return null;
     try {
-      const directDate = new Date(dateStr);
-      if (!isNaN(directDate.getTime())) return directDate;
+      // Se for formato ISO
+      if (dateStr.includes('T') && dateStr.endsWith('Z')) {
+        const d = new Date(dateStr);
+        return isNaN(d.getTime()) ? null : d;
+      }
+      
+      // Se for formato Brasileiro DD/MM/AAAA HH:MM
       const parts = dateStr.split(/[\/\s,:]+/);
       if (parts.length >= 5) {
-        return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]), parseInt(parts[3]), parseInt(parts[4]));
+        const day = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10) - 1;
+        const year = parseInt(parts[2], 10);
+        const hour = parseInt(parts[3], 10);
+        const minute = parseInt(parts[4], 10);
+        const second = parts[5] ? parseInt(parts[5], 10) : 0;
+        
+        const d = new Date(year, month, day, hour, minute, second);
+        return isNaN(d.getTime()) ? null : d;
       }
-      return null;
+
+      const fallback = new Date(dateStr);
+      return isNaN(fallback.getTime()) ? null : fallback;
     } catch { return null; }
   };
 
@@ -72,7 +87,9 @@ export const SlaAuditor: React.FC<SlaAuditorProps> = ({ manifestos, openHistory 
     const start = parseAnyDate(startStr);
     const end = parseAnyDate(endStr);
     if (!start || !end) return null;
+    
     const diff = (end.getTime() - start.getTime()) / 60000;
+    // O arredondamento garante conformidade com a visualização do usuário
     return Math.max(0, Math.round(diff));
   };
 
@@ -185,7 +202,6 @@ export const SlaAuditor: React.FC<SlaAuditorProps> = ({ manifestos, openHistory 
   const SlaCell = ({ start, end, diff, limit, label }: { start: string|undefined, end: string|undefined, diff: number|null, limit: number, label: string }) => {
     if (diff === null) return (
        <div className="flex items-center justify-center h-full">
-         {/* Ajuste de Contraste: text-slate-300 alterado para text-slate-400 para melhor visibilidade em fundo branco */}
          <span className="text-[9px] text-slate-400 dark:text-slate-500 italic font-black uppercase tracking-widest">{label}</span>
        </div>
     );
@@ -193,7 +209,6 @@ export const SlaAuditor: React.FC<SlaAuditorProps> = ({ manifestos, openHistory 
     return (
       <div className="flex items-center justify-between gap-4 h-full w-full">
         <div className="flex items-center gap-4 flex-1">
-           {/* Melhoria de contraste nos labels I e F */}
            <div className="flex items-center gap-1.5 border-l-2 border-indigo-200 dark:border-indigo-900/50 pl-2">
               <span className="text-[8px] font-black text-slate-500 dark:text-slate-400 uppercase">I</span>
               {formatDateTime(start)}
@@ -267,7 +282,7 @@ export const SlaAuditor: React.FC<SlaAuditorProps> = ({ manifestos, openHistory 
       {/* Dashboard de Performance */}
       {!isExpanded && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 shrink-0 animate-fadeIn">
-          <div className="bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 p-4 shadow-xl flex flex-col gap-4">
+          <div className="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-800 p-4 shadow-xl flex flex-col gap-4">
              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
                 <h4 className="text-[10px] font-black text-slate-950 dark:text-white uppercase tracking-[0.2em] flex items-center gap-2">
                    <TrendingUp size={14} className="text-blue-500" /> Indicadores Performance SLA

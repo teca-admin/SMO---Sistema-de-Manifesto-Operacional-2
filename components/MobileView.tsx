@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Manifesto, CIAS, User as UserType } from '../types';
 import { 
@@ -69,10 +68,11 @@ export const MobileView: React.FC<MobileViewProps> = ({
     }
     setIsLoggingIn(true);
     try {
+      // Alterado para .eq para garantir distinção de maiúsculas/minúsculas
       const { data, error } = await supabase
         .from('Cadastro_de_Perfil')
         .select('*')
-        .ilike('Usuario', loginId.trim())
+        .eq('Usuario', loginId.trim())
         .eq('Senha', loginPass.trim())
         .single();
       
@@ -107,7 +107,7 @@ export const MobileView: React.FC<MobileViewProps> = ({
   const getStatusClass = (status: string) => {
     switch (status) {
       case 'Manifesto Recebido': return 'bg-blue-600 text-white';
-      case 'Manifesto Iniciado': return 'bg-amber-500 text-white';
+      case 'Manifesto Iniciado': return 'bg-amber-50 text-white';
       case 'Manifesto Finalizado': return 'bg-emerald-500 text-white';
       case 'Manifesto Entregue': return 'bg-emerald-700 text-white';
       case 'Manifesto Cancelado': return 'bg-red-600 text-white';
