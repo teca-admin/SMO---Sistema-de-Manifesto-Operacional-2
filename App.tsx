@@ -188,6 +188,21 @@ function App() {
     return '3º TURNO';
   };
 
+  const getNextDbId = async (tableName: string) => {
+    try {
+      const { data, error } = await supabase
+        .from(tableName)
+        .select('id')
+        .order('id', { ascending: false })
+        .limit(1);
+      if (error || !data || data.length === 0) return 1;
+      return Number(data[0].id) + 1;
+    } catch (err) {
+      console.error(`Error fetching max id for ${tableName}:`, err);
+      return 1;
+    }
+  };
+
   const fetchNextId = useCallback(async () => {
       const year = new Date().getFullYear().toString().slice(-2); 
       const prefix = `MAO-${year}`;
@@ -289,7 +304,9 @@ function App() {
       const { error } = await supabase.from('SMO_Sistema').update(updateData).eq('ID_Manifesto', id);
       if (error) throw error;
       
+      const nextOperacionalId = await getNextDbId('SMO_Operacional');
       await supabase.from('SMO_Operacional').insert({ 
+        id: nextOperacionalId,
         ID_Manifesto: id, 
         "Ação": status, 
         Usuario: user, 
@@ -325,7 +342,9 @@ function App() {
 
       if (error) throw error;
 
+      const nextOperacionalId = await getNextDbId('SMO_Operacional');
       await supabase.from('SMO_Operacional').insert({ 
+        id: nextOperacionalId,
         ID_Manifesto: data.id, 
         "Ação": "Edição de Monitoramento", 
         Usuario: user, 
@@ -363,7 +382,9 @@ function App() {
 
       if (error) throw error;
 
+      const nextOperacionalId = await getNextDbId('SMO_Operacional');
       await supabase.from('SMO_Operacional').insert({ 
+        id: nextOperacionalId,
         ID_Manifesto: id, 
         "Ação": "Assinatura Repr. CIA", 
         Usuario: user, 
@@ -404,7 +425,9 @@ function App() {
             const id = await fetchNextId();
             const turno = getTurnoAtual();
             const now = getCurrentTimestampBR();
+            const nextSistemaId = await getNextDbId('SMO_Sistema');
             const { error } = await supabase.from('SMO_Sistema').insert({
+              id: nextSistemaId,
               ID_Manifesto: id, 
               Usuario_Sistema: activeOperatorName, 
               CIA: d.cia, 
@@ -417,7 +440,9 @@ function App() {
             });
             
             if (!error) {
+              const nextOperacionalId = await getNextDbId('SMO_Operacional');
               await supabase.from('SMO_Operacional').insert({ 
+                id: nextOperacionalId,
                 ID_Manifesto: id, 
                 "Ação": "Manifesto Cadastrado", 
                 Usuario: activeOperatorName, 
@@ -521,7 +546,9 @@ function App() {
                 const id = await fetchNextId();
                 const turno = getTurnoAtual();
                 const now = getCurrentTimestampBR();
+                const nextSistemaId = await getNextDbId('SMO_Sistema');
                 const { error } = await supabase.from('SMO_Sistema').insert({
+                  id: nextSistemaId,
                   ID_Manifesto: id, 
                   Usuario_Sistema: activeOperatorName, 
                   CIA: d.cia, 
@@ -533,7 +560,9 @@ function App() {
                   "Usuario_Ação": activeOperatorName
                 });
                 if (!error) {
+                  const nextOperacionalId = await getNextDbId('SMO_Operacional');
                   await supabase.from('SMO_Operacional').insert({ 
+                    id: nextOperacionalId,
                     ID_Manifesto: id, 
                     "Ação": "Manifesto Cadastrado", 
                     Usuario: activeOperatorName, 

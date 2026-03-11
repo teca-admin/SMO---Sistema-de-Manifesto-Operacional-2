@@ -215,8 +215,8 @@ export const CustomDateTimePicker: React.FC<CustomDateTimePickerProps> = ({
           </div>
           <div className="p-3">
             <div className="grid grid-cols-7 mb-1">
-              {['D','S','T','Q','Q','S','S'].map(d => (
-                <div key={d} className="text-[8px] font-black text-slate-400 dark:text-slate-500 text-center uppercase">{d}</div>
+              {['D','S','T','Q','Q','S','S'].map((d, i) => (
+                <div key={`${d}-${i}`} className="text-[8px] font-black text-slate-400 dark:text-slate-500 text-center uppercase">{d}</div>
               ))}
             </div>
             <div className="grid grid-cols-7 gap-px bg-slate-100 dark:bg-slate-700 border border-slate-100 dark:border-slate-700">
