@@ -74,40 +74,57 @@ function App() {
     }
   }, [activeUser]);
 
-  // MONITOR DE SESSÃO DUPLICADA (POLLING - sem WebSocket/Realtime)
+  // MONITOR DE SESSÃO DUPLICADA (REALTIME + FOCUS CHECK)
   useEffect(() => {
     if (!activeUser || !activeUser.id) return;
 
     // Função para validar se o ID no banco é igual ao ID desta máquina
     const validateSessionIntegrity = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('Cadastro_de_Perfil')
-          .select('sesson_id')
-          .eq('id', activeUser.id)
-          .single();
-        
-        if (!error && data) {
-          if (data.sesson_id && data.sesson_id !== GLOBAL_SESSION_ID) {
-            handleLogout(false);
-            showAlert('error', 'SESSÃO ENCERRADA: Este perfil foi aberto em outro computador. Acesso revogado neste terminal.');
-          }
+      const { data, error } = await supabase
+        .from('Cadastro_de_Perfil')
+        .select('sesson_id')
+        .eq('id', activeUser.id)
+        .single();
+      
+      if (!error && data) {
+        // Se o banco tem um ID e é diferente do nosso ID global salvo no login
+        if (data.sesson_id && data.sesson_id !== GLOBAL_SESSION_ID) {
+          handleLogout(false);
+          showAlert('error', 'SESSÃO ENCERRADA: Este perfil foi aberto em outro computador. Acesso revogado neste terminal.');
         }
-      } catch (err) {
-        // Silencia erros de rede no monitor de sessão para não logar o usuário por instabilidade
-        console.warn('Monitor de sessão: erro de rede ignorado', err);
       }
     };
 
-    // Verifica ao focar na aba
+    // 1. Verifica integridade ao abrir a aba ou mudar de aba (Focus)
     window.addEventListener('focus', validateSessionIntegrity);
 
-    // Polling a cada 30 segundos (substitui o WebSocket/Realtime)
-    const sessionPollInterval = setInterval(validateSessionIntegrity, 30000);
+    // 2. Realtime: Escuta mudanças na tabela em tempo real
+    /* 
+    Desativado temporariamente para diagnosticar falha de conexão WebSocket em ambiente self-hosted
+    const channel = supabase
+      .channel(`security_check_${activeUser.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: DB_SCHEMA,
+          table: 'Cadastro_de_Perfil',
+          filter: `id=eq.${activeUser.id}`
+        },
+        (payload) => {
+          const remoteId = payload.new?.sesson_id;
+          if (remoteId && remoteId !== GLOBAL_SESSION_ID) {
+            handleLogout(false);
+            showAlert('error', 'KICK-OUT: Novo login detectado. Sessão encerrada instantaneamente por segurança.');
+          }
+        }
+      )
+      .subscribe();
+    */
 
     return () => {
       window.removeEventListener('focus', validateSessionIntegrity);
-      clearInterval(sessionPollInterval);
+      // supabase.removeChannel(channel);
     };
   }, [activeUser?.id, handleLogout]);
 
@@ -207,8 +224,8 @@ function App() {
     try {
       const { data, error } = await supabase.from('SMO_Sistema').select('*').order('id', { ascending: false }).limit(500);
       if (error) {
-        console.error("Error fetching manifestos:", error);
-        showAlert('error', `Erro ao ler banco: ${error.message} (Código: ${error.code})`);
+        console.error("DETAILED ERROR fetching manifestos:", error);
+        showAlert('error', `Erro ao ler banco: ${error.message} (Código: ${error.code}). Verifique o console para detalhes.`);
         throw error;
       }
       if (data) {
