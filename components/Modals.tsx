@@ -10,8 +10,9 @@ const parseBRDate = (dateStr: string | undefined): Date | null => {
     if (!dateStr || dateStr === '---' || dateStr === '') return null;
     try {
       if (dateStr.includes('/')) {
-        // Divide por qualquer separador comum (barra, espaço, dois pontos)
-        const parts = dateStr.split(/[\/\s,:]+/);
+        // Divide por qualquer separador: barra, espaço, vírgula, dois pontos
+        // Cobre: "DD/MM/YYYY HH:MM:SS" e "DD/MM/YYYY, HH:MM:SS" (formato antigo)
+        const parts = dateStr.split(/[\/\s,:]+/).filter(Boolean);
         if (parts.length >= 5) {
           const day = parseInt(parts[0], 10);
           const month = parseInt(parts[1], 10) - 1; // Mês no JS começa em 0
@@ -23,10 +24,10 @@ const parseBRDate = (dateStr: string | undefined): Date | null => {
           if (!isNaN(d.getTime())) return d;
         }
       }
-      // Tenta parse padrão (funciona para ISO bem formados)
+      // Tenta parse padrão — funciona para ISO bem formados (com ou sem segundos)
       const directDate = new Date(dateStr);
       if (!isNaN(directDate.getTime())) return directDate;
-      // Fallback: extrai partes do ISO mesmo com fuso horário incomum
+      // Fallback: extrai partes do ISO mesmo com fuso horário incomum (ex: -04:00:04)
       const isoMatch = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/);
       if (isoMatch) {
         const [, y, m, d, h, min, s] = isoMatch;
