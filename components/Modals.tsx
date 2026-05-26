@@ -514,7 +514,9 @@ export const HistoryModal: React.FC<{ data: Manifesto, onClose: () => void }> = 
                                   <span className="text-[9px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-tighter truncate">{log.usuario}</span>
                                </div>
                                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-900 px-2 py-0.5 rounded-full shrink-0 whitespace-nowrap">
-                                 {formatDisplayDate(log.createdAtBR)}
+                                 {log.acao === 'Manifesto Puxado'
+                                   ? formatDisplayDate(data.dataHoraPuxado)
+                                   : formatDisplayDate(log.createdAtBR)}
                                </span>
                             </div>
                             <span className={`text-[9px] font-black px-2 py-0.5 rounded border ${log.acao.includes('Edição') ? 'bg-indigo-50 text-indigo-600 border-indigo-100 dark:bg-indigo-900/20 dark:text-indigo-400 dark:border-indigo-800/50' : 'bg-slate-50 text-slate-600 border-slate-100 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-700'} uppercase`}>{log.acao}</span>
