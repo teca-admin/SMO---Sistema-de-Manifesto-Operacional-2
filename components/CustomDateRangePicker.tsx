@@ -109,32 +109,43 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({ st
     return checkDate > today;
   };
 
-  const setShortcut = (type: 't1' | 't2' | 't3' | 'hoje') => {
-    // Lógica alterada: Para turnos, usamos a data já selecionada (startDate) como base.
-    // Para o botão 'Hoje', resetamos para a data atual do sistema.
-    const baseDate = type === 'hoje' ? new Date() : new Date(startDate);
-    
-    let s = new Date(baseDate);
-    let e = new Date(baseDate);
+  const setShortcut = (type: 't1' | 't2' | 't3' | 'hoje' | 'mes' | 'mesant' | '30d' | 'tudo') => {
+    const now = new Date();
+    let s = new Date(now);
+    let e = new Date(now);
 
     switch (type) {
-      case 't1':
-        s.setHours(6, 0, 0, 0);
-        e.setHours(13, 59, 59, 999);
-        break;
-      case 't2':
-        s.setHours(14, 0, 0, 0);
-        e.setHours(21, 59, 59, 999);
-        break;
-      case 't3':
-        s.setHours(22, 0, 0, 0);
-        e = new Date(s);
-        e.setDate(e.getDate() + 1);
-        e.setHours(5, 59, 59, 999);
-        break;
       case 'hoje':
         s.setHours(0, 0, 0, 0);
         e.setHours(23, 59, 59, 999);
+        break;
+      case 't1':
+        s = new Date(startDate); s.setHours(6, 0, 0, 0);
+        e = new Date(startDate); e.setHours(13, 59, 59, 999);
+        break;
+      case 't2':
+        s = new Date(startDate); s.setHours(14, 0, 0, 0);
+        e = new Date(startDate); e.setHours(21, 59, 59, 999);
+        break;
+      case 't3':
+        s = new Date(startDate); s.setHours(22, 0, 0, 0);
+        e = new Date(s); e.setDate(e.getDate() + 1); e.setHours(5, 59, 59, 999);
+        break;
+      case 'mes':
+        s = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+        e = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+        break;
+      case 'mesant':
+        s = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0);
+        e = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+        break;
+      case '30d':
+        s = new Date(now); s.setDate(now.getDate() - 30); s.setHours(0, 0, 0, 0);
+        e = new Date(now); e.setHours(23, 59, 59, 999);
+        break;
+      case 'tudo':
+        s = new Date(2026, 0, 1, 0, 0, 0, 0);
+        e = new Date(now); e.setHours(23, 59, 59, 999);
         break;
     }
 
@@ -146,7 +157,7 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({ st
       end: `${e.getHours().toString().padStart(2, '0')}:${e.getMinutes().toString().padStart(2, '0')}`
     });
     setActiveShortcut(type);
-    setSelectionStep(1); 
+    setSelectionStep(1);
   };
 
   const daysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
@@ -307,7 +318,7 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({ st
             visibility: coords.top === -9999 ? 'hidden' : 'visible'
           }}
         >
-          <div className="p-3 bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700">
+          <div className="p-3 bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700 flex flex-col gap-1.5">
             <div className="grid grid-cols-4 gap-1.5">
               {[
                 { label: 'Hoje', type: 'hoje', colorClass: 'bg-slate-600 text-white border-slate-700', inactiveClass: 'bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700' },
@@ -317,15 +328,24 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({ st
               ].map(bt => {
                 const isActive = activeShortcut === bt.type;
                 return (
-                  <button
-                    key={bt.type}
-                    onClick={() => setShortcut(bt.type as any)}
-                    className={`h-7 border text-[9px] font-black uppercase tracking-tighter transition-all rounded-sm flex items-center justify-center ${
-                      isActive ? bt.colorClass : bt.inactiveClass
-                    }`}
-                  >
-                    {bt.label}
-                  </button>
+                  <button key={bt.type} onClick={() => setShortcut(bt.type as any)}
+                    className={`h-7 border text-[9px] font-black uppercase tracking-tighter transition-all rounded-sm flex items-center justify-center ${isActive ? bt.colorClass : bt.inactiveClass}`}
+                  >{bt.label}</button>
+                );
+              })}
+            </div>
+            <div className="grid grid-cols-4 gap-1.5">
+              {[
+                { label: 'Este Mês', type: 'mes', colorClass: 'bg-emerald-600 text-white border-emerald-700', inactiveClass: 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 border-slate-200 dark:border-slate-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/20' },
+                { label: 'Mês Ant.', type: 'mesant', colorClass: 'bg-teal-600 text-white border-teal-700', inactiveClass: 'bg-white dark:bg-slate-900 text-teal-600 dark:text-teal-400 border-slate-200 dark:border-slate-700 hover:bg-teal-50 dark:hover:bg-teal-900/20' },
+                { label: '30 Dias', type: '30d', colorClass: 'bg-violet-600 text-white border-violet-700', inactiveClass: 'bg-white dark:bg-slate-900 text-violet-600 dark:text-violet-400 border-slate-200 dark:border-slate-700 hover:bg-violet-50 dark:hover:bg-violet-900/20' },
+                { label: 'Tudo', type: 'tudo', colorClass: 'bg-rose-600 text-white border-rose-700', inactiveClass: 'bg-white dark:bg-slate-900 text-rose-600 dark:text-rose-400 border-slate-200 dark:border-slate-700 hover:bg-rose-50 dark:hover:bg-rose-900/20' },
+              ].map(bt => {
+                const isActive = activeShortcut === bt.type;
+                return (
+                  <button key={bt.type} onClick={() => setShortcut(bt.type as any)}
+                    className={`h-7 border text-[9px] font-black uppercase tracking-tighter transition-all rounded-sm flex items-center justify-center ${isActive ? bt.colorClass : bt.inactiveClass}`}
+                  >{bt.label}</button>
                 );
               })}
             </div>
