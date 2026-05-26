@@ -329,9 +329,13 @@ function App() {
 
   useEffect(() => {
     // Mostra cache imediatamente para evitar tela em branco
+    // Se tiver cache, marca hasFullData para não reduzir o dataset durante o fetch inicial
     try {
       const cached = localStorage.getItem(MANIFESTO_CACHE_KEY);
-      if (cached) setManifestos(JSON.parse(cached));
+      if (cached) {
+        setManifestos(JSON.parse(cached));
+        hasFullData.current = true;
+      }
     } catch {}
     fetchManifestos();
     fetchNextId();

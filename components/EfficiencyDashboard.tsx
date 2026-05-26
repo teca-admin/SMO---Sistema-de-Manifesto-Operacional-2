@@ -211,27 +211,11 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
     const isToday = start.toDateString() === now.toDateString();
     const isPastDay = end < now && start.toDateString() !== now.toDateString();
     const currentHour = now.getHours();
-    const baseManifestos = manifestos.filter(m => {
-      const mDate = parseAnyDate(m.dataHoraRecebido) || parseAnyDate(m.dataHoraPuxado);
-      if (!mDate || mDate < start || mDate > end) return false;
-      if (activeFilters.cia && m.cia.toUpperCase() !== activeFilters.cia.toUpperCase()) return false;
-      if (activeFilters.turno && m.turno !== activeFilters.turno) return false;
-      if (activeFilters.usuario && m.usuarioResponsavel !== activeFilters.usuario) return false;
-      if (activeFilters.usuarioCadastro && m.usuario !== activeFilters.usuarioCadastro) return false;
-      if (activeFilters.manifestoSearch && !m.id.toLowerCase().includes(activeFilters.manifestoSearch.toLowerCase())) return false;
-      if (activeFilters.status) {
-        if (activeFilters.status === 'Concluído' && m.status !== 'Manifesto Entregue') return false;
-        if (activeFilters.status === 'Andamento' && (m.status === 'Manifesto Entregue' || m.status === 'Manifesto Cancelado')) return false;
-        if (activeFilters.status === 'Cancelado' && m.status !== 'Manifesto Cancelado') return false;
-      }
-      return true;
-    });
     const hours: Record<number, { received: number, isFuture: boolean }> = {};
     for (let i = 0; i < 24; i++) {
-      let isFuture = isToday ? i > currentHour : !isPastDay;
-      hours[i] = { received: 0, isFuture };
+      hours[i] = { received: 0, isFuture: isToday ? i > currentHour : !isPastDay };
     }
-    baseManifestos.forEach(m => {
+    filteredManifestos.forEach(m => {
       const dRec = parseAnyDate(m.dataHoraRecebido) || parseAnyDate(m.dataHoraPuxado);
       if (dRec) {
         const h = dRec.getHours();
@@ -239,7 +223,7 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
       }
     });
     return Object.entries(hours).map(([h, data]) => ({ hour: parseInt(h), ...data }));
-  }, [manifestos, dateRange, activeFilters.cia, activeFilters.turno, activeFilters.usuario, activeFilters.usuarioCadastro, activeFilters.status, activeFilters.manifestoSearch]);
+  }, [filteredManifestos, dateRange]);
 
   const totalReceived = filteredManifestos.length;
   const totalDelivered = filteredManifestos.filter(m => m.status === 'Manifesto Entregue').length;
