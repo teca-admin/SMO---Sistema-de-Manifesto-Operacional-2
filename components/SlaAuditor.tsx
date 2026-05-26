@@ -220,7 +220,7 @@ export const SlaAuditor: React.FC<SlaAuditorProps> = ({ manifestos, openHistory 
            </div>
         </div>
         <div className={`px-2 py-0.5 rounded-sm text-[11px] font-black flex items-center gap-1.5 shadow-sm border shrink-0 min-w-[50px] justify-center ${isViolated ? 'bg-red-600 border-red-700 text-white' : 'bg-emerald-600 border-emerald-700 text-white'}`}>
-           <span className="leading-none">{diff}m</span>
+           <span className="leading-none">{diff >= 60 ? `${Math.floor(diff / 60)}h ${diff % 60}m` : `${diff}m`}</span>
            {isViolated ? <AlertTriangle size={10} /> : <Check size={10} />}
         </div>
       </div>
