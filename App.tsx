@@ -286,9 +286,15 @@ function App() {
 
   const updateStatus = async (id: string, status: string, fields: any = {}, operatorNameOverride?: string) => {
     const user = activeOperatorName || operatorNameOverride || "Sistema";
-    
+    const target = manifestos.find(m => m.id === id);
+
+    // Bloqueia qualquer ação em manifesto já encerrado
+    if (target?.status === 'Manifesto Entregue' || target?.status === 'Manifesto Cancelado') {
+      showAlert('error', `BLOQUEIO: Manifesto já encerrado (${target.status}). Nenhuma ação permitida.`);
+      return;
+    }
+
     if (status === 'Manifesto Entregue') {
-      const target = manifestos.find(m => m.id === id);
       const signature = target?.dataHoraRepresentanteCIA || fields?.Representante_CIA;
       if (!signature || signature === '---' || signature === '') {
         showAlert('error', 'BLOQUEIO: Assinatura Repr. CIA é obrigatória para entrega.');
@@ -374,6 +380,11 @@ function App() {
   };
 
   const handleSaveReprDate = async (id: string, date: string) => {
+    const target = manifestos.find(m => m.id === id);
+    if (target?.status === 'Manifesto Entregue' || target?.status === 'Manifesto Cancelado') {
+      showAlert('error', `BLOQUEIO: Manifesto já encerrado (${target.status}). Assinatura não permitida.`);
+      return;
+    }
     setLoadingMsg("Registrando Assinatura...");
     try {
       const now = getCurrentTimestampBR();
