@@ -15,6 +15,27 @@ import { LayoutGrid, Plane, LogOut, Terminal, Activity, Columns, BarChart3, Sun,
 // Variável de controle fora do React para evitar stale closures
 let GLOBAL_SESSION_ID: string | null = null;
 
+const MANIFESTO_CACHE_KEY = 'smo_manifestos_v2';
+
+const toManifesto = (item: SMO_Sistema_DB): import('./types').Manifesto => ({
+  id: item.ID_Manifesto,
+  usuario: item.Usuario_Sistema,
+  cia: item.CIA,
+  dataHoraPuxado: item.Manifesto_Puxado,
+  dataHoraRecebido: item.Manifesto_Recebido,
+  dataHoraRepresentanteCIA: item.Representante_CIA,
+  dataHoraEntregue: item.Manifesto_Entregue,
+  status: item.Status,
+  turno: item.Turno,
+  carimboDataHR: item["Carimbo_Data/HR"],
+  usuarioAcao: item["Usuario_Ação"],
+  usuarioResponsavel: item["Usuario_Operação"],
+  dataHoraIniciado: item.Manifesto_Iniciado,
+  dataHoraDisponivel: item.Manifesto_Disponivel,
+  dataHoraConferencia: item["Manifesto_em_Conferência"],
+  dataHoraCompleto: item.Manifesto_Completo
+});
+
 function App() {
   const [activeTab, setActiveTab] = useState<'sistema' | 'operacional' | 'fluxo' | 'eficiencia' | 'avaliacao' | 'auditoria'>('sistema');
   const [manifestos, setManifestos] = useState<Manifesto[]>([]);
@@ -238,24 +259,6 @@ function App() {
   const fetchManifestos = useCallback(async () => {
     try {
       const PAGE = 1000;
-      const toManifesto = (item: SMO_Sistema_DB) => ({
-        id: item.ID_Manifesto,
-        usuario: item.Usuario_Sistema,
-        cia: item.CIA,
-        dataHoraPuxado: item.Manifesto_Puxado,
-        dataHoraRecebido: item.Manifesto_Recebido,
-        dataHoraRepresentanteCIA: item.Representante_CIA,
-        dataHoraEntregue: item.Manifesto_Entregue,
-        status: item.Status,
-        turno: item.Turno,
-        carimboDataHR: item["Carimbo_Data/HR"],
-        usuarioAcao: item["Usuario_Ação"],
-        usuarioResponsavel: item["Usuario_Operação"],
-        dataHoraIniciado: item.Manifesto_Iniciado,
-        dataHoraDisponivel: item.Manifesto_Disponivel,
-        dataHoraConferencia: item["Manifesto_em_Conferência"],
-        dataHoraCompleto: item.Manifesto_Completo
-      });
 
       // Carrega primeira página e renderiza imediatamente
       const { data: firstPage, error: firstError } = await supabase
@@ -269,7 +272,11 @@ function App() {
         return;
       }
       setManifestos((firstPage ?? []).map(toManifesto));
-      if (!firstPage || firstPage.length < PAGE) return;
+
+      if (!firstPage || firstPage.length < PAGE) {
+        try { localStorage.setItem(MANIFESTO_CACHE_KEY, JSON.stringify((firstPage ?? []).map(toManifesto))); } catch {}
+        return;
+      }
 
       // Carrega páginas restantes em background (sem bloquear a UI)
       let allData: SMO_Sistema_DB[] = [...firstPage];
@@ -285,7 +292,9 @@ function App() {
         if (!data || data.length < PAGE) break;
         from += PAGE;
       }
-      setManifestos(allData.map(toManifesto));
+      const result = allData.map(toManifesto);
+      setManifestos(result);
+      try { localStorage.setItem(MANIFESTO_CACHE_KEY, JSON.stringify(result)); } catch {}
     } catch (error) { console.error(error); }
   }, []);
 
@@ -301,6 +310,11 @@ function App() {
   }, []);
 
   useEffect(() => {
+    // Mostra cache imediatamente para evitar tela em branco
+    try {
+      const cached = localStorage.getItem(MANIFESTO_CACHE_KEY);
+      if (cached) setManifestos(JSON.parse(cached));
+    } catch {}
     fetchManifestos();
     fetchNextId();
     const interval = setInterval(fetchManifestos, 30000);
@@ -343,19 +357,37 @@ function App() {
 
       const { error } = await supabase.from('SMO_Sistema').update(updateData).eq('ID_Manifesto', id);
       if (error) throw error;
-      
+
       const nextOperacionalId = await getNextDbId('SMO_Operacional');
-      await supabase.from('SMO_Operacional').insert({ 
+      await supabase.from('SMO_Operacional').insert({
         id: nextOperacionalId,
-        ID_Manifesto: id, 
-        "Ação": status, 
-        Usuario: user, 
+        ID_Manifesto: id,
+        "Ação": status,
+        Usuario: user,
         Justificativa: Justificativa || null,
-        "Created_At_BR": now 
+        "Created_At_BR": now
       });
-      
+
+      // Atualiza estado local sem recarregar tudo
+      const dbToState: Record<string, string> = {
+        Manifesto_Iniciado: 'dataHoraIniciado',
+        Manifesto_Completo: 'dataHoraCompleto',
+        Representante_CIA: 'dataHoraRepresentanteCIA',
+        Manifesto_Entregue: 'dataHoraEntregue',
+        Manifesto_Puxado: 'dataHoraPuxado',
+        Manifesto_Recebido: 'dataHoraRecebido',
+        'Usuario_Operação': 'usuarioResponsavel',
+      };
+      setManifestos(prev => prev.map(m => {
+        if (m.id !== id) return m;
+        const patch: Record<string, string> = { status, carimboDataHR: now, usuarioAcao: user };
+        for (const [db, st] of Object.entries(dbToState)) {
+          if (dbUpdateFields[db] !== undefined) patch[st] = dbUpdateFields[db];
+        }
+        if (status === 'Manifesto Entregue') patch['dataHoraEntregue'] = now;
+        return { ...m, ...patch };
+      }));
       showAlert('success', `Status: ${status}`);
-      fetchManifestos();
     } catch (err: any) { 
       showAlert('error', err.message); 
     } finally { 
@@ -392,9 +424,21 @@ function App() {
         "Created_At_BR": now 
       });
 
+      // Atualiza estado local sem recarregar tudo
+      setManifestos(prev => prev.map(m => m.id === data.id ? {
+        ...m,
+        cia: data.cia,
+        dataHoraPuxado: data.dataHoraPuxado,
+        dataHoraRecebido: data.dataHoraRecebido,
+        dataHoraRepresentanteCIA: data.dataHoraRepresentanteCIA,
+        dataHoraEntregue: data.dataHoraEntregue,
+        dataHoraIniciado: data.dataHoraIniciado,
+        dataHoraCompleto: data.dataHoraCompleto,
+        carimboDataHR: now,
+        usuarioAcao: user,
+      } : m));
       showAlert('success', 'Monitoramento Atualizado');
       setEditingId(null);
-      fetchManifestos();
     } catch (err: any) {
       showAlert('error', err.message);
     } finally {
@@ -436,9 +480,15 @@ function App() {
         "Created_At_BR": now 
       });
 
+      // Atualiza estado local sem recarregar tudo
+      setManifestos(prev => prev.map(m => m.id === id ? {
+        ...m,
+        dataHoraRepresentanteCIA: brDate,
+        carimboDataHR: now,
+        usuarioAcao: user,
+      } : m));
       showAlert('success', 'Assinatura Registrada');
       setFillingReprId(null);
-      fetchManifestos();
     } catch (err: any) {
       showAlert('error', err.message);
     } finally {
@@ -493,8 +543,13 @@ function App() {
                 Usuario: activeOperatorName,
                 "Created_At_BR": now
               });
+              // Adiciona novo manifesto ao estado local sem recarregar tudo
+              setManifestos(prev => [{
+                id, usuario: activeOperatorName!, cia: d.cia,
+                dataHoraPuxado: d.dataHoraPuxado, dataHoraRecebido: d.dataHoraRecebido,
+                status: "Manifesto Recebido", turno, carimboDataHR: now, usuarioAcao: activeOperatorName!,
+              }, ...prev]);
               showAlert('success', `Registro Concluído (${turno})`);
-              fetchManifestos();
             } else {
               showAlert('error', error.message);
             }
@@ -613,8 +668,13 @@ function App() {
                     Usuario: activeOperatorName,
                     "Created_At_BR": now
                   });
+                  // Adiciona novo manifesto ao estado local sem recarregar tudo
+                  setManifestos(prev => [{
+                    id, usuario: activeOperatorName!, cia: d.cia,
+                    dataHoraPuxado: d.dataHoraPuxado, dataHoraRecebido: d.dataHoraRecebido,
+                    status: "Manifesto Recebido", turno, carimboDataHR: now, usuarioAcao: activeOperatorName!,
+                  }, ...prev]);
                   showAlert('success', `Registro Concluído (${turno})`);
-                  fetchManifestos();
                 } else {
                   showAlert('error', error.message);
                 }

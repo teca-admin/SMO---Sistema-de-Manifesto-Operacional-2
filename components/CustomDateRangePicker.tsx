@@ -133,7 +133,7 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({ st
         break;
       case 'mes':
         s = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
-        e = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+        e = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 23, 59, 59, 999);
         break;
       case 'mesant':
         s = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0);
