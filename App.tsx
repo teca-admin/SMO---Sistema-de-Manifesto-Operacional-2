@@ -238,23 +238,37 @@ function App() {
   const fetchManifestos = useCallback(async () => {
     try {
       const PAGE = 1000;
-      let allData: SMO_Sistema_DB[] = [];
-      let from = 0;
-      while (true) {
-        const { data, error } = await supabase
+
+      const { count, error: countError } = await supabase
+        .from('SMO_Sistema')
+        .select('*', { count: 'exact', head: true });
+      if (countError) {
+        console.error("DETAILED ERROR counting manifestos:", countError);
+        showAlert('error', `Erro ao ler banco: ${countError.message} (Código: ${countError.code}). Verifique o console para detalhes.`);
+        return;
+      }
+
+      const total = count ?? 0;
+      const pages = Math.ceil(total / PAGE);
+      const requests = Array.from({ length: pages }, (_, i) =>
+        supabase
           .from('SMO_Sistema')
           .select('*')
           .order('id', { ascending: false })
-          .range(from, from + PAGE - 1);
+          .range(i * PAGE, (i + 1) * PAGE - 1)
+      );
+
+      const results = await Promise.all(requests);
+      let allData: SMO_Sistema_DB[] = [];
+      for (const { data, error } of results) {
         if (error) {
           console.error("DETAILED ERROR fetching manifestos:", error);
           showAlert('error', `Erro ao ler banco: ${error.message} (Código: ${error.code}). Verifique o console para detalhes.`);
-          throw error;
+          return;
         }
-        if (data && data.length > 0) allData = allData.concat(data);
-        if (!data || data.length < PAGE) break;
-        from += PAGE;
+        if (data) allData = allData.concat(data);
       }
+
       setManifestos(allData.map((item: SMO_Sistema_DB) => ({
         id: item.ID_Manifesto,
         usuario: item.Usuario_Sistema,
