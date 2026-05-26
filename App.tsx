@@ -237,32 +237,42 @@ function App() {
 
   const fetchManifestos = useCallback(async () => {
     try {
-      const { data, error } = await supabase.from('SMO_Sistema').select('*').order('id', { ascending: false }).limit(500);
-      if (error) {
-        console.error("DETAILED ERROR fetching manifestos:", error);
-        showAlert('error', `Erro ao ler banco: ${error.message} (Código: ${error.code}). Verifique o console para detalhes.`);
-        throw error;
+      const PAGE = 1000;
+      let allData: SMO_Sistema_DB[] = [];
+      let from = 0;
+      while (true) {
+        const { data, error } = await supabase
+          .from('SMO_Sistema')
+          .select('*')
+          .order('id', { ascending: false })
+          .range(from, from + PAGE - 1);
+        if (error) {
+          console.error("DETAILED ERROR fetching manifestos:", error);
+          showAlert('error', `Erro ao ler banco: ${error.message} (Código: ${error.code}). Verifique o console para detalhes.`);
+          throw error;
+        }
+        if (data && data.length > 0) allData = allData.concat(data);
+        if (!data || data.length < PAGE) break;
+        from += PAGE;
       }
-      if (data) {
-        setManifestos(data.map((item: SMO_Sistema_DB) => ({
-          id: item.ID_Manifesto,
-          usuario: item.Usuario_Sistema,
-          cia: item.CIA,
-          dataHoraPuxado: item.Manifesto_Puxado,
-          dataHoraRecebido: item.Manifesto_Recebido,
-          dataHoraRepresentanteCIA: item.Representante_CIA,
-          dataHoraEntregue: item.Manifesto_Entregue,
-          status: item.Status,
-          turno: item.Turno,
-          carimboDataHR: item["Carimbo_Data/HR"],
-          usuarioAcao: item["Usuario_Ação"],
-          usuarioResponsavel: item["Usuario_Operação"], 
-          dataHoraIniciado: item.Manifesto_Iniciado,
-          dataHoraDisponivel: item.Manifesto_Disponivel,
-          dataHoraConferencia: item["Manifesto_em_Conferência"],
-          dataHoraCompleto: item.Manifesto_Completo
-        })));
-      }
+      setManifestos(allData.map((item: SMO_Sistema_DB) => ({
+        id: item.ID_Manifesto,
+        usuario: item.Usuario_Sistema,
+        cia: item.CIA,
+        dataHoraPuxado: item.Manifesto_Puxado,
+        dataHoraRecebido: item.Manifesto_Recebido,
+        dataHoraRepresentanteCIA: item.Representante_CIA,
+        dataHoraEntregue: item.Manifesto_Entregue,
+        status: item.Status,
+        turno: item.Turno,
+        carimboDataHR: item["Carimbo_Data/HR"],
+        usuarioAcao: item["Usuario_Ação"],
+        usuarioResponsavel: item["Usuario_Operação"],
+        dataHoraIniciado: item.Manifesto_Iniciado,
+        dataHoraDisponivel: item.Manifesto_Disponivel,
+        dataHoraConferencia: item["Manifesto_em_Conferência"],
+        dataHoraCompleto: item.Manifesto_Completo
+      })));
     } catch (error) { console.error(error); }
   }, []);
 
