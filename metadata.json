@@ -1,0 +1,5 @@
+{
+  "name": "SMO - Sistema de Manifesto Operacional",
+  "description": "Controle operacional de manifestos aéreos com fluxo sequencial MAO.",
+  "requestFramePermissions": []
+}
