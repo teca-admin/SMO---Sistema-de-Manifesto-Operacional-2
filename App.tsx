@@ -267,12 +267,12 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!localStorage.getItem('smo_migration_nomenclatura_v1')) {
-      supabase
-        .from('SMO_Operacional')
-        .update({ 'Ação': 'Manifesto Puxado' })
-        .eq('Ação', 'Manifesto Cadastrado')
-        .then(() => localStorage.setItem('smo_migration_nomenclatura_v1', '1'))
+    if (!localStorage.getItem('smo_migration_nomenclatura_v2')) {
+      Promise.all([
+        supabase.from('SMO_Operacional').update({ 'Ação': 'Manifesto Puxado' }).eq('Ação', 'Manifesto Cadastrado'),
+        supabase.from('SMO_Operacional').update({ 'Ação': 'Assinatura Representante' }).eq('Ação', 'Assinatura Repr. CIA'),
+      ])
+        .then(() => localStorage.setItem('smo_migration_nomenclatura_v2', '1'))
         .catch(e => console.error('Migração de nomenclatura falhou:', e));
     }
   }, []);
@@ -397,7 +397,7 @@ function App() {
       await supabase.from('SMO_Operacional').insert({ 
         id: nextOperacionalId,
         ID_Manifesto: id, 
-        "Ação": "Assinatura Repr. CIA", 
+        "Ação": "Assinatura Representante",
         Usuario: user, 
         "Created_At_BR": now 
       });
