@@ -429,8 +429,8 @@ export const HistoryModal: React.FC<{ data: Manifesto, onClose: () => void }> = 
   const timelineSteps = [
     { label: 'Manifesto Puxado', time: data.dataHoraPuxado, icon: ClipboardEdit },
     { label: 'Manifesto Recebido', time: data.dataHoraRecebido, icon: MapPin },
-    { label: 'Início da Operação', time: data.dataHoraIniciado, icon: Activity },
-    { label: 'Operação Finalizada', time: data.dataHoraCompleto, icon: CheckCircle2 },
+    { label: 'Manifesto Iniciado', time: data.dataHoraIniciado, icon: Activity },
+    { label: 'Manifesto Finalizado', time: data.dataHoraCompleto, icon: CheckCircle2 },
     { label: 'Assinatura Representante', time: data.dataHoraRepresentanteCIA, icon: Clock },
     { label: 'Manifesto Entregue', time: data.dataHoraEntregue, icon: Plane }
   ];
