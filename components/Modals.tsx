@@ -517,6 +517,8 @@ export const HistoryModal: React.FC<{ data: Manifesto, onClose: () => void }> = 
                                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-900 px-2 py-0.5 rounded-full shrink-0 whitespace-nowrap">
                                  {log.acao === 'Manifesto Puxado'
                                    ? formatDisplayDate(data.dataHoraPuxado)
+                                   : log.acao === 'Manifesto Recebido'
+                                   ? formatDisplayDate(data.dataHoraRecebido)
                                    : formatDisplayDate(log.createdAtBR)}
                                </span>
                             </div>
