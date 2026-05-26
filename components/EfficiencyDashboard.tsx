@@ -269,10 +269,13 @@ export const EfficiencyDashboard: React.FC<EfficiencyDashboardProps> = ({ manife
   }, [filteredManifestos, activeFilters.sistemaRankSearch]);
 
   const ciaStats = useMemo(() => {
+    const knownCias = new Set(CIAS.map(c => c.toUpperCase()));
     const counts: Record<string, number> = {};
     CIAS.forEach(c => counts[c.toUpperCase()] = 0);
     filteredManifestos.forEach(m => {
+      if (!m.cia) return;
       const cia = m.cia.toUpperCase();
+      if (!knownCias.has(cia)) return;
       counts[cia] = (counts[cia] || 0) + 1;
     });
     const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
