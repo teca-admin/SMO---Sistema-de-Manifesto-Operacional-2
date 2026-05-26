@@ -417,7 +417,7 @@ export const HistoryModal: React.FC<{ data: Manifesto, onClose: () => void }> = 
     const fetchFullHistory = async () => {
       setLoadingLogs(true);
       try {
-        const { data: logData, error } = await supabase.from('SMO_Operacional').select('*').eq('ID_Manifesto', data.id).order('id', { ascending: false });
+        const { data: logData, error } = await supabase.from('SMO_Operacional').select('*').eq('ID_Manifesto', data.id).order('id', { ascending: false }).limit(200);
         if (!error && logData) {
           setLogs(logData.map(l => ({ id: l.id, idManifesto: l.ID_Manifesto, acao: l.Ação, usuario: l.Usuario, justificativa: l.Justificativa, createdAtBR: l.Created_At_BR })));
         }
