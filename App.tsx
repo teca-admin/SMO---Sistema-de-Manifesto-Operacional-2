@@ -50,6 +50,8 @@ function App() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [fillingReprId, setFillingReprId] = useState<string | null>(null);
   const [viewingHistoryId, setViewingHistoryId] = useState<string | null>(null);
+  const [viewingHistoryData, setViewingHistoryData] = useState<import('./types').Manifesto | null>(null);
+  const hasFullData = useRef(false);
   const [cancellationId, setCancellationId] = useState<string | null>(null);
   const [assigningId, setAssigningId] = useState<string | null>(null);
   const [loadingMsg, setLoadingMsg] = useState<string | null>(null);
@@ -166,9 +168,18 @@ function App() {
   // Ambos podem ver auditoria e têm privilégios de visualização no Kanban
   const isAdmin = isRafael || isVinciAdm;
   const canSeeAuditoria = isRafael || isVinciAdm;
-  
+
   // Apenas Rafael pode ver Avaliação
   const canSeeAvaliacao = isRafael;
+
+  // Captura o dado do manifesto na hora do clique para evitar undefined se o estado mudar
+  const openHistory = useCallback((id: string) => {
+    const found = manifestos.find(m => m.id === id);
+    if (found) {
+      setViewingHistoryId(id);
+      setViewingHistoryData(found);
+    }
+  }, [manifestos]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -271,10 +282,16 @@ function App() {
         showAlert('error', `Erro ao ler banco: ${firstError.message} (Código: ${firstError.code}). Verifique o console para detalhes.`);
         return;
       }
-      setManifestos((firstPage ?? []).map(toManifesto));
+      // Mostra primeira página apenas se ainda não temos todos os dados (evita reduzir dataset durante polls)
+      if (!hasFullData.current) {
+        setManifestos((firstPage ?? []).map(toManifesto));
+      }
 
       if (!firstPage || firstPage.length < PAGE) {
-        try { localStorage.setItem(MANIFESTO_CACHE_KEY, JSON.stringify((firstPage ?? []).map(toManifesto))); } catch {}
+        const partial = (firstPage ?? []).map(toManifesto);
+        setManifestos(partial);
+        hasFullData.current = true;
+        try { localStorage.setItem(MANIFESTO_CACHE_KEY, JSON.stringify(partial)); } catch {}
         return;
       }
 
@@ -294,6 +311,7 @@ function App() {
       }
       const result = allData.map(toManifesto);
       setManifestos(result);
+      hasFullData.current = true;
       try { localStorage.setItem(MANIFESTO_CACHE_KEY, JSON.stringify(result)); } catch {}
     } catch (error) { console.error(error); }
   }, []);
@@ -562,7 +580,7 @@ function App() {
             else if (act === 'Manifesto Recebido') updateStatus(id, 'Manifesto Recebido', { "Usuario_Operação": activeOperatorName });
             else if (act === 'cancelar') setCancellationId(id);
           }}
-          openHistory={setViewingHistoryId}
+          openHistory={openHistory}
           openEdit={setEditingId}
           onOpenReprFill={setFillingReprId}
           showAlert={showAlert}
@@ -573,7 +591,7 @@ function App() {
         {editingId && (
           <EditModal data={manifestos.find(m => m.id === editingId)!} onClose={() => setEditingId(null)} onSave={handleSaveEdit} />
         )}
-        {viewingHistoryId && <HistoryModal data={manifestos.find(m => m.id === viewingHistoryId)!} onClose={() => setViewingHistoryId(null)} />}
+        {viewingHistoryId && viewingHistoryData && <HistoryModal data={viewingHistoryData} onClose={() => { setViewingHistoryId(null); setViewingHistoryData(null); }} />}
         {fillingReprId && (
           <ReprFillModal
             manifesto={manifestos.find(m => m.id === fillingReprId)!}
@@ -684,7 +702,7 @@ function App() {
                 if (act === 'entregar') updateStatus(id, 'Manifesto Entregue');
                 else if (act === 'cancelar') setCancellationId(id);
               }}
-              openHistory={setViewingHistoryId}
+              openHistory={openHistory}
               openEdit={setEditingId}
               onOpenReprFill={setFillingReprId}
               onShowAlert={showAlert}
@@ -703,9 +721,9 @@ function App() {
           ) : activeTab === 'fluxo' ? (
             <KanbanBoard manifestos={manifestos} isAdmin={isAdmin} />
           ) : activeTab === 'eficiencia' ? (
-            <EfficiencyDashboard manifestos={manifestos} activeUser={activeUser} openHistory={setViewingHistoryId} />
+            <EfficiencyDashboard manifestos={manifestos} activeUser={activeUser} openHistory={openHistory} />
           ) : activeTab === 'auditoria' ? (
-            canSeeAuditoria && <SlaAuditor manifestos={manifestos} openHistory={setViewingHistoryId} />
+            canSeeAuditoria && <SlaAuditor manifestos={manifestos} openHistory={openHistory} />
           ) : (
             canSeeAvaliacao && <AssessmentGuide onShowAlert={showAlert} />
           )}
@@ -714,7 +732,7 @@ function App() {
 
       {editingId && (<EditModal data={manifestos.find(m => m.id === editingId)!} onClose={() => setEditingId(null)} onSave={handleSaveEdit} />)}
       {fillingReprId && (<ReprFillModal manifesto={manifestos.find(m => m.id === fillingReprId)!} onClose={() => setFillingReprId(null)} onConfirm={(date) => handleSaveReprDate(fillingReprId, date)} />)}
-      {viewingHistoryId && <HistoryModal data={manifestos.find(m => m.id === viewingHistoryId)!} onClose={() => setViewingHistoryId(null)} />}
+      {viewingHistoryId && viewingHistoryData && <HistoryModal data={viewingHistoryData} onClose={() => { setViewingHistoryId(null); setViewingHistoryData(null); }} />}
       {cancellationId && <CancellationModal onConfirm={(reason) => { updateStatus(cancellationId, 'Manifesto Cancelado', { Justificativa: reason }); setCancellationId(null); }} onClose={() => setCancellationId(null)} />}
       {assigningId && (<AssignResponsibilityModal manifestoId={assigningId} onConfirm={(name) => { updateStatus(assigningId, 'Manifesto Recebido', { "Usuario_Operação": name }); setAssigningId(null); }} onClose={() => setAssigningId(null)} />)}
       {loadingMsg && <LoadingOverlay msg={loadingMsg} />}
