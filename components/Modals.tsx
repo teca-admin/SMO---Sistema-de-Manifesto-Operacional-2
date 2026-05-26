@@ -466,7 +466,7 @@ export const HistoryModal: React.FC<{ data: Manifesto, onClose: () => void }> = 
              ))}
              <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800 rounded-lg">
                 <p className="text-[8px] font-black text-indigo-400 uppercase mb-1">Status Final</p>
-                <span className="text-[9px] font-black text-indigo-700 dark:text-indigo-400 uppercase">{data.status}</span>
+                <span className="text-xs font-black text-indigo-700 dark:text-indigo-400 uppercase">{data.status}</span>
              </div>
           </div>
 
