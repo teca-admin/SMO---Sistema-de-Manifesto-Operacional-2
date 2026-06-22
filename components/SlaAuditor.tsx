@@ -138,6 +138,7 @@ export const SlaAuditor: React.FC<SlaAuditorProps> = ({ manifestos, openHistory 
     let total = filteredManifestos.length;
     let failApre = 0, failWfs = 0, failComp = 0;
     let totalApre = 0, totalWfs = 0, totalComp = 0;
+    let sumApreMin = 0, sumWfsMin = 0, sumCompMin = 0;
 
     const ciaPerf: Record<string, { total: number, fails: number }> = {};
     CIAS.forEach(c => ciaPerf[c] = { total: 0, fails: 0 });
@@ -149,24 +150,24 @@ export const SlaAuditor: React.FC<SlaAuditorProps> = ({ manifestos, openHistory 
 
       let isMNonConforming = false;
 
-      if (apre !== null) { 
-        totalApre++; 
-        if (apre > 10) { 
-          failApre++; 
-          if (visibleSlas.apre) isMNonConforming = true; 
+      if (apre !== null) {
+        totalApre++; sumApreMin += apre;
+        if (apre > 10) {
+          failApre++;
+          if (visibleSlas.apre) isMNonConforming = true;
         }
       }
-      if (wfs !== null) { 
-        totalWfs++; 
-        if (wfs > 120) { 
-          failWfs++; 
+      if (wfs !== null) {
+        totalWfs++; sumWfsMin += wfs;
+        if (wfs > 120) {
+          failWfs++;
           if (visibleSlas.wfs) isMNonConforming = true;
         }
       }
-      if (comp !== null) { 
-        totalComp++; 
-        if (comp > 15) { 
-          failComp++; 
+      if (comp !== null) {
+        totalComp++; sumCompMin += comp;
+        if (comp > 15) {
+          failComp++;
           if (visibleSlas.comp) isMNonConforming = true;
         }
       }
@@ -177,12 +178,15 @@ export const SlaAuditor: React.FC<SlaAuditorProps> = ({ manifestos, openHistory 
       }
     });
 
-    return { 
-      total, 
+    return {
+      total,
       failApre, failWfs, failComp,
       avgApre: totalApre > 0 ? ((totalApre - failApre) / totalApre) * 100 : 100,
       avgWfs: totalWfs > 0 ? ((totalWfs - failWfs) / totalWfs) * 100 : 100,
       avgComp: totalComp > 0 ? ((totalComp - failComp) / totalComp) * 100 : 100,
+      avgApreMin: totalApre > 0 ? Math.round(sumApreMin / totalApre) : null,
+      avgWfsMin: totalWfs > 0 ? Math.round(sumWfsMin / totalWfs) : null,
+      avgCompMin: totalComp > 0 ? Math.round(sumCompMin / totalComp) : null,
       ciaData: Object.entries(ciaPerf).map(([name, d]) => ({
         name,
         total: d.total,
@@ -394,20 +398,41 @@ export const SlaAuditor: React.FC<SlaAuditorProps> = ({ manifestos, openHistory 
                 <th className="py-2 px-4 w-56 text-[9px] font-black text-slate-800 dark:text-slate-200 uppercase tracking-tighter">Manifesto / CIA / Turno</th>
                 
                 {visibleSlas.apre && (
-                  <th className="py-2 px-3 border-l border-slate-200 dark:border-slate-700 text-center text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-tighter bg-blue-50/10 dark:bg-blue-900/5">
-                    1. Apresentação (10m)
+                  <th className="py-2 px-3 border-l border-slate-200 dark:border-slate-700 text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-tighter bg-blue-50/10 dark:bg-blue-900/5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span>1. Apresentação (10m)</span>
+                      {stats.avgApreMin !== null && (
+                        <span className="text-[10px] font-black px-2 py-0.5 bg-slate-600 text-white rounded-sm shrink-0">
+                          {stats.avgApreMin >= 60 ? `${Math.floor(stats.avgApreMin / 60)}h ${stats.avgApreMin % 60}m` : `${stats.avgApreMin}m`} méd
+                        </span>
+                      )}
+                    </div>
                   </th>
                 )}
-                
+
                 {visibleSlas.wfs && (
-                  <th className="py-2 px-3 border-l border-slate-200 dark:border-slate-700 text-center text-[10px] font-black text-amber-600 dark:text-amber-500 uppercase tracking-tighter bg-amber-50/10 dark:bg-amber-900/5">
-                    2. Disponível (2h)
+                  <th className="py-2 px-3 border-l border-slate-200 dark:border-slate-700 text-[10px] font-black text-amber-600 dark:text-amber-500 uppercase tracking-tighter bg-amber-50/10 dark:bg-amber-900/5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span>2. Disponível (2h)</span>
+                      {stats.avgWfsMin !== null && (
+                        <span className="text-[10px] font-black px-2 py-0.5 bg-slate-600 text-white rounded-sm shrink-0">
+                          {stats.avgWfsMin >= 60 ? `${Math.floor(stats.avgWfsMin / 60)}h ${stats.avgWfsMin % 60}m` : `${stats.avgWfsMin}m`} méd
+                        </span>
+                      )}
+                    </div>
                   </th>
                 )}
-                
+
                 {visibleSlas.comp && (
-                  <th className="py-2 px-3 border-l border-slate-200 dark:border-slate-700 text-center text-[10px] font-black text-emerald-600 dark:text-emerald-500 uppercase tracking-tighter bg-emerald-50/10 dark:bg-emerald-900/5">
-                    3. Comparecimento (15m)
+                  <th className="py-2 px-3 border-l border-slate-200 dark:border-slate-700 text-[10px] font-black text-emerald-600 dark:text-emerald-500 uppercase tracking-tighter bg-emerald-50/10 dark:bg-emerald-900/5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span>3. Comparecimento (15m)</span>
+                      {stats.avgCompMin !== null && (
+                        <span className="text-[10px] font-black px-2 py-0.5 bg-slate-600 text-white rounded-sm shrink-0">
+                          {stats.avgCompMin >= 60 ? `${Math.floor(stats.avgCompMin / 60)}h ${stats.avgCompMin % 60}m` : `${stats.avgCompMin}m`} méd
+                        </span>
+                      )}
+                    </div>
                   </th>
                 )}
                 
