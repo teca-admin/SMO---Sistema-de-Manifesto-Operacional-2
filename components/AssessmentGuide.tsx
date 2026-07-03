@@ -261,7 +261,7 @@ export const AssessmentGuide: React.FC<AssessmentGuideProps> = ({ onShowAlert })
   const fetchReport = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.from('SMO_Avaliacoes').select('*').order('created_at', { ascending: false });
+      const { data, error } = await supabase.from('SMO_Avaliacoes').select('*').order('created_at', { ascending: false }).limit(1000);
       if (data) setReportData(data);
     } catch (e) {
       console.error(e);

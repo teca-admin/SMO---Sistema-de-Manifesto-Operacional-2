@@ -14,6 +14,8 @@ import { LayoutGrid, Plane, LogOut, Terminal, Activity, Columns, BarChart3, Sun,
 
 // Variável de controle fora do React para evitar stale closures
 let GLOBAL_SESSION_ID: string | null = null;
+let lastSessionCheckAt = 0;
+const SESSION_CHECK_MIN_INTERVAL_MS = 15000;
 
 const MANIFESTO_CACHE_KEY = 'smo_manifestos_v2';
 
@@ -52,6 +54,8 @@ function App() {
   const [viewingHistoryId, setViewingHistoryId] = useState<string | null>(null);
   const [viewingHistoryData, setViewingHistoryData] = useState<import('./types').Manifesto | null>(null);
   const hasFullData = useRef(false);
+  const lastSyncRef = useRef<string>(new Date(0).toISOString());
+  const isFetchingRef = useRef(false);
   const [cancellationId, setCancellationId] = useState<string | null>(null);
   const [assigningId, setAssigningId] = useState<string | null>(null);
   const [loadingMsg, setLoadingMsg] = useState<string | null>(null);
@@ -69,10 +73,11 @@ function App() {
     return null;
   });
 
-  const [lastError, setLastError] = useState<string | null>(null);
+  // Reflete especificamente falhas de conexão/leitura com o Supabase (fetchManifestos),
+  // não qualquer erro de negócio (login errado, validação, etc.) — usado no badge "Supabase Status".
+  const [connectionError, setConnectionError] = useState<string | null>(null);
 
   const showAlert = (type: 'success' | 'error', msg: string) => {
-     if (type === 'error') setLastError(msg);
      setAlert({ type, msg });
      setTimeout(() => setAlert(null), 6000);
   };
@@ -103,6 +108,10 @@ function App() {
 
     // Função para validar se o ID no banco é igual ao ID desta máquina
     const validateSessionIntegrity = async () => {
+      const now = Date.now();
+      if (now - lastSessionCheckAt < SESSION_CHECK_MIN_INTERVAL_MS) return;
+      lastSessionCheckAt = now;
+
       const { data, error } = await supabase
         .from('Cadastro_de_Perfil')
         .select('sesson_id')
@@ -220,58 +229,59 @@ function App() {
     return '3º TURNO';
   };
 
-  const getNextDbId = async (tableName: string) => {
-    try {
-      const { data, error } = await supabase
-        .from(tableName)
-        .select('id')
-        .order('id', { ascending: false })
-        .limit(1);
-      if (error || !data || data.length === 0) return 1;
-      return Number(data[0].id) + 1;
-    } catch (err) {
-      console.error(`Error fetching max id for ${tableName}:`, err);
-      return 1;
-    }
-  };
-
   const fetchNextId = useCallback(async () => {
-      const year = new Date().getFullYear().toString().slice(-2); 
-      const prefix = `MAO-${year}`;
       try {
-        const { data, error } = await supabase
-          .from('SMO_Sistema')
-          .select('ID_Manifesto')
-          .ilike('ID_Manifesto', `${prefix}%`)
-          .order('ID_Manifesto', { ascending: false })
-          .limit(1);
-        
+        const { data, error } = await supabase.rpc('next_manifesto_id');
+
         if (error) {
           console.error("Error fetching next ID:", error);
-          // Don't show alert here to avoid spamming, but log it
           return 'Erro ID';
         }
 
-        let nextSeq = 1;
-        if (data && data.length > 0) {
-            const lastId = data[0].ID_Manifesto;
-            const lastSeq = parseInt(lastId.substring(prefix.length), 10);
-            if (!isNaN(lastSeq)) nextSeq = lastSeq + 1;
-        }
-        const newId = `${prefix}${nextSeq.toString().padStart(7, '0')}`;
-        setNextId(newId);
-        return newId;
-      } catch (err) { 
+        setNextId(data);
+        return data as string;
+      } catch (err) {
         console.error("Critical error in fetchNextId:", err);
-        return 'Erro ID'; 
+        return 'Erro ID';
       }
   }, []);
 
-  const fetchManifestos = useCallback(async () => {
+  const fetchManifestos = useCallback(async (delta: boolean = false) => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
     try {
+      // Poll incremental: só busca o que mudou desde a última sincronização bem-sucedida
+      if (delta) {
+        const requestStartedAt = new Date().toISOString();
+        const { data, error } = await supabase
+          .from('SMO_Sistema')
+          .select('*')
+          .gte('updated_at', lastSyncRef.current)
+          .order('updated_at', { ascending: true })
+          .limit(2000);
+        if (error) {
+          console.error("DETAILED ERROR fetching manifestos (delta):", error);
+          setConnectionError(error.message);
+          return;
+        }
+        setConnectionError(null);
+        if (data && data.length > 0) {
+          setManifestos(prev => {
+            const byId = new Map(prev.map(m => [m.id, m]));
+            for (const row of data) byId.set(row.ID_Manifesto, toManifesto(row));
+            const merged = Array.from(byId.values()).sort((a, b) => (a.id < b.id ? 1 : a.id > b.id ? -1 : 0));
+            try { localStorage.setItem(MANIFESTO_CACHE_KEY, JSON.stringify(merged)); } catch {}
+            return merged;
+          });
+        }
+        lastSyncRef.current = requestStartedAt;
+        return;
+      }
+
       const PAGE = 1000;
 
       // Carrega primeira página e renderiza imediatamente
+      const requestStartedAt = new Date().toISOString();
       const { data: firstPage, error: firstError } = await supabase
         .from('SMO_Sistema')
         .select('*')
@@ -279,9 +289,11 @@ function App() {
         .range(0, PAGE - 1);
       if (firstError) {
         console.error("DETAILED ERROR fetching manifestos:", firstError);
+        setConnectionError(firstError.message);
         showAlert('error', `Erro ao ler banco: ${firstError.message} (Código: ${firstError.code}). Verifique o console para detalhes.`);
         return;
       }
+      setConnectionError(null);
       // Mostra primeira página apenas se ainda não temos todos os dados (evita reduzir dataset durante polls)
       if (!hasFullData.current) {
         setManifestos((firstPage ?? []).map(toManifesto));
@@ -291,6 +303,7 @@ function App() {
         const partial = (firstPage ?? []).map(toManifesto);
         setManifestos(partial);
         hasFullData.current = true;
+        lastSyncRef.current = requestStartedAt;
         try { localStorage.setItem(MANIFESTO_CACHE_KEY, JSON.stringify(partial)); } catch {}
         return;
       }
@@ -312,8 +325,10 @@ function App() {
       const result = allData.map(toManifesto);
       setManifestos(result);
       hasFullData.current = true;
+      lastSyncRef.current = requestStartedAt;
       try { localStorage.setItem(MANIFESTO_CACHE_KEY, JSON.stringify(result)); } catch {}
     } catch (error) { console.error(error); }
+    finally { isFetchingRef.current = false; }
   }, []);
 
   useEffect(() => {
@@ -337,9 +352,9 @@ function App() {
         hasFullData.current = true;
       }
     } catch {}
-    fetchManifestos();
+    fetchManifestos(false);
     fetchNextId();
-    const interval = setInterval(fetchManifestos, 30000);
+    const interval = setInterval(() => fetchManifestos(true), 60000);
     return () => clearInterval(interval);
   }, [fetchManifestos, fetchNextId]);
 
@@ -380,15 +395,13 @@ function App() {
       const { error } = await supabase.from('SMO_Sistema').update(updateData).eq('ID_Manifesto', id);
       if (error) throw error;
 
-      const nextOperacionalId = await getNextDbId('SMO_Operacional');
-      await supabase.from('SMO_Operacional').insert({
-        id: nextOperacionalId,
+      supabase.from('SMO_Operacional').insert({
         ID_Manifesto: id,
         "Ação": status,
         Usuario: user,
         Justificativa: Justificativa || null,
         "Created_At_BR": now
-      });
+      }).then(({ error: logErr }) => { if (logErr) console.error('Falha ao registrar log operacional:', logErr); });
 
       // Atualiza estado local sem recarregar tudo
       const dbToState: Record<string, string> = {
@@ -436,15 +449,13 @@ function App() {
 
       if (error) throw error;
 
-      const nextOperacionalId = await getNextDbId('SMO_Operacional');
-      await supabase.from('SMO_Operacional').insert({ 
-        id: nextOperacionalId,
-        ID_Manifesto: data.id, 
-        "Ação": "Edição de Monitoramento", 
-        Usuario: user, 
+      supabase.from('SMO_Operacional').insert({
+        ID_Manifesto: data.id,
+        "Ação": "Edição de Monitoramento",
+        Usuario: user,
         Justificativa: data.justificativa,
-        "Created_At_BR": now 
-      });
+        "Created_At_BR": now
+      }).then(({ error: logErr }) => { if (logErr) console.error('Falha ao registrar log operacional:', logErr); });
 
       // Atualiza estado local sem recarregar tudo
       setManifestos(prev => prev.map(m => m.id === data.id ? {
@@ -493,14 +504,12 @@ function App() {
 
       if (error) throw error;
 
-      const nextOperacionalId = await getNextDbId('SMO_Operacional');
-      await supabase.from('SMO_Operacional').insert({ 
-        id: nextOperacionalId,
-        ID_Manifesto: id, 
+      supabase.from('SMO_Operacional').insert({
+        ID_Manifesto: id,
         "Ação": "Assinatura Representante",
-        Usuario: user, 
-        "Created_At_BR": now 
-      });
+        Usuario: user,
+        "Created_At_BR": now
+      }).then(({ error: logErr }) => { if (logErr) console.error('Falha ao registrar log operacional:', logErr); });
 
       // Atualiza estado local sem recarregar tudo
       setManifestos(prev => prev.map(m => m.id === id ? {
@@ -542,29 +551,25 @@ function App() {
             const id = await fetchNextId();
             const turno = getTurnoAtual();
             const now = getCurrentTimestampBR();
-            const nextSistemaId = await getNextDbId('SMO_Sistema');
             const { error } = await supabase.from('SMO_Sistema').insert({
-              id: nextSistemaId,
-              ID_Manifesto: id, 
-              Usuario_Sistema: activeOperatorName, 
-              CIA: d.cia, 
-              Manifesto_Puxado: d.dataHoraPuxado, 
+              ID_Manifesto: id,
+              Usuario_Sistema: activeOperatorName,
+              CIA: d.cia,
+              Manifesto_Puxado: d.dataHoraPuxado,
               Manifesto_Recebido: d.dataHoraRecebido,
-              Status: "Manifesto Recebido", 
-              Turno: turno, 
-              "Carimbo_Data/HR": now, 
+              Status: "Manifesto Recebido",
+              Turno: turno,
+              "Carimbo_Data/HR": now,
               "Usuario_Ação": activeOperatorName
             });
-            
+
             if (!error) {
-              const nextOperacionalId = await getNextDbId('SMO_Operacional');
-              await supabase.from('SMO_Operacional').insert({
-                id: nextOperacionalId,
+              supabase.from('SMO_Operacional').insert({
                 ID_Manifesto: id,
                 "Ação": "Manifesto Puxado",
                 Usuario: activeOperatorName,
                 "Created_At_BR": now
-              });
+              }).then(({ error: logErr }) => { if (logErr) console.error('Falha ao registrar log operacional:', logErr); });
               // Adiciona novo manifesto ao estado local sem recarregar tudo
               setManifestos(prev => [{
                 id, usuario: activeOperatorName!, cia: d.cia,
@@ -640,15 +645,15 @@ function App() {
           <div className="flex items-center gap-6">
             <button onClick={() => setDarkMode(!darkMode)} className="p-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-indigo-400 transition-all rounded">{darkMode ? <Sun size={16} /> : <Moon size={16} />}</button>
             <div className="hidden lg:flex items-center gap-3 px-4 py-1.5 bg-slate-800 border border-slate-700">
-              <Activity size={14} className={lastError ? "text-red-400" : "text-emerald-400"} />
+              <Activity size={14} className={connectionError ? "text-red-400" : "text-emerald-400"} />
               <div className="text-left leading-none">
                 <p className="text-[9px] font-bold text-slate-400 uppercase">Supabase Status</p>
-                <p className="text-[10px] font-bold text-slate-200">{lastError ? "Erro de Conexão" : "Online"}</p>
+                <p className="text-[10px] font-bold text-slate-200">{connectionError ? "Erro de Conexão" : "Online"}</p>
               </div>
             </div>
-            {lastError && (
+            {connectionError && (
               <div className="hidden xl:block max-w-[200px] overflow-hidden text-ellipsis whitespace-nowrap bg-red-900/20 border border-red-500/30 px-2 py-1 rounded">
-                <p className="text-[8px] text-red-400 font-mono">{lastError}</p>
+                <p className="text-[8px] text-red-400 font-mono">{connectionError}</p>
               </div>
             )}
             <div className="text-right"><p className="text-[9px] font-black text-indigo-400 uppercase tracking-tighter">Terminal Livre</p><p className="text-[11px] font-bold text-slate-100 uppercase">Acesso Direto</p></div>
@@ -668,28 +673,24 @@ function App() {
                 const id = await fetchNextId();
                 const turno = getTurnoAtual();
                 const now = getCurrentTimestampBR();
-                const nextSistemaId = await getNextDbId('SMO_Sistema');
                 const { error } = await supabase.from('SMO_Sistema').insert({
-                  id: nextSistemaId,
-                  ID_Manifesto: id, 
-                  Usuario_Sistema: activeOperatorName, 
-                  CIA: d.cia, 
-                  Manifesto_Puxado: d.dataHoraPuxado, 
+                  ID_Manifesto: id,
+                  Usuario_Sistema: activeOperatorName,
+                  CIA: d.cia,
+                  Manifesto_Puxado: d.dataHoraPuxado,
                   Manifesto_Recebido: d.dataHoraRecebido,
-                  Status: "Manifesto Recebido", 
-                  Turno: turno, 
-                  "Carimbo_Data/HR": now, 
+                  Status: "Manifesto Recebido",
+                  Turno: turno,
+                  "Carimbo_Data/HR": now,
                   "Usuario_Ação": activeOperatorName
                 });
                 if (!error) {
-                  const nextOperacionalId = await getNextDbId('SMO_Operacional');
-                  await supabase.from('SMO_Operacional').insert({
-                    id: nextOperacionalId,
+                  supabase.from('SMO_Operacional').insert({
                     ID_Manifesto: id,
                     "Ação": "Manifesto Puxado",
                     Usuario: activeOperatorName,
                     "Created_At_BR": now
-                  });
+                  }).then(({ error: logErr }) => { if (logErr) console.error('Falha ao registrar log operacional:', logErr); });
                   // Adiciona novo manifesto ao estado local sem recarregar tudo
                   setManifestos(prev => [{
                     id, usuario: activeOperatorName!, cia: d.cia,

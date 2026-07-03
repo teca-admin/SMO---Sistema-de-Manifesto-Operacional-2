@@ -65,6 +65,7 @@ export interface SMO_Sistema_DB {
   "Manifesto_em_Conferência"?: string;
   Manifesto_Pendente?: string;
   Manifesto_Completo?: string;
+  updated_at?: string;
 }
 
 export const CIAS = ["Azul", "Gol", "Latam", "Modern", "Total", "Braspress"];
