@@ -7,6 +7,7 @@ import { EfficiencyDashboard } from './components/EfficiencyDashboard';
 import { AssessmentGuide } from './components/AssessmentGuide';
 import { SlaAuditor } from './components/SlaAuditor';
 import { MobileView } from './components/MobileView';
+import { AlertaInspecao } from './components/AlertaInspecao';
 import { EditModal, LoadingOverlay, HistoryModal, AlertToast, CancellationModal, AssignResponsibilityModal, ReprFillModal } from './components/Modals';
 import { Manifesto, User, SMO_Sistema_DB } from './types';
 import { supabase, DB_SCHEMA } from './supabaseClient';
@@ -614,6 +615,7 @@ function App() {
         }} onClose={() => setCancellationId(null)} />}
         {loadingMsg && <LoadingOverlay msg={loadingMsg} />}
         {alert && <AlertToast type={alert.type} msg={alert.msg} />}
+        <AlertaInspecao activeUser={activeUser} />
       </div>
     );
   }
@@ -742,6 +744,7 @@ function App() {
       {assigningId && (<AssignResponsibilityModal manifestoId={assigningId} onConfirm={(name) => { updateStatus(assigningId, 'Manifesto Recebido', { "Usuario_Operação": name }); setAssigningId(null); }} onClose={() => setAssigningId(null)} />)}
       {loadingMsg && <LoadingOverlay msg={loadingMsg} />}
       {alert && <AlertToast type={alert.type} msg={alert.msg} />}
+      <AlertaInspecao activeUser={activeUser} />
     </div>
   );
 }

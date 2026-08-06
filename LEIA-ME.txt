@@ -1,0 +1,83 @@
+===============================================================================
+ COMO SUBIR ESTES ARQUIVOS NO GITHUB
+ Repositorio: teca-admin/SMO---Sistema-de-Manifesto-Operacional-2
+ Preparado em: 06/08/2026
+===============================================================================
+
+SAO 2 ARQUIVOS DE CODIGO (o .sql nao afeta o site, veja no fim):
+
+  App.tsx                        -> vai na RAIZ do repositorio (substitui)
+  components/AlertaInspecao.tsx  -> vai dentro da pasta "components" (novo)
+
+
+-------------------------------------------------------------------------------
+ O QUE MUDA NO App.tsx
+-------------------------------------------------------------------------------
+Apenas 3 LINHAS FORAM ADICIONADAS. Nenhuma linha existente foi alterada
+ou removida. Sao elas:
+
+  1. o import do componente novo, junto dos outros imports
+  2. <AlertaInspecao activeUser={activeUser} /> na versao mobile
+  3. <AlertaInspecao activeUser={activeUser} /> na versao desktop
+
+Todo o resto do arquivo esta exatamente igual ao que ja esta no ar.
+
+
+-------------------------------------------------------------------------------
+ COMO SUBIR (arrastando, do jeito que voce faz)
+-------------------------------------------------------------------------------
+1. Abra https://github.com/teca-admin/SMO---Sistema-de-Manifesto-Operacional-2
+
+2. Para o App.tsx:
+   - clique em "Add file" > "Upload files"
+   - arraste o App.tsx desta pasta
+   - o GitHub vai reconhecer que e uma atualizacao do arquivo existente
+
+3. Para o AlertaInspecao.tsx:
+   - entre na pasta "components" ANTES de subir
+   - clique em "Add file" > "Upload files"
+   - arraste o AlertaInspecao.tsx
+   (se subir na raiz por engano, o site quebra: o import procura
+    ./components/AlertaInspecao)
+
+4. Escreva a mensagem do commit, por exemplo:
+      feat(expedicao): alerta bloqueante de carga puxada sem inspecao
+
+5. Confirme. A Vercel faz o deploy automatico em ~1 minuto.
+
+
+-------------------------------------------------------------------------------
+ O QUE ESPERAR DEPOIS DO DEPLOY
+-------------------------------------------------------------------------------
+NADA vai mudar visualmente para a equipe.
+
+O alerta so aparece quando existe carga pendente na tabela Alertas_Inspecao.
+Com a tabela vazia, o componente nao desenha nada na tela ("return null") -
+a equipe nao percebe diferenca nenhuma.
+
+O alerta comeca a funcionar sozinho quando o robo de retirada publicar a
+primeira pendencia.
+
+
+-------------------------------------------------------------------------------
+ SE DER ALGUM PROBLEMA (como voltar atras)
+-------------------------------------------------------------------------------
+No GitHub, abra o historico do App.tsx, escolha a versao anterior
+(commit 26558c3) e restaure. A Vercel refaz o deploy automaticamente.
+
+O AlertaInspecao.tsx pode ficar no repositorio sem problema: sem o import
+no App.tsx ele nunca e carregado.
+
+
+-------------------------------------------------------------------------------
+ SOBRE O alertas_inspecao_setup.sql
+-------------------------------------------------------------------------------
+Esse arquivo NAO e executado pelo site - e so o registro do que foi criado
+no banco (voce ja rodou ele no Supabase em 06/08/2026).
+
+Vale subir junto para ficar versionado, mas e opcional. Ele cria as duas
+tabelas novas:
+   smo.Alertas_Inspecao      - a fila de cargas pendentes
+   smo.Alertas_Inspecao_Log  - o registro de quem confirmou cada alerta
+
+===============================================================================
